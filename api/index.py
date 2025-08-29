@@ -378,11 +378,29 @@ def login():
 
 @app.get("/api/auth/callback")
 async def auth_callback(request: Request):
-    # Kemungkinan masih menggunakan from_client_secrets_file di sini
-    flow = Flow.from_client_secrets_file(CLIENT_SECRETS_FILE, scopes=SCOPES, redirect_uri=REDIRECT_URI)
-    flow.fetch_token(authorization_response=str(request.url))
-    save_credentials(flow.credentials)
-    return RedirectResponse(url=FRONTEND_URL)
+    """
+    Menangani callback dari Google dan menukarkan kode dengan token.
+    """
+    try:
+        if creds_info:
+            # Di server, gunakan config dari env var
+            flow = Flow.from_client_config(creds_info, scopes=SCOPES, redirect_uri=REDIRECT_URI)
+        else:
+            # Di lokal, gunakan file
+            flow = Flow.from_client_secrets_file(CLIENT_SECRETS_FILE, scopes=SCOPES, redirect_uri=REDIRECT_URI)
+
+        flow.fetch_token(authorization_response=str(request.url))
+        
+        # Simpan kredensial (token)
+        save_credentials(flow.credentials)
+        
+        # Arahkan kembali ke halaman utama frontend
+        return RedirectResponse(url=FRONTEND_URL)
+
+    except Exception as e:
+        print(f"Authentication callback error: {e}")
+        # Jangan kirim error detail ke user, cukup notifikasi umum
+        raise HTTPException(status_code=400, detail="Authentication failed")
 
 @app.post("/api/logout")
 async def logout():
