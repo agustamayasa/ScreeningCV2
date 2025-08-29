@@ -60,7 +60,7 @@ SCOPES = [
     'https://www.googleapis.com/auth/spreadsheets',
     'https://www.googleapis.com/auth/drive.file'
 ]
-REDIRECT_URI = f"{BACKEND_URL}/auth/callback" # <-- Gunakan variabel baru
+REDIRECT_URI = f"{BACKEND_URL}/api/auth/callback"
 
 SPREADSHEET_NAME = "Analisis Resume AI"
 
@@ -352,7 +352,7 @@ def ensure_headers_exist(sheet):
 def root():
     return {"message": "AI Resume Screening API is running!"}
 
-@app.get("/login")
+@app.get("/api/login")
 def login():
     """
     Memulai alur otentikasi Google.
@@ -376,7 +376,7 @@ def login():
         print(f"Login error: {e}")
         raise HTTPException(status_code=500, detail="Gagal menginisialisasi alur login.")
 
-@app.get("/auth/callback")
+@app.get("/api/auth/callback")
 async def auth_callback(request: Request):
     try:
         flow = Flow.from_client_secrets_file(CLIENT_SECRETS_FILE, scopes=SCOPES, redirect_uri=REDIRECT_URI)
