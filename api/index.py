@@ -378,14 +378,11 @@ def login():
 
 @app.get("/api/auth/callback")
 async def auth_callback(request: Request):
-    try:
-        flow = Flow.from_client_secrets_file(CLIENT_SECRETS_FILE, scopes=SCOPES, redirect_uri=REDIRECT_URI)
-        flow.fetch_token(authorization_response=str(request.url))
-        save_credentials(flow.credentials)
-        return RedirectResponse(url="http://localhost:3000")
-    except Exception as e:
-        print(f"Auth callback error: {e}")
-        raise HTTPException(status_code=500, detail="Authentication failed")
+    # Kemungkinan masih menggunakan from_client_secrets_file di sini
+    flow = Flow.from_client_secrets_file(CLIENT_SECRETS_FILE, scopes=SCOPES, redirect_uri=REDIRECT_URI)
+    flow.fetch_token(authorization_response=str(request.url))
+    save_credentials(flow.credentials)
+    return RedirectResponse(url=FRONTEND_URL)
 
 @app.post("/api/logout")
 async def logout():
