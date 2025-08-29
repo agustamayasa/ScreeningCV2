@@ -1,0 +1,10 @@
+fastapi
+uvicorn[standard]
+python-multipart
+pdfplumber
+google-api-python-client
+google-auth-oauthlib
+google-auth-httplib2
+python-dotenv
+google-generativeai  # Tambahan baru
+gspread            # Tambahan baru
