@@ -13,6 +13,7 @@ from google_auth_oauthlib.flow import Flow
 from google.auth.transport.requests import Request as GoogleRequest
 from googleapiclient.discovery import build
 from dotenv import load_dotenv
+from google.oauth2.credentials import Credentials  # <-- Import Credentials
 import google.generativeai as genai
 import gspread
 import hashlib
@@ -69,21 +70,35 @@ job_description_text = ""
 # ==============================================================================
 # FUNGSI-FUNGSI HELPER
 # ==============================================================================
-def save_credentials(creds):
-    try:
-        with open('token.pickle', 'wb') as token:
-            pickle.dump(creds, token)
-    except Exception as e:
-        print(f"Error saving credentials: {e}")
+# FUNGSI HELPER BARU UNTUK COOKIES
+# ==============================================================================
+def credentials_to_dict(credentials):
+    """Mengubah objek Credentials menjadi dictionary yang aman untuk JSON."""
+    return {'token': credentials.token,
+            'refresh_token': credentials.refresh_token,
+            'token_uri': credentials.token_uri,
+            'client_id': credentials.client_id,
+            'client_secret': credentials.client_secret,
+            'scopes': credentials.scopes}
 
-def load_credentials():
+def get_creds_from_cookie(request: Request) -> Credentials | None:
+    """Membaca dan memvalidasi kredensial dari cookie."""
+    token_str = request.cookies.get("auth_token")
+    if not token_str:
+        return None
+    
     try:
-        if os.path.exists('token.pickle'):
-            with open('token.pickle', 'rb') as token:
-                return pickle.load(token)
-    except Exception as e:
-        print(f"Error loading credentials: {e}")
-    return None
+        token_dict = json.loads(token_str)
+        creds = Credentials(**token_dict)
+        # Periksa apakah token valid atau bisa di-refresh
+        if creds and creds.valid:
+            return creds
+        if creds and creds.expired and creds.refresh_token:
+            creds.refresh(GoogleRequest())
+            return creds
+        return None
+    except (json.JSONDecodeError, TypeError):
+        return None
 
 def clear_credentials():
     """Hapus file token untuk logout"""
@@ -96,28 +111,21 @@ def clear_credentials():
         print(f"Error clearing credentials: {e}")
         return False
 
-def get_google_services():
-    creds = load_credentials()
-    if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
-            try:
-                creds.refresh(GoogleRequest())
-            except Exception as e:
-                print(f"Error refreshing credentials: {e}")
-                raise HTTPException(status_code=401, detail="Token expired. Please login again.")
-        else:
-            raise HTTPException(status_code=401, detail="User not authenticated")
+def get_google_services(request: Request):
+    """Mendapatkan service Google menggunakan kredensial dari cookie."""
+    creds = get_creds_from_cookie(request)
+    if not creds:
+        raise HTTPException(status_code=401, detail="User not authenticated")
     
-    save_credentials(creds)
+    # Simpan kembali token yang mungkin sudah di-refresh ke cookie
+    refreshed_creds_dict = credentials_to_dict(creds)
     
-    try:
-        gmail = build('gmail', 'v1', credentials=creds)
-        drive = build('drive', 'v3', credentials=creds)
-        gc = gspread.authorize(creds)
-        return gmail, drive, gc
-    except Exception as e:
-        print(f"Error building Google services: {e}")
-        raise HTTPException(status_code=500, detail="Failed to connect to Google services")
+    gmail = build('gmail', 'v1', credentials=creds)
+    drive = build('drive', 'v3', credentials=creds)
+    gc = gspread.authorize(creds)
+    
+    return gmail, drive, gc, refreshed_creds_dict
+
 
 def check_auth_status():
     """Periksa apakah user sudah login dan kredensial masih valid"""
@@ -378,28 +386,35 @@ def login():
 
 @app.get("/api/auth/callback")
 async def auth_callback(request: Request):
-    """
-    Menangani callback dari Google dan menukarkan kode dengan token.
-    """
+    """Menangani callback, menukar kode dengan token, dan MENYIMPANNYA DI COOKIE."""
     try:
+        # Logika inisialisasi flow tetap sama
         if creds_info:
-            # Di server, gunakan config dari env var
             flow = Flow.from_client_config(creds_info, scopes=SCOPES, redirect_uri=REDIRECT_URI)
         else:
-            # Di lokal, gunakan file
             flow = Flow.from_client_secrets_file(CLIENT_SECRETS_FILE, scopes=SCOPES, redirect_uri=REDIRECT_URI)
 
         flow.fetch_token(authorization_response=str(request.url))
         
-        # Simpan kredensial (token)
-        save_credentials(flow.credentials)
+        # --- PERUBAHAN UTAMA DI SINI ---
+        credentials = flow.credentials
+        creds_dict = credentials_to_dict(credentials)
         
-        # Arahkan kembali ke halaman utama frontend
-        return RedirectResponse(url=FRONTEND_URL)
+        # Buat respons redirect dan atur cookie di dalamnya
+        response = RedirectResponse(url=FRONTEND_URL)
+        response.set_cookie(
+            key="auth_token", 
+            value=json.dumps(creds_dict), 
+            httponly=True,       # Cookie tidak bisa diakses oleh JavaScript
+            secure=True,         # Hanya dikirim melalui HTTPS
+            samesite="Lax",      # Perlindungan CSRF
+            max_age=60*60*24*7   # Cookie berlaku selama 7 hari
+        )
+        return response
+        # -----------------------------
 
     except Exception as e:
         print(f"Authentication callback error: {e}")
-        # Jangan kirim error detail ke user, cukup notifikasi umum
         raise HTTPException(status_code=400, detail="Authentication failed")
 
 @app.post("/api/logout")
@@ -449,7 +464,7 @@ async def upload_job_description(file: UploadFile = File(...)):
         raise HTTPException(status_code=500, detail=f"Error processing file: {str(e)}")
 
 @app.post("/api/start-screening")
-async def start_screening():
+async def start_screening(request: Request):
     if not job_description_text:
         raise HTTPException(status_code=400, detail="Deskripsi pekerjaan belum di-upload.")
     
@@ -590,7 +605,7 @@ async def start_screening():
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 @app.get("/api/get-results")
-async def get_results():
+async def get_results(request: Request):
     try:
         _, _, gc = get_google_services()
         spreadsheet = ensure_spreadsheet_exists(gc)
