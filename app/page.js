@@ -231,7 +231,7 @@ export default function Home() {
       if (error.response?.status === 401) {
         setScreeningStatus('Sesi expired, mengarahkan ke login...');
         setTimeout(() => {
-          window.location.href = `${API_BASE_URL}/login`;
+          window.location.href = `${API_BASE_URL}/api/login`;
         }, 2000);
       } else {
         setScreeningStatus(`${errorMessage}`);
@@ -242,7 +242,7 @@ export default function Home() {
   };
 
   const handleLogin = () => {
-    window.location.href = `${API_BASE_URL}/login`;
+    window.location.href = `${API_BASE_URL}/api/login`;
   };
 
   const handleClearResults = async () => {
