@@ -469,7 +469,7 @@ async def start_screening(request: Request):
         raise HTTPException(status_code=400, detail="Deskripsi pekerjaan belum di-upload.")
     
     try:
-        gmail, drive, gc = get_google_services()
+        gmail, drive, gc, refreshed_creds = get_google_services(request=request)
         spreadsheet = ensure_spreadsheet_exists(gc)
         sheet = spreadsheet.sheet1
         
@@ -607,7 +607,7 @@ async def start_screening(request: Request):
 @app.get("/api/get-results")
 async def get_results(request: Request):
     try:
-        _, _, gc = get_google_services()
+        _, _, gc, _ = get_google_services(request=request) 
         spreadsheet = ensure_spreadsheet_exists(gc)
         sheet = spreadsheet.sheet1
         
