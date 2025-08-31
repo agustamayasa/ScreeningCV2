@@ -631,7 +631,7 @@ async def get_results(request: Request):
 @app.delete("/api/clear-results")
 async def clear_results():
     try:
-        _, _, gc = get_google_services()
+        _, _, gc = get_google_services(request=request) 
         spreadsheet = ensure_spreadsheet_exists(gc)
         sheet = spreadsheet.sheet1
         
