@@ -54,8 +54,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Konfigurasi Google OAuth
-CLIENT_SECRETS_FILE = "credentials.json"
+
 SCOPES = [
     'https://www.googleapis.com/auth/gmail.readonly',
     'https://www.googleapis.com/auth/spreadsheets',
@@ -629,7 +628,7 @@ async def get_results(request: Request):
         raise HTTPException(status_code=500, detail=f"Failed to fetch results: {str(e)}")
 
 @app.delete("/api/clear-results")
-async def clear_results():
+async def clear_results(request: Request):
     try:
         _, _, gc = get_google_services(request=request) 
         spreadsheet = ensure_spreadsheet_exists(gc)
