@@ -177,6 +177,7 @@ export default function Home() {
       setConfigStatus('Nama posisi pekerjaan tidak boleh kosong');
       return;
     }
+
     const validSubjects = emailSubjects.filter(subject => subject.trim() !== '');
     if (validSubjects.length === 0) {
       setConfigStatus('Minimal satu subjek email harus diisi');
@@ -191,13 +192,13 @@ export default function Home() {
       });
 
       setIsConfigSaved(true);
-      // Update nama dan URL dari response
       setCurrentSpreadsheetName(response.data.spreadsheet_name);
-      setCurrentSpreadsheetUrl(response.data.spreadsheet_url); // <-- Simpan URL
+      setConfigStatus(`Konfigurasi berhasil disimpan! Spreadsheet: ${response.data.spreadsheet_name}`);
       
-      setConfigStatus(`Konfigurasi berhasil disimpan!`);
-      
-      setTimeout(() => setConfigStatus(''), 5000);
+      // Clear success message after 5 seconds
+      setTimeout(() => {
+        setConfigStatus('');
+      }, 5000);
     } catch (error) {
       const errorMessage = handleApiError(error, 'Gagal menyimpan konfigurasi');
       setConfigStatus(`Error: ${errorMessage}`);
@@ -556,9 +557,9 @@ export default function Home() {
           <div className="mt-6 pt-6 border-t border-gray-200">
             <div className="flex items-center justify-between">
               <div className="flex-1">
-                {currentSpreadsheetUrl && (
+                {currentSpreadsheetName && (
                   <p className="text-sm text-gray-600">
-                    <span className="font-medium">Spreadsheet:</span> {currentSpreadsheetUrl}
+                    <span className="font-medium">Spreadsheet:</span> {currentSpreadsheetName}
                   </p>
                 )}
                 {configStatus && (
