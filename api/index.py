@@ -494,8 +494,8 @@ async def get_auth_status(request: Request):
         return JSONResponse(content={"authenticated": False})
 
 @app.post("/api/set-screening-config")
-async def set_screening_config(config: ScreeningConfig):
-    """Set konfigurasi screening: nama posisi dan subjek email"""
+async def set_screening_config(config: ScreeningConfig, request: Request): # <-- Tambahkan request
+    """Set konfigurasi screening dan kembalikan info spreadsheet termasuk URL."""
     global job_position_name, email_subjects
     
     try:
@@ -508,11 +508,18 @@ async def set_screening_config(config: ScreeningConfig):
         if not email_subjects:
             raise HTTPException(status_code=400, detail="Minimal satu subjek email harus diisi")
         
+        # ✨ Perbaikan: Dapatkan URL spreadsheet setelah diset
+        _, _, gc, _ = get_google_services(request=request)
+        spreadsheet_name = generate_spreadsheet_name(job_position_name)
+        spreadsheet = ensure_spreadsheet_exists(gc, spreadsheet_name)
+        spreadsheet_url = f"https://docs.google.com/spreadsheets/d/{spreadsheet.id}/edit"
+        
         return JSONResponse(content={
             "message": "Konfigurasi screening berhasil disimpan",
             "job_position": job_position_name,
             "email_subjects": email_subjects,
-            "spreadsheet_name": generate_spreadsheet_name(job_position_name)
+            "spreadsheet_name": spreadsheet_name,
+            "spreadsheet_url": spreadsheet_url # <-- Kirim URL ke frontend
         })
         
     except HTTPException as e:
@@ -522,12 +529,27 @@ async def set_screening_config(config: ScreeningConfig):
         raise HTTPException(status_code=500, detail=f"Failed to set configuration: {str(e)}")
 
 @app.get("/api/get-screening-config")
-async def get_screening_config():
-    """Mendapatkan konfigurasi screening saat ini"""
+async def get_screening_config(request: Request): # <-- Tambahkan request
+    """Mendapatkan konfigurasi screening saat ini termasuk URL spreadsheet."""
+    spreadsheet_name = ""
+    spreadsheet_url = ""
+
+    # ✨ Perbaikan: Jika sudah ada konfigurasi, dapatkan juga URL-nya
+    if job_position_name:
+        try:
+            _, _, gc, _ = get_google_services(request=request)
+            spreadsheet_name = generate_spreadsheet_name(job_position_name)
+            spreadsheet = ensure_spreadsheet_exists(gc, spreadsheet_name)
+            spreadsheet_url = f"https://docs.google.com/spreadsheets/d/{spreadsheet.id}/edit"
+        except Exception as e:
+            # Jika gagal (misal token expired), jangan gagalkan semua, kirim saja namanya
+            print(f"Could not get spreadsheet URL on config fetch: {e}")
+
     return JSONResponse(content={
         "job_position": job_position_name,
         "email_subjects": email_subjects,
-        "spreadsheet_name": generate_spreadsheet_name(job_position_name) if job_position_name else "",
+        "spreadsheet_name": spreadsheet_name,
+        "spreadsheet_url": spreadsheet_url, # <-- Kirim URL ke frontend
         "has_job_description": bool(job_description_text)
     })
 

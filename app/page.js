@@ -177,7 +177,6 @@ export default function Home() {
       setConfigStatus('Nama posisi pekerjaan tidak boleh kosong');
       return;
     }
-
     const validSubjects = emailSubjects.filter(subject => subject.trim() !== '');
     if (validSubjects.length === 0) {
       setConfigStatus('Minimal satu subjek email harus diisi');
@@ -192,13 +191,13 @@ export default function Home() {
       });
 
       setIsConfigSaved(true);
+      // Update nama dan URL dari response
       setCurrentSpreadsheetName(response.data.spreadsheet_name);
-      setConfigStatus(`Konfigurasi berhasil disimpan! Spreadsheet: ${response.data.spreadsheet_name}`);
+      setCurrentSpreadsheetUrl(response.data.spreadsheet_url); // <-- Simpan URL
       
-      // Clear success message after 5 seconds
-      setTimeout(() => {
-        setConfigStatus('');
-      }, 5000);
+      setConfigStatus(`Konfigurasi berhasil disimpan!`);
+      
+      setTimeout(() => setConfigStatus(''), 5000);
     } catch (error) {
       const errorMessage = handleApiError(error, 'Gagal menyimpan konfigurasi');
       setConfigStatus(`Error: ${errorMessage}`);
@@ -557,11 +556,25 @@ export default function Home() {
           <div className="mt-6 pt-6 border-t border-gray-200">
             <div className="flex items-center justify-between">
               <div className="flex-1">
-                {currentSpreadsheetName && (
-                  <p className="text-sm text-gray-600">
-                    <span className="font-medium">Spreadsheet:</span> {currentSpreadsheetName}
-                  </p>
-                )}
+                    {/* 4. Ubah JSX untuk menampilkan link secara kondisional */}
+                    {currentSpreadsheetUrl ? (
+                      <p className="text-sm text-gray-600">
+                        <span className="font-medium">Spreadsheet:</span>{' '}
+                        <a
+                          href={currentSpreadsheetUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:text-blue-800 hover:underline font-semibold"
+                          title="Buka di Google Sheets"
+                        >
+                          {currentSpreadsheetName}
+                        </a>
+                      </p>
+                    ) : currentSpreadsheetName && (
+                      <p className="text-sm text-gray-600">
+                        <span className="font-medium">Spreadsheet:</span> {currentSpreadsheetName}
+                      </p>
+                    )}
                 {configStatus && (
                   <div className={`mt-2 p-3 rounded-lg text-sm font-medium ${
                     configStatus.includes('berhasil') || configStatus.includes('Sukses')
@@ -792,19 +805,19 @@ export default function Home() {
                   )}
                 </button>
 
-                  {results.length > 0 && (
-                    <button
-                      onClick={handleClearResults}
-                      disabled={isLoading}
-                      className="w-full bg-red-600 text-white py-3 px-4 rounded-lg hover:bg-red-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors duration-200 font-medium flex items-center justify-center"
-                    >
-                      <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
-                      Clear All Data
-                    </button>
-                  )}
-                </div>
+                {results.length > 0 && (
+                  <button
+                    onClick={handleClearResults}
+                    disabled={isLoading}
+                    className="w-full bg-red-600 text-white py-3 px-4 rounded-lg hover:bg-red-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors duration-200 font-medium flex items-center justify-center"
+                  >
+                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                    Clear All Data
+                  </button>
+                )}
+              </div>
 
               {/* Screening Status */}
               {screeningStatus && (
