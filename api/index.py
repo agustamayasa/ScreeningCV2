@@ -749,6 +749,8 @@ async def get_results(request: Request):
         print(f"Error in get_results: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to fetch results: {str(e)}")
 
+# Di file backend FastAPI Anda (main.py)
+
 @app.delete("/api/clear-results")
 async def clear_results(request: Request):
     global job_position_name
@@ -756,32 +758,29 @@ async def clear_results(request: Request):
     try:
         _, _, gc, _ = get_google_services(request=request)
         
-        # Jika tidak ada nama posisi yang diset, gunakan spreadsheet default
         if not job_position_name:
             spreadsheet_name = "Analisis Resume AI"
         else:
             spreadsheet_name = generate_spreadsheet_name(job_position_name)
-        
+            
         spreadsheet = ensure_spreadsheet_exists(gc, spreadsheet_name)
         sheet = spreadsheet.sheet1
         
-        # Hapus semua data kecuali header
-        sheet.clear()
-        headers = [
-            'Waktu', 'Drive Link', 'Nama', 'Email', 'Nomor Telepon',
-            'Pendidikan Terakhir', 'Kekuatan', 'Kekurangan', 
-            'Risk Factor', 'Reward Factor', 'Overall Fit', 'Justifikasi', 'CV_Hash'
-        ]
-        sheet.append_row(headers)
+        # --- PERBAIKAN UTAMA ADA DI SINI ---
+        # Cek apakah ada baris data untuk dihapus (lebih dari 1 baris header)
+        if sheet.row_count > 1:
+            # Hapus semua baris mulai dari baris ke-2 hingga baris terakhir.
+            # Ini akan menjaga baris header tetap utuh.
+            sheet.delete_rows(2, sheet.row_count)
         
         return JSONResponse(content={
-            "message": "Semua data berhasil dihapus.",
+            "message": f"Semua data pada spreadsheet '{spreadsheet_name}' berhasil dihapus.",
             "spreadsheet_name": spreadsheet_name
         })
         
     except Exception as e:
         print(f"Error in clear_results: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to clear results: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Gagal menghapus data: {str(e)}")
 
 @app.get("/api/list-spreadsheets")
 async def list_spreadsheets(request: Request):
