@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 
-
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export default function Home() {
@@ -19,6 +18,12 @@ export default function Home() {
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   
+  // New state for configuration forms
+  const [jobPosition, setJobPosition] = useState('');
+  const [emailSubjects, setEmailSubjects] = useState(['']);
+  const [configStatus, setConfigStatus] = useState('');
+  const [isConfigSaved, setIsConfigSaved] = useState(false);
+  const [currentSpreadsheetName, setCurrentSpreadsheetName] = useState('');
 
   // Fungsi untuk menangani error dengan lebih baik
   const handleApiError = (error, defaultMessage) => {
@@ -49,19 +54,37 @@ export default function Home() {
   const checkAuthStatus = async () => {
     try {
       setIsCheckingAuth(true);
-      const response = await axios.get(`${API_BASE_URL}/api/get-results`);
-      setResults(response.data.results || []);
-      setIsLoggedIn(true);
-    } catch (error) {
-      if (error.response?.status === 401) {
-        setIsLoggedIn(false);
-        setResults([]);
-      } else {
-        const errorMessage = handleApiError(error, "Gagal mengambil status autentikasi");
-        setError(errorMessage);
+      const response = await axios.get(`${API_BASE_URL}/api/auth-status`);
+      setIsLoggedIn(response.data.authenticated);
+      
+      if (response.data.authenticated) {
+        await fetchScreeningConfig();
+        await fetchResults();
       }
+    } catch (error) {
+      setIsLoggedIn(false);
+      const errorMessage = handleApiError(error, "Gagal mengambil status autentikasi");
+      setError(errorMessage);
     } finally {
       setIsCheckingAuth(false);
+    }
+  };
+
+  const fetchScreeningConfig = async () => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/api/get-screening-config`);
+      const config = response.data;
+      
+      setJobPosition(config.job_position || '');
+      setEmailSubjects(config.email_subjects.length > 0 ? config.email_subjects : ['']);
+      setCurrentSpreadsheetName(config.spreadsheet_name || '');
+      setIsConfigSaved(config.job_position && config.email_subjects.length > 0);
+      
+      if (config.has_job_description) {
+        setUploadStatus('Sukses: Deskripsi pekerjaan sudah tersedia');
+      }
+    } catch (error) {
+      console.error('Error fetching config:', error);
     }
   };
 
@@ -72,6 +95,7 @@ export default function Home() {
       setError('');
       const response = await axios.get(`${API_BASE_URL}/api/get-results`);
       setResults(response.data.results || []);
+      setCurrentSpreadsheetName(response.data.spreadsheet_name || '');
     } catch (error) {
       const errorMessage = handleApiError(error, "Gagal mengambil hasil");
       
@@ -109,6 +133,11 @@ export default function Home() {
       setSelectedFile(null);
       setError('');
       setSelectedCandidate(null);
+      setJobPosition('');
+      setEmailSubjects(['']);
+      setConfigStatus('');
+      setIsConfigSaved(false);
+      setCurrentSpreadsheetName('');
       
       // Show success message briefly
       setScreeningStatus('Logout berhasil!');
@@ -126,6 +155,11 @@ export default function Home() {
       setSelectedFile(null);
       setError('');
       setSelectedCandidate(null);
+      setJobPosition('');
+      setEmailSubjects(['']);
+      setConfigStatus('');
+      setIsConfigSaved(false);
+      setCurrentSpreadsheetName('');
       
       // Show that logout completed
       setScreeningStatus('Logout selesai!');
@@ -135,6 +169,57 @@ export default function Home() {
     } finally {
       setIsLoggingOut(false);
     }
+  };
+
+  // New functions for configuration
+  const handleSaveConfig = async () => {
+    if (!jobPosition.trim()) {
+      setConfigStatus('Nama posisi pekerjaan tidak boleh kosong');
+      return;
+    }
+
+    const validSubjects = emailSubjects.filter(subject => subject.trim() !== '');
+    if (validSubjects.length === 0) {
+      setConfigStatus('Minimal satu subjek email harus diisi');
+      return;
+    }
+
+    try {
+      setConfigStatus('Menyimpan konfigurasi...');
+      const response = await axios.post(`${API_BASE_URL}/api/set-screening-config`, {
+        job_position: jobPosition.trim(),
+        email_subjects: validSubjects
+      });
+
+      setIsConfigSaved(true);
+      setCurrentSpreadsheetName(response.data.spreadsheet_name);
+      setConfigStatus(`Konfigurasi berhasil disimpan! Spreadsheet: ${response.data.spreadsheet_name}`);
+      
+      // Clear success message after 5 seconds
+      setTimeout(() => {
+        setConfigStatus('');
+      }, 5000);
+    } catch (error) {
+      const errorMessage = handleApiError(error, 'Gagal menyimpan konfigurasi');
+      setConfigStatus(`Error: ${errorMessage}`);
+    }
+  };
+
+  const addEmailSubject = () => {
+    setEmailSubjects([...emailSubjects, '']);
+  };
+
+  const removeEmailSubject = (index) => {
+    if (emailSubjects.length > 1) {
+      const newSubjects = emailSubjects.filter((_, i) => i !== index);
+      setEmailSubjects(newSubjects);
+    }
+  };
+
+  const updateEmailSubject = (index, value) => {
+    const newSubjects = [...emailSubjects];
+    newSubjects[index] = value;
+    setEmailSubjects(newSubjects);
   };
 
   useEffect(() => {
@@ -183,6 +268,11 @@ export default function Home() {
       return;
     }
 
+    if (!isConfigSaved) {
+      setError('Simpan konfigurasi screening terlebih dahulu');
+      return;
+    }
+
     const formData = new FormData();
     formData.append('file', selectedFile);
     setUploadStatus('Mengupload...');
@@ -206,6 +296,11 @@ export default function Home() {
   const handleStartScreening = async () => {
     if (!uploadStatus.includes('Sukses')) {
       setError('Upload deskripsi pekerjaan terlebih dahulu');
+      return;
+    }
+
+    if (!isConfigSaved) {
+      setError('Simpan konfigurasi screening terlebih dahulu');
       return;
     }
 
@@ -272,6 +367,22 @@ export default function Home() {
     return 'bg-red-100 text-red-800 border-red-200';
   };
 
+  // Show loading state while checking authentication
+  if (isCheckingAuth) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <svg className="animate-spin w-8 h-8 text-blue-600 mx-auto mb-4" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <p className="text-gray-600">Checking authentication...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show login page if not authenticated
   
 
   return (
@@ -359,6 +470,136 @@ export default function Home() {
           </div>
         )}
 
+        {/* Configuration Section */}
+        <div className="bg-white border border-gray-200 rounded-xl p-6 mb-8">
+          <div className="flex items-center mb-6">
+            <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center mr-3">
+              <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900">Screening Configuration</h2>
+              <p className="text-sm text-gray-600">Setup job position and email criteria</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Job Position Form */}
+            <div className="space-y-4">
+              <div>
+                <label htmlFor="jobPosition" className="block text-sm font-medium text-gray-700 mb-2">
+                  Nama Posisi Pekerjaan
+                </label>
+                <input
+                  type="text"
+                  id="jobPosition"
+                  value={jobPosition}
+                  onChange={(e) => setJobPosition(e.target.value)}
+                  placeholder="e.g., UI/UX Designer, Frontend Developer"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Nama ini akan digunakan untuk penamaan spreadsheet
+                </p>
+              </div>
+            </div>
+
+            {/* Email Subjects Form */}
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Format Subjek Email yang Diterima
+                </label>
+                <div className="space-y-2">
+                  {emailSubjects.map((subject, index) => (
+                    <div key={index} className="flex items-center space-x-2">
+                      <input
+                        type="text"
+                        value={subject}
+                        onChange={(e) => updateEmailSubject(index, e.target.value)}
+                        placeholder="e.g., cv-ui/ux, resume-frontend"
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+                      />
+                      {emailSubjects.length > 1 && (
+                        <button
+                          onClick={() => removeEmailSubject(index)}
+                          className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors duration-200"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                
+                <button
+                  onClick={addEmailSubject}
+                  className="mt-2 inline-flex items-center px-3 py-2 text-sm text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors duration-200"
+                >
+                  <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  Tambah Subjek Email
+                </button>
+                
+                <p className="text-xs text-gray-500 mt-1">
+                  Email dengan subjek ini akan di-scan untuk mencari CV
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Configuration Status and Save Button */}
+          <div className="mt-6 pt-6 border-t border-gray-200">
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                {currentSpreadsheetName && (
+                  <p className="text-sm text-gray-600">
+                    <span className="font-medium">Spreadsheet:</span> {currentSpreadsheetName}
+                  </p>
+                )}
+                {configStatus && (
+                  <div className={`mt-2 p-3 rounded-lg text-sm font-medium ${
+                    configStatus.includes('berhasil') || configStatus.includes('Sukses')
+                      ? 'bg-green-50 text-green-700 border border-green-200' 
+                      : configStatus.includes('Error') || configStatus.includes('kosong')
+                      ? 'bg-red-50 text-red-700 border border-red-200'
+                      : 'bg-blue-50 text-blue-700 border border-blue-200'
+                  }`}>
+                    {configStatus}
+                  </div>
+                )}
+              </div>
+              
+              <button
+                onClick={handleSaveConfig}
+                disabled={!jobPosition.trim() || emailSubjects.every(s => !s.trim())}
+                className="ml-4 bg-purple-600 text-white py-2 px-6 rounded-lg hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors duration-200 font-medium flex items-center"
+              >
+                {isConfigSaved ? (
+                  <>
+                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    Update Config
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 0V4a2 2 0 00-2-2H9a2 2 0 00-2 2v3m1 0h4" />
+                    </svg>
+                    Save Config
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+
         {/* Main Process Section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
           {/* Upload Section */}
@@ -374,6 +615,18 @@ export default function Home() {
                 <p className="text-sm text-gray-600">Upload PDF file containing job requirements</p>
               </div>
             </div>
+
+            {/* Configuration Reminder */}
+            {!isConfigSaved && (
+              <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                <div className="flex items-center">
+                  <svg className="w-4 h-4 text-amber-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                  <p className="text-amber-700 text-sm">Simpan konfigurasi screening terlebih dahulu</p>
+                </div>
+              </div>
+            )}
 
             {/* File Upload Area */}
             <div
@@ -425,7 +678,7 @@ export default function Home() {
             {/* Upload Button */}
             <button
               onClick={handleUpload}
-              disabled={!selectedFile}
+              disabled={!selectedFile || !isConfigSaved}
               className="w-full mt-4 bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors duration-200 font-medium"
             >
               Upload Job Description
@@ -460,7 +713,30 @@ export default function Home() {
             </div>
 
             <div className="space-y-4">
-              {/* Analysis Info */}
+              {/* Prerequisites Check */}
+              <div className="bg-gray-50 rounded-lg p-4">
+                <h3 className="font-medium text-gray-900 mb-3">Prerequisites</h3>
+                <div className="space-y-2">
+                  <div className="flex items-center">
+                    <svg className={`w-4 h-4 mr-2 ${isConfigSaved ? 'text-green-500' : 'text-gray-400'}`} fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                    <span className={`text-sm ${isConfigSaved ? 'text-green-700' : 'text-gray-600'}`}>
+                      Screening configuration saved
+                    </span>
+                  </div>
+                  <div className="flex items-center">
+                    <svg className={`w-4 h-4 mr-2 ${uploadStatus.includes('Sukses') ? 'text-green-500' : 'text-gray-400'}`} fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                    <span className={`text-sm ${uploadStatus.includes('Sukses') ? 'text-green-700' : 'text-gray-600'}`}>
+                      Job description uploaded
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Process Overview */}
               <div className="bg-gray-50 rounded-lg p-4">
                 <h3 className="font-medium text-gray-900 mb-2">Process Overview</h3>
                 <ul className="text-sm text-gray-600 space-y-1">
@@ -495,7 +771,7 @@ export default function Home() {
               <div className="space-y-3">
                 <button
                   onClick={handleStartScreening}
-                  disabled={isLoading || !uploadStatus.includes('Sukses')}
+                  disabled={isLoading || !uploadStatus.includes('Sukses') || !isConfigSaved}
                   className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors duration-200 font-medium flex items-center justify-center"
                 >
                   {isLoading ? (
@@ -546,7 +822,7 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Results Section */}
+                {/* Results Section */}
         <div className="bg-white border border-gray-200 rounded-xl p-6">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center">

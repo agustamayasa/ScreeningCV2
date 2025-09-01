@@ -1,4 +1,3 @@
-# Backend Python Code (main.py)
 import os
 import io
 import json
@@ -6,17 +5,19 @@ import base64
 import pickle
 from datetime import datetime
 import pdfplumber
-from fastapi import FastAPI, UploadFile, File, HTTPException, Request
+from fastapi import FastAPI, UploadFile, File, HTTPException, Request, Form
 from fastapi.responses import RedirectResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from google_auth_oauthlib.flow import Flow
 from google.auth.transport.requests import Request as GoogleRequest
 from googleapiclient.discovery import build
 from dotenv import load_dotenv
-from google.oauth2.credentials import Credentials  # <-- Import Credentials
+from google.oauth2.credentials import Credentials
 import google.generativeai as genai
 import gspread
 import hashlib
+from pydantic import BaseModel
+from typing import List, Optional
 
 # ==============================================================================
 # KONFIGURASI DAN SETUP AWAL
@@ -54,7 +55,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
 SCOPES = [
     'https://www.googleapis.com/auth/gmail.readonly',
     'https://www.googleapis.com/auth/spreadsheets',
@@ -62,14 +62,24 @@ SCOPES = [
 ]
 REDIRECT_URI = f"{BACKEND_URL}/api/auth/callback"
 
-SPREADSHEET_NAME = "Analisis Resume AI"
-
+# Global variables untuk menyimpan konfigurasi screening
 job_description_text = ""
+job_position_name = ""
+email_subjects = []
+
+# ==============================================================================
+# PYDANTIC MODELS
+# ==============================================================================
+class ScreeningConfig(BaseModel):
+    job_position: str
+    email_subjects: List[str]
+
+class JobDescriptionResponse(BaseModel):
+    message: str
+    preview: str
 
 # ==============================================================================
 # FUNGSI-FUNGSI HELPER
-# ==============================================================================
-# FUNGSI HELPER BARU UNTUK COOKIES
 # ==============================================================================
 def credentials_to_dict(credentials):
     """Mengubah objek Credentials menjadi dictionary yang aman untuk JSON."""
@@ -125,6 +135,14 @@ def get_google_services(request: Request):
     
     return gmail, drive, gc, refreshed_creds_dict
 
+def generate_spreadsheet_name(job_position: str) -> str:
+    """Generate nama spreadsheet berdasarkan posisi pekerjaan"""
+    if not job_position.strip():
+        return "Analisis Resume AI"
+    
+    # Bersihkan nama posisi dari karakter yang tidak valid
+    clean_position = "".join(c for c in job_position if c.isalnum() or c in (' ', '-', '_')).strip()
+    return f"Analisis Resume AI - {clean_position}"
 
 def check_auth_status():
     """Periksa apakah user sudah login dan kredensial masih valid"""
@@ -146,27 +164,28 @@ def check_auth_status():
         print(f"Error checking auth status: {e}")
         return False
 
-def ensure_spreadsheet_exists(gc):
+def ensure_spreadsheet_exists(gc, spreadsheet_name: str):
     """Pastikan spreadsheet ada, jika tidak buat baru"""
     try:
-        spreadsheet = gc.open(SPREADSHEET_NAME)
+        spreadsheet = gc.open(spreadsheet_name)
+        print(f"Spreadsheet '{spreadsheet_name}' ditemukan")
         return spreadsheet
     except gspread.exceptions.SpreadsheetNotFound:
-        print(f"Spreadsheet '{SPREADSHEET_NAME}' tidak ditemukan, membuat yang baru...")
+        print(f"Spreadsheet '{spreadsheet_name}' tidak ditemukan, membuat yang baru...")
         try:
             # Buat spreadsheet baru
-            spreadsheet = gc.create(SPREADSHEET_NAME)
+            spreadsheet = gc.create(spreadsheet_name)
             sheet = spreadsheet.sheet1
             
             # Tambahkan header
             headers = [
                 'Waktu', 'Drive Link', 'Nama', 'Email', 'Nomor Telepon',
                 'Pendidikan Terakhir', 'Kekuatan', 'Kekurangan', 
-                'Risk Factor', 'Reward Factor', 'Overall Fit', 'Justifikasi'
+                'Risk Factor', 'Reward Factor', 'Overall Fit', 'Justifikasi', 'CV_Hash'
             ]
             sheet.append_row(headers)
             
-            print(f"Spreadsheet '{SPREADSHEET_NAME}' berhasil dibuat!")
+            print(f"Spreadsheet '{spreadsheet_name}' berhasil dibuat!")
             return spreadsheet
         except Exception as e:
             print(f"Error creating spreadsheet: {e}")
@@ -352,6 +371,35 @@ def ensure_headers_exist(sheet):
     except Exception as e:
         print(f"Error ensuring headers: {e}")
 
+def build_gmail_query(email_subjects: List[str]) -> str:
+    """Membangun query Gmail berdasarkan subjek email yang diinput"""
+    if not email_subjects:
+        # Default query jika tidak ada subjek yang dispecified
+        return 'subject:cv OR subject:resume has:attachment filename:pdf'
+    
+    # Bangun query dengan OR untuk setiap subjek
+    subject_queries = []
+    for subject in email_subjects:
+        subject = subject.strip()
+        if subject:
+            # Escape special characters jika perlu
+            subject_queries.append(f'subject:{subject}')
+    
+    if not subject_queries:
+        return 'subject:cv OR subject:resume has:attachment filename:pdf'
+    
+    # Gabungkan semua subjek dengan OR dan tambahkan filter attachment
+    query = ' OR '.join(subject_queries) + ' has:attachment filename:pdf'
+    return query
+
+def check_spreadsheet_exists(gc, spreadsheet_name: str) -> bool:
+    """Periksa apakah spreadsheet dengan nama tertentu sudah ada"""
+    try:
+        gc.open(spreadsheet_name)
+        return True
+    except gspread.exceptions.SpreadsheetNotFound:
+        return False
+
 # ==============================================================================
 # ENDPOINTS API
 # ==============================================================================
@@ -371,7 +419,7 @@ def login():
             flow = Flow.from_client_config(creds_info, scopes=SCOPES, redirect_uri=REDIRECT_URI)
         else:
             # Jika tidak, gunakan file lokal (untuk development)
-            flow = Flow.from_client_secrets_file(CLIENT_SECRETS_FILE, scopes=SCOPES, redirect_uri=REDIRECT_URI)
+            flow = Flow.from_client_secrets_file("credentials.json", scopes=SCOPES, redirect_uri=REDIRECT_URI)
             
         authorization_url, _ = flow.authorization_url(access_type='offline', include_granted_scopes='true')
         return RedirectResponse(url=authorization_url)
@@ -391,7 +439,7 @@ async def auth_callback(request: Request):
         if creds_info:
             flow = Flow.from_client_config(creds_info, scopes=SCOPES, redirect_uri=REDIRECT_URI)
         else:
-            flow = Flow.from_client_secrets_file(CLIENT_SECRETS_FILE, scopes=SCOPES, redirect_uri=REDIRECT_URI)
+            flow = Flow.from_client_secrets_file("credentials.json", scopes=SCOPES, redirect_uri=REDIRECT_URI)
 
         flow.fetch_token(authorization_response=str(request.url))
         
@@ -421,24 +469,67 @@ async def logout():
     """Logout user dan hapus credentials"""
     try:
         success = clear_credentials()
-        if success:
-            return JSONResponse(content={"message": "Logout berhasil"})
-        else:
-            return JSONResponse(content={"message": "Logout gagal, tapi credentials mungkin sudah dihapus"})
+        
+        # Buat response dan hapus cookie
+        response = JSONResponse(content={"message": "Logout berhasil"})
+        response.delete_cookie(key="auth_token")
+        
+        return response
     except Exception as e:
         print(f"Logout error: {e}")
         # Return success even if there's an error to ensure frontend can logout
-        return JSONResponse(content={"message": "Logout selesai"})
+        response = JSONResponse(content={"message": "Logout selesai"})
+        response.delete_cookie(key="auth_token")
+        return response
 
 @app.get("/api/auth-status")
-async def get_auth_status():
+async def get_auth_status(request: Request):
     """Check authentication status"""
     try:
-        is_authenticated = check_auth_status()
+        creds = get_creds_from_cookie(request)
+        is_authenticated = creds is not None
         return JSONResponse(content={"authenticated": is_authenticated})
     except Exception as e:
         print(f"Auth status check error: {e}")
         return JSONResponse(content={"authenticated": False})
+
+@app.post("/api/set-screening-config")
+async def set_screening_config(config: ScreeningConfig):
+    """Set konfigurasi screening: nama posisi dan subjek email"""
+    global job_position_name, email_subjects
+    
+    try:
+        job_position_name = config.job_position.strip()
+        email_subjects = [subject.strip() for subject in config.email_subjects if subject.strip()]
+        
+        if not job_position_name:
+            raise HTTPException(status_code=400, detail="Nama posisi pekerjaan tidak boleh kosong")
+        
+        if not email_subjects:
+            raise HTTPException(status_code=400, detail="Minimal satu subjek email harus diisi")
+        
+        return JSONResponse(content={
+            "message": "Konfigurasi screening berhasil disimpan",
+            "job_position": job_position_name,
+            "email_subjects": email_subjects,
+            "spreadsheet_name": generate_spreadsheet_name(job_position_name)
+        })
+        
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        print(f"Error setting screening config: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to set configuration: {str(e)}")
+
+@app.get("/api/get-screening-config")
+async def get_screening_config():
+    """Mendapatkan konfigurasi screening saat ini"""
+    return JSONResponse(content={
+        "job_position": job_position_name,
+        "email_subjects": email_subjects,
+        "spreadsheet_name": generate_spreadsheet_name(job_position_name) if job_position_name else "",
+        "has_job_description": bool(job_description_text)
+    })
 
 @app.post("/api/upload-job-description")
 async def upload_job_description(file: UploadFile = File(...)):
@@ -464,12 +555,23 @@ async def upload_job_description(file: UploadFile = File(...)):
 
 @app.post("/api/start-screening")
 async def start_screening(request: Request):
+    global job_description_text, job_position_name, email_subjects
+    
     if not job_description_text:
         raise HTTPException(status_code=400, detail="Deskripsi pekerjaan belum di-upload.")
     
+    if not job_position_name:
+        raise HTTPException(status_code=400, detail="Nama posisi pekerjaan belum diset. Gunakan endpoint /api/set-screening-config terlebih dahulu.")
+    
+    if not email_subjects:
+        raise HTTPException(status_code=400, detail="Subjek email belum diset. Gunakan endpoint /api/set-screening-config terlebih dahulu.")
+    
     try:
         gmail, drive, gc, refreshed_creds = get_google_services(request=request)
-        spreadsheet = ensure_spreadsheet_exists(gc)
+        
+        # Generate nama spreadsheet berdasarkan posisi pekerjaan
+        spreadsheet_name = generate_spreadsheet_name(job_position_name)
+        spreadsheet = ensure_spreadsheet_exists(gc, spreadsheet_name)
         sheet = spreadsheet.sheet1
         
         # Pastikan headers termasuk CV_Hash ada
@@ -478,17 +580,23 @@ async def start_screening(request: Request):
         # Dapatkan hash CV yang sudah ada
         existing_hashes = get_existing_hashes(sheet)
         
+        # Build query berdasarkan subjek email yang diinput
+        gmail_query = build_gmail_query(email_subjects)
+        print(f"Gmail query: {gmail_query}")
+        
         # Query Gmail untuk email dengan resume
         results = gmail.users().messages().list(
             userId='me', 
-            q='subject:cv-ui/ux OR subject:cv-uiux OR subject:cv OR subject:resume has:attachment filename:pdf'
+            q=gmail_query
         ).execute()
         
         messages = results.get('messages', [])
         if not messages:
             return JSONResponse(content={
-                "message": "Tidak ada email dengan resume ditemukan.", 
-                "results": []
+                "message": "Tidak ada email dengan resume ditemukan untuk subjek yang ditentukan.", 
+                "results": [],
+                "spreadsheet_name": spreadsheet_name,
+                "gmail_query_used": gmail_query
             })
         
         processed_results = []
@@ -594,7 +702,9 @@ async def start_screening(request: Request):
             "results": processed_results,
             "processed_count": processed_count,
             "skipped_count": skipped_count,
-            "total_emails": len(messages)
+            "total_emails": len(messages),
+            "spreadsheet_name": spreadsheet_name,
+            "gmail_query_used": gmail_query
         })
 
     except HTTPException as e:
@@ -605,9 +715,18 @@ async def start_screening(request: Request):
 
 @app.get("/api/get-results")
 async def get_results(request: Request):
+    global job_position_name
+    
     try:
-        _, _, gc, _ = get_google_services(request=request) 
-        spreadsheet = ensure_spreadsheet_exists(gc)
+        _, _, gc, _ = get_google_services(request=request)
+        
+        # Jika tidak ada nama posisi yang diset, gunakan spreadsheet default
+        if not job_position_name:
+            spreadsheet_name = "Analisis Resume AI"
+        else:
+            spreadsheet_name = generate_spreadsheet_name(job_position_name)
+        
+        spreadsheet = ensure_spreadsheet_exists(gc, spreadsheet_name)
         sheet = spreadsheet.sheet1
         
         # Ambil semua data
@@ -619,7 +738,10 @@ async def get_results(request: Request):
             filtered_record = {k: v for k, v in record.items() if k != 'CV_Hash'}
             filtered_records.append(filtered_record)
         
-        return JSONResponse(content={"results": filtered_records})
+        return JSONResponse(content={
+            "results": filtered_records,
+            "spreadsheet_name": spreadsheet_name
+        })
         
     except HTTPException as e:
         raise e
@@ -629,9 +751,18 @@ async def get_results(request: Request):
 
 @app.delete("/api/clear-results")
 async def clear_results(request: Request):
+    global job_position_name
+    
     try:
-        _, _, gc = get_google_services(request=request) 
-        spreadsheet = ensure_spreadsheet_exists(gc)
+        _, _, gc, _ = get_google_services(request=request)
+        
+        # Jika tidak ada nama posisi yang diset, gunakan spreadsheet default
+        if not job_position_name:
+            spreadsheet_name = "Analisis Resume AI"
+        else:
+            spreadsheet_name = generate_spreadsheet_name(job_position_name)
+        
+        spreadsheet = ensure_spreadsheet_exists(gc, spreadsheet_name)
         sheet = spreadsheet.sheet1
         
         # Hapus semua data kecuali header
@@ -643,12 +774,51 @@ async def clear_results(request: Request):
         ]
         sheet.append_row(headers)
         
-        return JSONResponse(content={"message": "Semua data berhasil dihapus."})
+        return JSONResponse(content={
+            "message": "Semua data berhasil dihapus.",
+            "spreadsheet_name": spreadsheet_name
+        })
         
     except Exception as e:
         print(f"Error in clear_results: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to clear results: {str(e)}")
 
+@app.get("/api/list-spreadsheets")
+async def list_spreadsheets(request: Request):
+    """Menampilkan daftar spreadsheet yang ada"""
+    try:
+        _, _, gc, _ = get_google_services(request=request)
+        
+        # Cari semua spreadsheet yang dimulai dengan "Analisis Resume AI"
+        all_spreadsheets = []
+        try:
+            spreadsheet_list = gc.list_spreadsheet_files()
+            for spreadsheet_info in spreadsheet_list:
+                name = spreadsheet_info.get('name', '')
+                if name.startswith('Analisis Resume AI'):
+                    all_spreadsheets.append({
+                        'name': name,
+                        'id': spreadsheet_info.get('id', ''),
+                        'url': f"https://docs.google.com/spreadsheets/d/{spreadsheet_info.get('id', '')}/edit"
+                    })
+        except Exception as e:
+            print(f"Error listing spreadsheets: {e}")
+        
+        return JSONResponse(content={
+            "spreadsheets": all_spreadsheets,
+            "current_spreadsheet": generate_spreadsheet_name(job_position_name) if job_position_name else "Belum diset"
+        })
+        
+    except Exception as e:
+        print(f"Error in list_spreadsheets: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to list spreadsheets: {str(e)}")
+
 @app.get("/api/health")
 def health_check():
-    return {"status": "ok", "message": "Server is running"}
+    return {
+        "status": "ok", 
+        "message": "Server is running",
+        "current_job_position": job_position_name or "Belum diset",
+        "email_subjects_count": len(email_subjects),
+        "has_job_description": bool(job_description_text)
+    }
