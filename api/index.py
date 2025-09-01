@@ -400,6 +400,13 @@ def check_spreadsheet_exists(gc, spreadsheet_name: str) -> bool:
     except gspread.exceptions.SpreadsheetNotFound:
         return False
 
+def get_spreadsheet_url(gc, spreadsheet_name: str) -> str:
+    """Mendapatkan URL spreadsheet berdasarkan nama"""
+    try:
+        spreadsheet = gc.open(spreadsheet_name)
+        return f"https://docs.google.com/spreadsheets/d/{spreadsheet.id}/edit"
+    except gspread.exceptions.SpreadsheetNotFound:
+        return ""
 # ==============================================================================
 # ENDPOINTS API
 # ==============================================================================
@@ -494,7 +501,7 @@ async def get_auth_status(request: Request):
         return JSONResponse(content={"authenticated": False})
 
 @app.post("/api/set-screening-config")
-async def set_screening_config(config: ScreeningConfig):
+async def set_screening_config(config: ScreeningConfig, request: Request):
     """Set konfigurasi screening: nama posisi dan subjek email"""
     global job_position_name, email_subjects
     
@@ -508,11 +515,21 @@ async def set_screening_config(config: ScreeningConfig):
         if not email_subjects:
             raise HTTPException(status_code=400, detail="Minimal satu subjek email harus diisi")
         
+        # Coba dapatkan URL spreadsheet
+        spreadsheet_url = ""
+        try:
+            _, _, gc, _ = get_google_services(request=request)
+            spreadsheet_name = generate_spreadsheet_name(job_position_name)
+            spreadsheet_url = get_spreadsheet_url(gc, spreadsheet_name)
+        except:
+            pass
+        
         return JSONResponse(content={
             "message": "Konfigurasi screening berhasil disimpan",
             "job_position": job_position_name,
             "email_subjects": email_subjects,
-            "spreadsheet_name": generate_spreadsheet_name(job_position_name)
+            "spreadsheet_name": generate_spreadsheet_name(job_position_name),
+            "spreadsheet_url": spreadsheet_url
         })
         
     except HTTPException as e:
@@ -522,12 +539,22 @@ async def set_screening_config(config: ScreeningConfig):
         raise HTTPException(status_code=500, detail=f"Failed to set configuration: {str(e)}")
 
 @app.get("/api/get-screening-config")
-async def get_screening_config():
+async def get_screening_config(request: Request):
     """Mendapatkan konfigurasi screening saat ini"""
+    spreadsheet_url = ""
+    if job_position_name and isLoggedIn:  # Hanya cek URL jika sudah login dan ada posisi
+        try:
+            _, _, gc, _ = get_google_services(request=request)
+            spreadsheet_name = generate_spreadsheet_name(job_position_name)
+            spreadsheet_url = get_spreadsheet_url(gc, spreadsheet_name)
+        except:
+            pass  # Ignore error jika belum login atau spreadsheet belum ada
+    
     return JSONResponse(content={
         "job_position": job_position_name,
         "email_subjects": email_subjects,
         "spreadsheet_name": generate_spreadsheet_name(job_position_name) if job_position_name else "",
+        "spreadsheet_url": spreadsheet_url,
         "has_job_description": bool(job_description_text)
     })
 

@@ -25,6 +25,8 @@ export default function Home() {
   const [isConfigSaved, setIsConfigSaved] = useState(false);
   const [currentSpreadsheetName, setCurrentSpreadsheetName] = useState('');
 
+  const [currentSpreadsheetUrl, setCurrentSpreadsheetUrl] = useState('');
+
   // Fungsi untuk menangani error dengan lebih baik
   const handleApiError = (error, defaultMessage) => {
     console.error(defaultMessage, error);
@@ -78,6 +80,7 @@ export default function Home() {
       setJobPosition(config.job_position || '');
       setEmailSubjects(config.email_subjects.length > 0 ? config.email_subjects : ['']);
       setCurrentSpreadsheetName(config.spreadsheet_name || '');
+      setCurrentSpreadsheetUrl(config.spreadsheet_url || ''); // Tambah ini
       setIsConfigSaved(config.job_position && config.email_subjects.length > 0);
       
       if (config.has_job_description) {
@@ -138,6 +141,7 @@ export default function Home() {
       setConfigStatus('');
       setIsConfigSaved(false);
       setCurrentSpreadsheetName('');
+      setCurrentSpreadsheetUrl('');
       
       // Show success message briefly
       setScreeningStatus('Logout berhasil!');
@@ -193,6 +197,7 @@ export default function Home() {
 
       setIsConfigSaved(true);
       setCurrentSpreadsheetName(response.data.spreadsheet_name);
+      setCurrentSpreadsheetUrl(response.data.spreadsheet_url || ''); // Tambah ini
       setConfigStatus(`Konfigurasi berhasil disimpan! Spreadsheet: ${response.data.spreadsheet_name}`);
       
       // Clear success message after 5 seconds
@@ -559,7 +564,22 @@ export default function Home() {
               <div className="flex-1">
                 {currentSpreadsheetName && (
                   <p className="text-sm text-gray-600">
-                    <span className="font-medium">Spreadsheet:</span> {currentSpreadsheetName}
+                    <span className="font-medium">Spreadsheet:</span> 
+                    {currentSpreadsheetUrl ? (
+                      <a 
+                        href={currentSpreadsheetUrl} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:text-blue-800 hover:underline ml-1"
+                      >
+                        {currentSpreadsheetName}
+                        <svg className="w-3 h-3 inline ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                        </svg>
+                      </a>
+                    ) : (
+                      <span className="ml-1">{currentSpreadsheetName}</span>
+                    )}
                   </p>
                 )}
                 {configStatus && (
