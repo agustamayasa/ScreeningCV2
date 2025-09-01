@@ -222,9 +222,29 @@ export default function Home() {
   };
 
   useEffect(() => {
-    testServerConnection();
-    checkAuthStatus();
-  }, []);
+    const fetchConfig = async () => {
+      try {
+        const response = await axios.get(`${API_BASE_URL}/api/get-screening-config`);
+        const data = response.data;
+        
+        // Update state dari data yang didapat
+        setJobPosition(data.job_position || '');
+        setEmailSubjects(data.email_subjects.length > 0 ? data.email_subjects : ['']);
+        setCurrentSpreadsheetName(data.spreadsheet_name || 'Belum dikonfigurasi');
+        setCurrentSpreadsheetUrl(data.spreadsheet_url || '');
+        if (data.job_position) {
+          setIsConfigSaved(true);
+        }
+
+      } catch (error) {
+        const errorMessage = handleApiError(error, 'Gagal memuat konfigurasi awal');
+        setConfigStatus(`Error: ${errorMessage}`);
+        setCurrentSpreadsheetName('Gagal memuat');
+      }
+    };
+
+    fetchConfig();
+  }, []); // Array kosong berarti ini hanya berjalan sekali saat komponen mount
 
   const handleFileChange = (event) => {
     const file = event.target.files[0];
