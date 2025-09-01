@@ -222,29 +222,9 @@ export default function Home() {
   };
 
   useEffect(() => {
-    const fetchConfig = async () => {
-      try {
-        const response = await axios.get(`${API_BASE_URL}/api/get-screening-config`);
-        const data = response.data;
-        
-        // Update state dari data yang didapat
-        setJobPosition(data.job_position || '');
-        setEmailSubjects(data.email_subjects.length > 0 ? data.email_subjects : ['']);
-        setCurrentSpreadsheetName(data.spreadsheet_name || 'Belum dikonfigurasi');
-        setCurrentSpreadsheetUrl(data.spreadsheet_url || '');
-        if (data.job_position) {
-          setIsConfigSaved(true);
-        }
-
-      } catch (error) {
-        const errorMessage = handleApiError(error, 'Gagal memuat konfigurasi awal');
-        setConfigStatus(`Error: ${errorMessage}`);
-        setCurrentSpreadsheetName('Gagal memuat');
-      }
-    };
-
-    fetchConfig();
-  }, []); // Array kosong berarti ini hanya berjalan sekali saat komponen mount
+    testServerConnection();
+    checkAuthStatus();
+  }, []);
 
   const handleFileChange = (event) => {
     const file = event.target.files[0];
@@ -576,25 +556,11 @@ export default function Home() {
           <div className="mt-6 pt-6 border-t border-gray-200">
             <div className="flex items-center justify-between">
               <div className="flex-1">
-                    {/* 4. Ubah JSX untuk menampilkan link secara kondisional */}
-                    {currentSpreadsheetUrl ? (
-                      <p className="text-sm text-gray-600">
-                        <span className="font-medium">Spreadsheet:</span>{' '}
-                        <a
-                          href={currentSpreadsheetUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-600 hover:text-blue-800 hover:underline font-semibold"
-                          title="Buka di Google Sheets"
-                        >
-                          {currentSpreadsheetName}
-                        </a>
-                      </p>
-                    ) : currentSpreadsheetName && (
-                      <p className="text-sm text-gray-600">
-                        <span className="font-medium">Spreadsheet:</span> {currentSpreadsheetName}
-                      </p>
-                    )}
+                {currentSpreadsheetUrl && (
+                  <p className="text-sm text-gray-600">
+                    <span className="font-medium">Spreadsheet:</span> {currentSpreadsheetUrl}
+                  </p>
+                )}
                 {configStatus && (
                   <div className={`mt-2 p-3 rounded-lg text-sm font-medium ${
                     configStatus.includes('berhasil') || configStatus.includes('Sukses')
