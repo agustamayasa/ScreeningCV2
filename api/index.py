@@ -208,7 +208,7 @@ def ensure_spreadsheet_exists(gc, drive, spreadsheet_name: str):
         print(f"Spreadsheet '{spreadsheet_name}' tidak ditemukan, membuat yang baru...")
         try:
             # Dapatkan atau buat folder Spreadsheet
-            spreadsheet_folder_id = get_or_create_folder(drive, "Hasil Analisis CV AI")
+            spreadsheet_folder_id = get_or_create_folder(drive, "Spreadsheet")
             
             # Buat spreadsheet baru
             spreadsheet = gc.create(spreadsheet_name)
