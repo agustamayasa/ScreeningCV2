@@ -793,28 +793,21 @@ async def clear_results(request: Request):
         spreadsheet = ensure_spreadsheet_exists(gc, spreadsheet_name)
         sheet = spreadsheet.sheet1
         
-        # --- PERBAIKAN: Kosongkan isi cell, bukan hapus baris ---
-        row_count = sheet.row_count
-        col_count = sheet.col_count
-
-        if row_count > 1:
-            # Ambil range mulai dari baris ke-2 sampai akhir, semua kolom
-            cell_range = f"A2:{gspread.utils.rowcol_to_a1(row_count, col_count)}"
-            
-            # Isi semua dengan string kosong
-            empty_values = [["" for _ in range(col_count)] for _ in range(row_count - 1)]
-            
-            sheet.update(cell_range, empty_values)
+        # --- PERBAIKAN UTAMA ADA DI SINI ---
+        # Cek apakah ada baris data untuk dihapus (lebih dari 1 baris header)
+        if sheet.row_count > 1:
+            # Hapus semua baris mulai dari baris ke-2 hingga baris terakhir.
+            # Ini akan menjaga baris header tetap utuh.
+            sheet.delete_rows(2, sheet.row_count)
         
         return JSONResponse(content={
-            "message": f"Isi data pada spreadsheet '{spreadsheet_name}' berhasil dikosongkan (header tetap).",
+            "message": f"Semua data pada spreadsheet '{spreadsheet_name}' berhasil dihapus.",
             "spreadsheet_name": spreadsheet_name
         })
         
     except Exception as e:
         print(f"Error in clear_results: {e}")
         raise HTTPException(status_code=500, detail=f"Gagal menghapus data: {str(e)}")
-
 
 @app.get("/api/list-spreadsheets")
 async def list_spreadsheets(request: Request):
