@@ -315,7 +315,7 @@ export default function Home() {
     
     try {
       const response = await axios.post(`${API_BASE_URL}/api/start-screening`, {}, {
-        timeout: 120000,
+        timeout: 300000,
       });
       
       setScreeningStatus(`${response.data.message}`);

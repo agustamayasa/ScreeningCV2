@@ -16,13 +16,16 @@ from google.oauth2.credentials import Credentials
 import google.generativeai as genai
 import gspread
 import hashlib
+import logging
 from pydantic import BaseModel
 from typing import List, Optional
 
 # ==============================================================================
 # KONFIGURASI DAN SETUP AWAL
 # ==============================================================================
-os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
+os.environ['GOOGLE_APPLICATION_CREDENTIALS_JSON'] = '1'
+logging.getLogger('googleapiclient.discovery_cache').setLevel(logging.ERROR)
+logging.getLogger('googleapiclient.discovery').setLevel(logging.WARNING)
 load_dotenv()
 
 # --- Logika untuk memuat kredensial ---
