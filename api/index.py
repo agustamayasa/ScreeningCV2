@@ -164,41 +164,56 @@ def check_auth_status():
         print(f"Error checking auth status: {e}")
         return False
 
-def ensure_spreadsheet_exists(gc, spreadsheet_name: str):
-    """Pastikan spreadsheet ada, jika tidak buat baru"""
+def get_or_create_folder(drive, folder_name: str, parent_folder_id: str = None) -> str:
+    """Mendapatkan atau membuat folder di Google Drive"""
     try:
-        spreadsheet = gc.open(spreadsheet_name)
-        print(f"Spreadsheet '{spreadsheet_name}' ditemukan")
-        return spreadsheet
-    except gspread.exceptions.SpreadsheetNotFound:
-        print(f"Spreadsheet '{spreadsheet_name}' tidak ditemukan, membuat yang baru...")
-        try:
-            # Buat spreadsheet baru
-            spreadsheet = gc.create(spreadsheet_name)
-            sheet = spreadsheet.sheet1
+        # Query untuk mencari folder
+        query = f"name='{folder_name}' and mimeType='application/vnd.google-apps.folder' and trashed=false"
+        if parent_folder_id:
+            query += f" and '{parent_folder_id}' in parents"
+        
+        # Cari folder yang sudah ada
+        results = drive.files().list(q=query, fields="files(id, name)").execute()
+        folders = results.get('files', [])
+        
+        if folders:
+            print(f"Folder '{folder_name}' ditemukan")
+            return folders[0]['id']
+        else:
+            # Buat folder baru
+            folder_metadata = {
+                'name': folder_name,
+                'mimeType': 'application/vnd.google-apps.folder'
+            }
+            if parent_folder_id:
+                folder_metadata['parents'] = [parent_folder_id]
             
-            # Tambahkan header
-            headers = [
-                'Waktu', 'Drive Link', 'Nama', 'Email', 'Nomor Telepon',
-                'Pendidikan Terakhir', 'Kekuatan', 'Kekurangan', 
-                'Risk Factor', 'Reward Factor', 'Overall Fit', 'Justifikasi', 'CV_Hash'
-            ]
-            sheet.append_row(headers)
+            folder = drive.files().create(body=folder_metadata, fields='id').execute()
+            print(f"Folder '{folder_name}' berhasil dibuat")
+            return folder.get('id')
             
-            print(f"Spreadsheet '{spreadsheet_name}' berhasil dibuat!")
-            return spreadsheet
-        except Exception as e:
-            print(f"Error creating spreadsheet: {e}")
-            raise HTTPException(status_code=500, detail=f"Failed to create spreadsheet: {str(e)}")
+    except Exception as e:
+        print(f"Error creating/getting folder: {e}")
+        return None
 
+# Perbaikan fungsi upload_to_drive
 def upload_to_drive(drive, file_data, filename):
-    """Upload file ke Google Drive dan return link"""
+    """Upload file ke Google Drive dalam folder CV dan return link"""
     try:
+        # Dapatkan atau buat folder CV
+        cv_folder_id = get_or_create_folder(drive, "CV")
+        if not cv_folder_id:
+            print("Gagal membuat/mendapatkan folder CV, upload ke root directory")
+            cv_folder_id = None
+        
         # Buat file metadata
         file_metadata = {
-            'name': f"CV_{filename}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf",
-            'parents': []  # Bisa ditambahkan folder ID jika ingin simpan di folder tertentu
+            'name': f"CV_{filename}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
         }
+        
+        # Set parent folder jika berhasil dibuat
+        if cv_folder_id:
+            file_metadata['parents'] = [cv_folder_id]
         
         # Upload file
         media = io.BytesIO(file_data)
@@ -228,6 +243,55 @@ def upload_to_drive(drive, file_data, filename):
     except Exception as e:
         print(f"Error uploading to Drive: {e}")
         return None
+
+# Perbaikan fungsi ensure_spreadsheet_exists
+def ensure_spreadsheet_exists(gc, drive, spreadsheet_name: str):
+    """Pastikan spreadsheet ada dalam folder Spreadsheet, jika tidak buat baru"""
+    try:
+        # Coba buka spreadsheet yang sudah ada
+        spreadsheet = gc.open(spreadsheet_name)
+        print(f"Spreadsheet '{spreadsheet_name}' ditemukan")
+        return spreadsheet
+    except gspread.exceptions.SpreadsheetNotFound:
+        print(f"Spreadsheet '{spreadsheet_name}' tidak ditemukan, membuat yang baru...")
+        try:
+            # Dapatkan atau buat folder Spreadsheet
+            spreadsheet_folder_id = get_or_create_folder(drive, "Spreadsheet")
+            
+            # Buat spreadsheet baru
+            spreadsheet = gc.create(spreadsheet_name)
+            
+            # Pindahkan spreadsheet ke folder jika berhasil dibuat
+            if spreadsheet_folder_id:
+                try:
+                    # Dapatkan file spreadsheet
+                    file_id = spreadsheet.id
+                    
+                    # Pindahkan ke folder
+                    drive.files().update(
+                        fileId=file_id,
+                        addParents=spreadsheet_folder_id,
+                        fields='id, parents'
+                    ).execute()
+                    print(f"Spreadsheet dipindahkan ke folder 'Spreadsheet'")
+                except Exception as e:
+                    print(f"Gagal memindahkan spreadsheet ke folder: {e}")
+            
+            sheet = spreadsheet.sheet1
+            
+            # Tambahkan header
+            headers = [
+                'Waktu', 'Drive Link', 'Nama', 'Email', 'Nomor Telepon',
+                'Pendidikan Terakhir', 'Kekuatan', 'Kekurangan', 
+                'Risk Factor', 'Reward Factor', 'Overall Fit', 'Justifikasi', 'CV_Hash'
+            ]
+            sheet.append_row(headers)
+            
+            print(f"Spreadsheet '{spreadsheet_name}' berhasil dibuat!")
+            return spreadsheet
+        except Exception as e:
+            print(f"Error creating spreadsheet: {e}")
+            raise HTTPException(status_code=500, detail=f"Failed to create spreadsheet: {str(e)}")
 
 def extract_text_from_pdf_bytes(pdf_bytes: bytes) -> str:
     text = ""
@@ -260,8 +324,8 @@ def analyze_with_gemini(job_desc: str, resume_text: str) -> dict:
             "email": "Email pelamar jika tersedia, jika tidak ada tulis 'Tidak tercantum'",
             "nomor_telepon": "Nomor telepon jika tersedia, jika tidak ada tulis 'Tidak tercantum', Gunakan format contoh +6289836718275",
             "pendidikan_terakhir": "Jenjang dan jurusan pendidikan terakhir (Rubah Seluruhnya Gunakan bahasa indonesia dengan Format contoh: S1 Informatika)",
-            "kekuatan": "Format dalam list numbering:\n1. Kekuatan pertama yang relevan dengan posisi\n2. Kekuatan kedua yang relevan dengan posisi\n3. Kekuatan ketiga yang relevan dengan posisi\n4. Kekuatan keempat jika ada (maksimal 4 poin)",
-            "kekurangan": "Format dalam list numbering:\n1. Area pertama yang perlu ditingkatkan\n2. Area kedua yang perlu ditingkatkan\n3. Area ketiga jika ada (maksimal 3 poin)",
+            "kekuatan": "3-4 kekuatan utama kandidat yang relevan dengan posisi (maksimal 200 kata)",
+            "kekurangan": "Area yang perlu ditingkatkan atau gap yang ditemukan (maksimal 150 kata)",
             "risk_factor": "Potensi risiko dalam merekrut kandidat ini (maksimal 150 kata)",
             "reward_factor": "Potensi manfaat dan value yang akan dibawa kandidat (maksimal 150 kata)",
             "overall_fit": 85,
@@ -275,13 +339,6 @@ def analyze_with_gemini(job_desc: str, resume_text: str) -> dict:
           * 70-79: Cukup sesuai tapi ada beberapa kekurangan
           * 60-69: Kurang sesuai, banyak gap
           * <60: Tidak sesuai
-
-        PENTING UNTUK FORMAT KEKUATAN DAN KEKURANGAN:
-        - Gunakan format list numbering dengan enter/line break
-        - Setiap poin harus dalam baris terpisah
-        - Format: "1. [isi kekuatan/kekurangan]\\n2. [isi berikutnya]\\n..."
-        - Kekuatan maksimal 4 poin, kekurangan maksimal 3 poin
-        - Setiap poin harus spesifik dan relevan dengan job description
 
         DESKRIPSI PEKERJAAN:
         {job_desc[:2000]}
@@ -310,8 +367,8 @@ def analyze_with_gemini(job_desc: str, resume_text: str) -> dict:
             'email': 'Tidak tercantum',
             'nomor_telepon': 'Tidak tercantum',
             'pendidikan_terakhir': 'Tidak tercantum',
-            'kekuatan': '1. Tidak dapat dianalisis',
-            'kekurangan': '1. Tidak dapat dianalisis',
+            'kekuatan': 'Tidak dapat dianalisis',
+            'kekurangan': 'Tidak dapat dianalisis',
             'risk_factor': 'Tidak dapat dianalisis',
             'reward_factor': 'Tidak dapat dianalisis',
             'overall_fit': 0,
@@ -328,38 +385,6 @@ def analyze_with_gemini(job_desc: str, resume_text: str) -> dict:
                 result['overall_fit'] = int(''.join(filter(str.isdigit, result['overall_fit']))) or 0
             except:
                 result['overall_fit'] = 0
-        
-        # Validasi format numbering untuk kekuatan dan kekurangan
-        def ensure_numbered_list(text, max_points=4):
-            """Memastikan text dalam format numbered list"""
-            if not text or text == 'Tidak dapat dianalisis':
-                return text
-            
-            # Jika sudah dalam format numbered list, return as is
-            if text.strip().startswith('1.'):
-                return text
-            
-            # Jika tidak, coba convert ke numbered list
-            lines = [line.strip() for line in text.split('\n') if line.strip()]
-            if len(lines) == 1:
-                # Jika hanya satu baris, coba split by delimiter
-                if ',' in text:
-                    lines = [item.strip() for item in text.split(',') if item.strip()]
-                elif ';' in text:
-                    lines = [item.strip() for item in text.split(';') if item.strip()]
-            
-            # Format ke numbered list
-            numbered_lines = []
-            for i, line in enumerate(lines[:max_points]):
-                if not line.startswith(f"{i+1}."):
-                    line = f"{i+1}. {line}"
-                numbered_lines.append(line)
-            
-            return '\n'.join(numbered_lines)
-        
-        # Terapkan formatting untuk kekuatan dan kekurangan
-        result['kekuatan'] = ensure_numbered_list(result['kekuatan'], 4)
-        result['kekurangan'] = ensure_numbered_list(result['kekurangan'], 3)
         
         return result
         
@@ -637,7 +662,8 @@ async def start_screening(request: Request):
         
         # Generate nama spreadsheet berdasarkan posisi pekerjaan
         spreadsheet_name = generate_spreadsheet_name(job_position_name)
-        spreadsheet = ensure_spreadsheet_exists(gc, spreadsheet_name)
+        # PERBAIKAN: Tambahkan parameter drive
+        spreadsheet = ensure_spreadsheet_exists(gc, drive, spreadsheet_name)
         sheet = spreadsheet.sheet1
         
         # Pastikan headers termasuk CV_Hash ada
@@ -706,7 +732,7 @@ async def start_screening(request: Request):
                                 skipped_count += 1
                                 continue
                             
-                            # Upload ke Google Drive
+                            # Upload ke Google Drive (sudah otomatis masuk folder CV)
                             drive_link = upload_to_drive(drive, file_data, filename)
                             if not drive_link:
                                 drive_link = "Gagal upload ke Drive"
@@ -779,12 +805,13 @@ async def start_screening(request: Request):
         print(f"Terjadi error tak terduga di start_screening: {e}")
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
+# Perbaikan untuk endpoint get_results
 @app.get("/api/get-results")
 async def get_results(request: Request):
     global job_position_name
     
     try:
-        _, _, gc, _ = get_google_services(request=request)
+        _, drive, gc, _ = get_google_services(request=request)  # Tambahkan drive
         
         # Jika tidak ada nama posisi yang diset, gunakan spreadsheet default
         if not job_position_name:
@@ -792,7 +819,8 @@ async def get_results(request: Request):
         else:
             spreadsheet_name = generate_spreadsheet_name(job_position_name)
         
-        spreadsheet = ensure_spreadsheet_exists(gc, spreadsheet_name)
+        # PERBAIKAN: Tambahkan parameter drive
+        spreadsheet = ensure_spreadsheet_exists(gc, drive, spreadsheet_name)
         sheet = spreadsheet.sheet1
         
         # Ambil semua data
@@ -815,21 +843,20 @@ async def get_results(request: Request):
         print(f"Error in get_results: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to fetch results: {str(e)}")
 
-# Di file backend FastAPI Anda (main.py)
-
 @app.delete("/api/clear-results")
 async def clear_results(request: Request):
     global job_position_name
     
     try:
-        _, _, gc, _ = get_google_services(request=request)
+        _, drive, gc, _ = get_google_services(request=request)  # Tambahkan drive
         
         if not job_position_name:
             spreadsheet_name = "Analisis Resume AI"
         else:
             spreadsheet_name = generate_spreadsheet_name(job_position_name)
             
-        spreadsheet = ensure_spreadsheet_exists(gc, spreadsheet_name)
+        # PERBAIKAN: Tambahkan parameter drive
+        spreadsheet = ensure_spreadsheet_exists(gc, drive, spreadsheet_name)
         sheet = spreadsheet.sheet1
         
         # --- PERBAIKAN: Kosongkan isi cell, bukan hapus baris ---
@@ -854,25 +881,46 @@ async def clear_results(request: Request):
         print(f"Error in clear_results: {e}")
         raise HTTPException(status_code=500, detail=f"Gagal menghapus data: {str(e)}")
 
-
+# Perbaikan untuk endpoint list_spreadsheets
 @app.get("/api/list-spreadsheets")
 async def list_spreadsheets(request: Request):
     """Menampilkan daftar spreadsheet yang ada"""
     try:
-        _, _, gc, _ = get_google_services(request=request)
+        _, drive, gc, _ = get_google_services(request=request)  # Tambahkan drive untuk konsistensi
         
         # Cari semua spreadsheet yang dimulai dengan "Analisis Resume AI"
         all_spreadsheets = []
         try:
+            # Cari dalam folder Spreadsheet jika ada
+            spreadsheet_folder_id = get_or_create_folder(drive, "Spreadsheet")
+            
+            # Query untuk mencari file spreadsheet dalam folder
+            if spreadsheet_folder_id:
+                query = f"name contains 'Analisis Resume AI' and mimeType='application/vnd.google-apps.spreadsheet' and '{spreadsheet_folder_id}' in parents and trashed=false"
+                results = drive.files().list(q=query, fields="files(id, name)").execute()
+                files = results.get('files', [])
+                
+                for file_info in files:
+                    all_spreadsheets.append({
+                        'name': file_info.get('name', ''),
+                        'id': file_info.get('id', ''),
+                        'url': f"https://docs.google.com/spreadsheets/d/{file_info.get('id', '')}/edit"
+                    })
+            
+            # Juga cari di root untuk backward compatibility
             spreadsheet_list = gc.list_spreadsheet_files()
             for spreadsheet_info in spreadsheet_list:
                 name = spreadsheet_info.get('name', '')
-                if name.startswith('Analisis Resume AI'):
+                spreadsheet_id = spreadsheet_info.get('id', '')
+                
+                # Avoid duplicates
+                if name.startswith('Analisis Resume AI') and not any(s['id'] == spreadsheet_id for s in all_spreadsheets):
                     all_spreadsheets.append({
                         'name': name,
-                        'id': spreadsheet_info.get('id', ''),
-                        'url': f"https://docs.google.com/spreadsheets/d/{spreadsheet_info.get('id', '')}/edit"
+                        'id': spreadsheet_id,
+                        'url': f"https://docs.google.com/spreadsheets/d/{spreadsheet_id}/edit"
                     })
+                    
         except Exception as e:
             print(f"Error listing spreadsheets: {e}")
         
@@ -884,6 +932,46 @@ async def list_spreadsheets(request: Request):
     except Exception as e:
         print(f"Error in list_spreadsheets: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to list spreadsheets: {str(e)}")
+
+# Tambahkan endpoint baru untuk melihat struktur folder
+@app.get("/api/folder-info")
+async def get_folder_info(request: Request):
+    """Mendapatkan informasi folder CV dan Spreadsheet"""
+    try:
+        _, drive, gc, _ = get_google_services(request=request)
+        
+        # Cek folder CV
+        cv_folder_id = get_or_create_folder(drive, "CV")
+        cv_files_count = 0
+        if cv_folder_id:
+            query = f"'{cv_folder_id}' in parents and trashed=false"
+            results = drive.files().list(q=query, fields="files(id, name)").execute()
+            cv_files_count = len(results.get('files', []))
+        
+        # Cek folder Spreadsheet
+        spreadsheet_folder_id = get_or_create_folder(drive, "Spreadsheet")
+        spreadsheet_files_count = 0
+        if spreadsheet_folder_id:
+            query = f"'{spreadsheet_folder_id}' in parents and trashed=false"
+            results = drive.files().list(q=query, fields="files(id, name)").execute()
+            spreadsheet_files_count = len(results.get('files', []))
+        
+        return JSONResponse(content={
+            "cv_folder": {
+                "exists": bool(cv_folder_id),
+                "files_count": cv_files_count,
+                "folder_id": cv_folder_id
+            },
+            "spreadsheet_folder": {
+                "exists": bool(spreadsheet_folder_id),
+                "files_count": spreadsheet_files_count,
+                "folder_id": spreadsheet_folder_id
+            }
+        })
+        
+    except Exception as e:
+        print(f"Error in folder_info: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get folder info: {str(e)}")
 
 @app.get("/api/health")
 def health_check():
