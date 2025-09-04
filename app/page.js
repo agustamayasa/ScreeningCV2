@@ -26,6 +26,11 @@ export default function Home() {
   const [currentSpreadsheetName, setCurrentSpreadsheetName] = useState('');
 
   const [currentSpreadsheetUrl, setCurrentSpreadsheetUrl] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [sortConfig, setSortConfig] = useState({
+    key: "Overall Fit",
+    direction: "desc",
+  });
 
   // Fungsi untuk menangani error dengan lebih baik
   const handleApiError = (error, defaultMessage) => {
@@ -142,6 +147,8 @@ export default function Home() {
       setIsConfigSaved(false);
       setCurrentSpreadsheetName('');
       setCurrentSpreadsheetUrl('');
+      setSearchTerm('');
+      setSortConfig({ key: 'Overall Fit', direction: 'desc' });
       
       // Show success message briefly
       setScreeningStatus('Logout berhasil!');
@@ -387,7 +394,73 @@ export default function Home() {
     );
   }
 
-  // Show login page if not authenticated
+  const getFilteredAndSortedResults = () => {
+  let filtered = results.filter(result => {
+    const searchLower = searchTerm.toLowerCase();
+    return (
+      (result.Nama || '').toLowerCase().includes(searchLower) ||
+      (result.Email || '').toLowerCase().includes(searchLower) ||
+      (result['Pendidikan Terakhir'] || '').toLowerCase().includes(searchLower) ||
+      (result.Kekuatan || '').toLowerCase().includes(searchLower) ||
+      (result.Kekurangan || '').toLowerCase().includes(searchLower)
+    );
+  });
+
+  if (sortConfig.key) {
+    filtered.sort((a, b) => {
+      let aValue = a[sortConfig.key] || 0;
+      let bValue = b[sortConfig.key] || 0;
+      
+      // Special handling for Overall Fit (numeric)
+      if (sortConfig.key === 'Overall Fit') {
+        aValue = Number(aValue) || 0;
+        bValue = Number(bValue) || 0;
+      }
+      
+      if (aValue < bValue) {
+        return sortConfig.direction === 'asc' ? -1 : 1;
+      }
+      if (aValue > bValue) {
+        return sortConfig.direction === 'asc' ? 1 : -1;
+      }
+      return 0;
+    });
+  }
+
+  return filtered;
+};
+
+const handleSort = (key) => {
+  let direction = 'asc';
+  if (sortConfig.key === key && sortConfig.direction === 'asc') {
+    direction = 'desc';
+  }
+  setSortConfig({ key, direction });
+};
+
+const getSortIcon = (columnName) => {
+  if (sortConfig.key !== columnName) {
+    return (
+      <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+      </svg>
+    );
+  }
+  
+  if (sortConfig.direction === 'asc') {
+    return (
+      <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+      </svg>
+    );
+  } else {
+    return (
+      <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+      </svg>
+    );
+  }
+};
   
 
   return (
