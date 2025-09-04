@@ -244,7 +244,7 @@ def extract_text_from_pdf_bytes(pdf_bytes: bytes) -> str:
 
 def analyze_with_gemini(job_desc: str, resume_text: str) -> dict:
     try:
-        model = genai.GenerativeModel('gemini-1.5-flash')
+        model = genai.GenerativeModel('gemini-2.5-flash')
         prompt = f"""
         Sebagai seorang HR Specialist yang berpengalaman, analisis resume pelamar berikut dengan detail dan objektif berdasarkan deskripsi pekerjaan yang diberikan.
 
@@ -260,8 +260,8 @@ def analyze_with_gemini(job_desc: str, resume_text: str) -> dict:
             "email": "Email pelamar jika tersedia, jika tidak ada tulis 'Tidak tercantum'",
             "nomor_telepon": "Nomor telepon jika tersedia, jika tidak ada tulis 'Tidak tercantum', Gunakan format contoh +6289836718275",
             "pendidikan_terakhir": "Jenjang dan jurusan pendidikan terakhir (Rubah Seluruhnya Gunakan bahasa indonesia dengan Format contoh: S1 Informatika)",
-            "kekuatan": "3-4 kekuatan utama kandidat yang relevan dengan posisi (maksimal 200 kata)",
-            "kekurangan": "Area yang perlu ditingkatkan atau gap yang ditemukan (maksimal 150 kata)",
+            "kekuatan": "Format dalam list numbering:\n1. Kekuatan pertama yang relevan dengan posisi\n2. Kekuatan kedua yang relevan dengan posisi\n3. Kekuatan ketiga yang relevan dengan posisi\n4. Kekuatan keempat jika ada (maksimal 4 poin)",
+            "kekurangan": "Format dalam list numbering:\n1. Area pertama yang perlu ditingkatkan\n2. Area kedua yang perlu ditingkatkan\n3. Area ketiga jika ada (maksimal 3 poin)",
             "risk_factor": "Potensi risiko dalam merekrut kandidat ini (maksimal 150 kata)",
             "reward_factor": "Potensi manfaat dan value yang akan dibawa kandidat (maksimal 150 kata)",
             "overall_fit": 85,
@@ -275,6 +275,13 @@ def analyze_with_gemini(job_desc: str, resume_text: str) -> dict:
           * 70-79: Cukup sesuai tapi ada beberapa kekurangan
           * 60-69: Kurang sesuai, banyak gap
           * <60: Tidak sesuai
+
+        PENTING UNTUK FORMAT KEKUATAN DAN KEKURANGAN:
+        - Gunakan format list numbering dengan enter/line break
+        - Setiap poin harus dalam baris terpisah
+        - Format: "1. [isi kekuatan/kekurangan]\\n2. [isi berikutnya]\\n..."
+        - Kekuatan maksimal 4 poin, kekurangan maksimal 3 poin
+        - Setiap poin harus spesifik dan relevan dengan job description
 
         DESKRIPSI PEKERJAAN:
         {job_desc[:2000]}
@@ -303,8 +310,8 @@ def analyze_with_gemini(job_desc: str, resume_text: str) -> dict:
             'email': 'Tidak tercantum',
             'nomor_telepon': 'Tidak tercantum',
             'pendidikan_terakhir': 'Tidak tercantum',
-            'kekuatan': 'Tidak dapat dianalisis',
-            'kekurangan': 'Tidak dapat dianalisis',
+            'kekuatan': '1. Tidak dapat dianalisis',
+            'kekurangan': '1. Tidak dapat dianalisis',
             'risk_factor': 'Tidak dapat dianalisis',
             'reward_factor': 'Tidak dapat dianalisis',
             'overall_fit': 0,
@@ -321,6 +328,38 @@ def analyze_with_gemini(job_desc: str, resume_text: str) -> dict:
                 result['overall_fit'] = int(''.join(filter(str.isdigit, result['overall_fit']))) or 0
             except:
                 result['overall_fit'] = 0
+        
+        # Validasi format numbering untuk kekuatan dan kekurangan
+        def ensure_numbered_list(text, max_points=4):
+            """Memastikan text dalam format numbered list"""
+            if not text or text == 'Tidak dapat dianalisis':
+                return text
+            
+            # Jika sudah dalam format numbered list, return as is
+            if text.strip().startswith('1.'):
+                return text
+            
+            # Jika tidak, coba convert ke numbered list
+            lines = [line.strip() for line in text.split('\n') if line.strip()]
+            if len(lines) == 1:
+                # Jika hanya satu baris, coba split by delimiter
+                if ',' in text:
+                    lines = [item.strip() for item in text.split(',') if item.strip()]
+                elif ';' in text:
+                    lines = [item.strip() for item in text.split(';') if item.strip()]
+            
+            # Format ke numbered list
+            numbered_lines = []
+            for i, line in enumerate(lines[:max_points]):
+                if not line.startswith(f"{i+1}."):
+                    line = f"{i+1}. {line}"
+                numbered_lines.append(line)
+            
+            return '\n'.join(numbered_lines)
+        
+        # Terapkan formatting untuk kekuatan dan kekurangan
+        result['kekuatan'] = ensure_numbered_list(result['kekuatan'], 4)
+        result['kekurangan'] = ensure_numbered_list(result['kekurangan'], 3)
         
         return result
         
