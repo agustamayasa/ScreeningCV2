@@ -5,6 +5,7 @@ import base64
 import pickle
 from datetime import datetime
 import pdfplumber
+import gspread.utils  
 from fastapi import FastAPI, UploadFile, File, HTTPException, Request, Form
 from fastapi.responses import RedirectResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -163,47 +164,87 @@ def check_auth_status():
     except Exception as e:
         print(f"Error checking auth status: {e}")
         return False
-
-def ensure_spreadsheet_exists(gc, spreadsheet_name: str):
-    """Pastikan spreadsheet ada, jika tidak buat baru"""
+def get_or_create_folder(drive, folder_name, parent_folder_id=None):
+    """Mencari atau membuat folder di Google Drive"""
     try:
-        spreadsheet = gc.open(spreadsheet_name)
-        print(f"Spreadsheet '{spreadsheet_name}' ditemukan")
-        return spreadsheet
-    except gspread.exceptions.SpreadsheetNotFound:
-        print(f"Spreadsheet '{spreadsheet_name}' tidak ditemukan, membuat yang baru...")
-        try:
-            # Buat spreadsheet baru
-            spreadsheet = gc.create(spreadsheet_name)
-            sheet = spreadsheet.sheet1
+        # Query untuk mencari folder yang sudah ada
+        if parent_folder_id:
+            query = f"name='{folder_name}' and mimeType='application/vnd.google-apps.folder' and parents in '{parent_folder_id}'"
+        else:
+            query = f"name='{folder_name}' and mimeType='application/vnd.google-apps.folder'"
+        
+        results = drive.files().list(q=query, fields="files(id, name)").execute()
+        folders = results.get('files', [])
+        
+        if folders:
+            # Folder sudah ada
+            return folders[0]['id']
+        else:
+            # Buat folder baru
+            folder_metadata = {
+                'name': folder_name,
+                'mimeType': 'application/vnd.google-apps.folder'
+            }
             
-            # Tambahkan header
-            headers = [
-                'Waktu', 'Drive Link', 'Nama', 'Email', 'Nomor Telepon',
-                'Pendidikan Terakhir', 'Kekuatan', 'Kekurangan', 
-                'Risk Factor', 'Reward Factor', 'Overall Fit', 'Justifikasi', 'CV_Hash'
-            ]
-            sheet.append_row(headers)
+            if parent_folder_id:
+                folder_metadata['parents'] = [parent_folder_id]
             
-            print(f"Spreadsheet '{spreadsheet_name}' berhasil dibuat!")
-            return spreadsheet
-        except Exception as e:
-            print(f"Error creating spreadsheet: {e}")
-            raise HTTPException(status_code=500, detail=f"Failed to create spreadsheet: {str(e)}")
+            folder = drive.files().create(body=folder_metadata, fields='id').execute()
+            print(f"Folder '{folder_name}' berhasil dibuat dengan ID: {folder.get('id')}")
+            return folder.get('id')
+            
+    except Exception as e:
+        print(f"Error creating/getting folder {folder_name}: {e}")
+        return None
 
-def upload_to_drive(drive, file_data, filename):
-    """Upload file ke Google Drive dan return link"""
+def get_job_folder_structure(drive, job_position: str):
+    """Membuat struktur folder untuk posisi pekerjaan tertentu"""
     try:
+        # Buat folder utama "AI Resume Screening"
+        main_folder_id = get_or_create_folder(drive, "AI Resume Screening")
+        
+        if not main_folder_id:
+            return None, None
+        
+        # Buat subfolder untuk posisi pekerjaan
+        clean_position = "".join(c for c in job_position if c.isalnum() or c in (' ', '-', '_')).strip()
+        job_folder_name = f"Screening - {clean_position}"
+        job_folder_id = get_or_create_folder(drive, job_folder_name, main_folder_id)
+        
+        if not job_folder_id:
+            return None, None
+        
+        # Buat subfolder "CV" untuk menyimpan file CV
+        cv_folder_id = get_or_create_folder(drive, "CV", job_folder_id)
+        
+        return job_folder_id, cv_folder_id
+        
+    except Exception as e:
+        print(f"Error creating job folder structure: {e}")
+        return None, None
+    
+def upload_to_drive(drive, file_data, filename, job_position=""):
+    """Upload file ke Google Drive dengan struktur folder yang terorganisir"""
+    try:
+        # Dapatkan struktur folder
+        if job_position:
+            job_folder_id, cv_folder_id = get_job_folder_structure(drive, job_position)
+            parent_folder_id = cv_folder_id if cv_folder_id else None
+        else:
+            # Jika tidak ada job position, buat folder CV umum
+            parent_folder_id = get_or_create_folder(drive, "CV")
+        
         # Buat file metadata
         file_metadata = {
-            'name': f"CV_{filename}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf",
-            'parents': []  # Bisa ditambahkan folder ID jika ingin simpan di folder tertentu
+            'name': f"CV_{filename}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
         }
+        
+        if parent_folder_id:
+            file_metadata['parents'] = [parent_folder_id]
         
         # Upload file
         media = io.BytesIO(file_data)
         
-        # Import googleapiclient.http
         from googleapiclient.http import MediaIoBaseUpload
         media_upload = MediaIoBaseUpload(media, mimetype='application/pdf')
         
@@ -228,6 +269,55 @@ def upload_to_drive(drive, file_data, filename):
     except Exception as e:
         print(f"Error uploading to Drive: {e}")
         return None
+
+def ensure_spreadsheet_exists(gc, drive, spreadsheet_name: str, job_position: str = ""):
+    """Pastikan spreadsheet ada dalam folder yang sesuai"""
+    try:
+        # Coba buka spreadsheet yang sudah ada
+        try:
+            spreadsheet = gc.open(spreadsheet_name)
+            print(f"Spreadsheet '{spreadsheet_name}' ditemukan")
+            return spreadsheet
+        except gspread.exceptions.SpreadsheetNotFound:
+            pass
+        
+        print(f"Spreadsheet '{spreadsheet_name}' tidak ditemukan, membuat yang baru...")
+        
+        # Buat spreadsheet baru
+        spreadsheet = gc.create(spreadsheet_name)
+        
+        # Pindahkan ke folder yang sesuai jika job_position tersedia
+        if job_position and drive:
+            try:
+                job_folder_id, _ = get_job_folder_structure(drive, job_position)
+                if job_folder_id:
+                    # Pindahkan spreadsheet ke folder job
+                    drive.files().update(
+                        fileId=spreadsheet.id,
+                        addParents=job_folder_id,
+                        removeParents='root',
+                        fields='id, parents'
+                    ).execute()
+                    print(f"Spreadsheet dipindahkan ke folder job: {job_position}")
+            except Exception as e:
+                print(f"Error moving spreadsheet to folder: {e}")
+        
+        # Tambahkan header
+        sheet = spreadsheet.sheet1
+        headers = [
+            'Waktu', 'Drive Link', 'Nama', 'Email', 'Nomor Telepon',
+            'Pendidikan Terakhir', 'Kekuatan', 'Kekurangan', 
+            'Risk Factor', 'Reward Factor', 'Overall Fit', 'Justifikasi', 'CV_Hash'
+        ]
+        sheet.append_row(headers)
+        
+        print(f"Spreadsheet '{spreadsheet_name}' berhasil dibuat!")
+        return spreadsheet
+        
+    except Exception as e:
+        print(f"Error creating spreadsheet: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to create spreadsheet: {str(e)}")
+
 
 def extract_text_from_pdf_bytes(pdf_bytes: bytes) -> str:
     text = ""
@@ -598,7 +688,8 @@ async def start_screening(request: Request):
         
         # Generate nama spreadsheet berdasarkan posisi pekerjaan
         spreadsheet_name = generate_spreadsheet_name(job_position_name)
-        spreadsheet = ensure_spreadsheet_exists(gc, spreadsheet_name)
+        # PERUBAHAN: Tambahkan parameter drive dan job_position
+        spreadsheet = ensure_spreadsheet_exists(gc, drive, spreadsheet_name, job_position_name)
         sheet = spreadsheet.sheet1
         
         # Pastikan headers termasuk CV_Hash ada
@@ -667,8 +758,8 @@ async def start_screening(request: Request):
                                 skipped_count += 1
                                 continue
                             
-                            # Upload ke Google Drive
-                            drive_link = upload_to_drive(drive, file_data, filename)
+                            # PERUBAHAN: Upload ke Google Drive dengan job_position
+                            drive_link = upload_to_drive(drive, file_data, filename, job_position_name)
                             if not drive_link:
                                 drive_link = "Gagal upload ke Drive"
                             
@@ -745,15 +836,17 @@ async def get_results(request: Request):
     global job_position_name
     
     try:
-        _, _, gc, _ = get_google_services(request=request)
+        gmail, drive, gc, _ = get_google_services(request=request)
         
         # Jika tidak ada nama posisi yang diset, gunakan spreadsheet default
         if not job_position_name:
             spreadsheet_name = "Analisis Resume AI"
+            spreadsheet = ensure_spreadsheet_exists(gc, drive, spreadsheet_name)
         else:
             spreadsheet_name = generate_spreadsheet_name(job_position_name)
+            # PERUBAHAN: Tambahkan parameter drive dan job_position
+            spreadsheet = ensure_spreadsheet_exists(gc, drive, spreadsheet_name, job_position_name)
         
-        spreadsheet = ensure_spreadsheet_exists(gc, spreadsheet_name)
         sheet = spreadsheet.sheet1
         
         # Ambil semua data
@@ -776,24 +869,24 @@ async def get_results(request: Request):
         print(f"Error in get_results: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to fetch results: {str(e)}")
 
-# Di file backend FastAPI Anda (main.py)
-
 @app.delete("/api/clear-results")
 async def clear_results(request: Request):
     global job_position_name
     
     try:
-        _, _, gc, _ = get_google_services(request=request)
+        gmail, drive, gc, _ = get_google_services(request=request)
         
         if not job_position_name:
             spreadsheet_name = "Analisis Resume AI"
+            spreadsheet = ensure_spreadsheet_exists(gc, drive, spreadsheet_name)
         else:
             spreadsheet_name = generate_spreadsheet_name(job_position_name)
+            # PERUBAHAN: Tambahkan parameter drive dan job_position
+            spreadsheet = ensure_spreadsheet_exists(gc, drive, spreadsheet_name, job_position_name)
             
-        spreadsheet = ensure_spreadsheet_exists(gc, spreadsheet_name)
         sheet = spreadsheet.sheet1
         
-        # --- PERBAIKAN: Kosongkan isi cell, bukan hapus baris ---
+        # Kosongkan isi cell, bukan hapus baris
         row_count = sheet.row_count
         col_count = sheet.col_count
 
