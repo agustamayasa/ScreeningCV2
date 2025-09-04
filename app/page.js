@@ -847,28 +847,14 @@ export default function Home() {
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center">
               <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
-                <svg
-                  className="w-5 h-5 text-blue-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-                  />
+                <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                 </svg>
               </div>
               <div>
-                <h2 className="text-lg font-semibold text-gray-900">
-                  Analysis Results
-                </h2>
+                <h2 className="text-lg font-semibold text-gray-900">Analysis Results</h2>
                 <p className="text-sm text-gray-600">
-                  {results.length > 0
-                    ? `${results.length} candidates analyzed`
-                    : "No data available"}
+                  {results.length > 0 ? `${results.length} candidates analyzed` : 'No data available'}
                 </p>
               </div>
             </div>
@@ -891,85 +877,22 @@ export default function Home() {
             )}
           </div>
 
-          {/* Search Bar - positioned below header and aligned right */}
-          {results.length > 0 && (
-            <div className="flex justify-between items-center mb-6">
-              <div className="flex-1"></div>
-              <div className="relative max-w-md w-full sm:w-80">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <svg
-                    className="h-5 w-5 text-gray-400"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                    />
-                  </svg>
-                </div>
-                <input
-                  type="text"
-                  placeholder="Search candidates..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                />
-              </div>
-            </div>
-          )}
-
-          {/* Search Results Counter */}
-          {results.length > 0 && searchTerm && (
-            <div className="flex justify-end mb-4">
-              <p className="text-sm text-gray-600">
-                Showing {getFilteredAndSortedResults().length} of{" "}
-                {results.length} candidates
-              </p>
-            </div>
-          )}
-
           {/* Results Content */}
           {!isLoggedIn ? (
             <div className="text-center py-12">
               <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg
-                  className="w-8 h-8 text-gray-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-                  />
+                <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                 </svg>
               </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
-                Authentication Required
-              </h3>
-              <p className="text-gray-600 mb-4">
-                Please login with your Google account to view analysis results.
-              </p>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">Authentication Required</h3>
+              <p className="text-gray-600 mb-4">Please login with your Google account to view analysis results.</p>
               <button
                 onClick={handleLogin}
                 className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 font-medium"
               >
-                <svg
-                  className="w-4 h-4 mr-2"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M3 3a1 1 0 011 1v12a1 1 0 11-2 0V4a1 1 0 011-1zm7.707 3.293a1 1 0 010 1.414L9.414 9H17a1 1 0 110 2H9.414l1.293 1.293a1 1 0 01-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 011.414 0z"
-                    clipRule="evenodd"
-                  />
+                <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M3 3a1 1 0 011 1v12a1 1 0 11-2 0V4a1 1 0 011-1zm7.707 3.293a1 1 0 010 1.414L9.414 9H17a1 1 0 110 2H9.414l1.293 1.293a1 1 0 01-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 011.414 0z" clipRule="evenodd" />
                 </svg>
                 Login with Google
               </button>
@@ -977,295 +900,196 @@ export default function Home() {
           ) : results.length > 0 ? (
             <>
               <div className="overflow-x-auto">
-                <table className="w-full">
+                <table className="w-full min-w-[1800px]">
                   <thead>
-                    <tr className="border-b border-gray-200 bg-gray-50">
-                      <th className="text-left py-4 px-4 font-medium text-gray-900 w-48">
-                        <button
-                          onClick={() => handleSort("Nama")}
-                          className="flex items-center space-x-1 hover:text-blue-600 transition-colors"
-                        >
-                          <span>Candidate</span>
-                          {getSortIcon("Nama")}
-                        </button>
-                      </th>
+                    <tr className="border-b border-gray-200">
+                      <th className="text-left py-4 px-2 font-medium text-gray-900 w-48">Candidate</th>
+                      
+                      <th className="text-left py-4 px-4 font-medium text-gray-900 w-48">Education</th>
+                      <th className="text-center py-4 px-4 font-medium text-gray-900 w-32">Match Score</th>
+                      <th className="text-left py-4 px-4 font-medium text-gray-900 w-48">Strengths</th>
+                      <th className="text-left py-4 px-4 font-medium text-gray-900 w-48">Weaknesses</th>
 
-                      <th className="text-left py-4 px-2 font-medium text-gray-900 w-32">
-                        <button
-                          onClick={() => handleSort("Pendidikan Terakhir")}
-                          className="flex items-center space-x-1 hover:text-blue-600 transition-colors"
-                        >
-                          <span>Education</span>
-                          {getSortIcon("Pendidikan Terakhir")}
-                        </button>
-                      </th>
-
-                      <th className="text-center py-4 px-2 font-medium text-gray-900 w-28">
-                        <button
-                          onClick={() => handleSort("Overall Fit")}
-                          className="flex items-center space-x-1 hover:text-blue-600 transition-colors mx-auto"
-                        >
-                          <span>Score</span>
-                          {getSortIcon("Overall Fit")}
-                        </button>
-                      </th>
-
-                      <th className="text-left py-4 px-4 font-medium text-gray-900 w-64">
-                        Strengths
-                      </th>
-                      <th className="text-left py-4 px-4 font-medium text-gray-900 w-64">
-                        Weaknesses
-                      </th>
-                      <th className="text-left py-4 px-4 font-medium text-gray-900 w-64">
-                        Analysis
-                      </th>
-
-                      <th className="text-left py-4 px-2 font-medium text-gray-900 w-24">
-                        CV
-                      </th>
-
-                      <th className="text-left py-4 px-2 font-medium text-gray-900 w-28">
-                        <button
-                          onClick={() => handleSort("Waktu")}
-                          className="flex items-center space-x-1 hover:text-blue-600 transition-colors"
-                        >
-                          <span>Date</span>
-                          {getSortIcon("Waktu")}
-                        </button>
-                      </th>
-
-                      <th className="text-center py-4 px-2 font-medium text-gray-900 w-20">
-                        Details
-                      </th>
+                      <th className="text-left py-4 px-4 font-medium text-gray-900 w-48">Analysis</th>
+                      <th className="text-left py-4 px-4 font-medium text-gray-900 w-32">CV Link</th>
+                      <th className="text-left py-4 px-4 font-medium text-gray-900 w-32">Date</th>
+                      <th className="text-left py-4 px-4 font-medium text-gray-900 w-24">Details</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
-                    {getFilteredAndSortedResults().map((result, index) => (
-                      <tr
-                        key={index}
-                        className="hover:bg-gray-50 transition-colors duration-150"
-                      >
+                    {results.map((result, index) => (
+                      <tr key={index} className="hover:bg-gray-50 transition-colors duration-150">
                         {/* Candidate Info */}
                         <td className="py-4 px-4">
                           <div className="flex items-center">
+                            
                             <div className="min-w-0">
-                              <p
-                                className="font-medium text-gray-900 truncate"
-                                title={result.Nama || "N/A"}
-                              >
-                                {result.Nama || "N/A"}
+                              <p className="font-medium text-gray-900 truncate" title={result.Nama || 'N/A'}>
+                                {result.Nama || 'N/A'}
                               </p>
                             </div>
                           </div>
-                          <div className="text-xs space-y-1">
-                            {result.Email &&
-                            result.Email !== "Tidak tercantum" ? (
-                              <a
+                          <div className="text-sm space-y-1">
+                            {result.Email && result.Email !== 'Tidak tercantum' ? (
+                              <a 
                                 href={`mailto:${result.Email}`}
                                 className="text-blue-600 hover:text-blue-800 hover:underline block truncate"
                                 title={result.Email}
                               >
-                                {result.Email.length > 25
-                                  ? `${result.Email.substring(0, 25)}...`
-                                  : result.Email}
+                                {result.Email.length > 25 ? `${result.Email.substring(0, 25)}...` : result.Email}
                               </a>
                             ) : (
-                              <span className="text-gray-400 block">
-                                No email
-                              </span>
+                              <span className="text-gray-400 block">No email</span>
                             )}
-                            {result["Nomor Telepon"] &&
-                            result["Nomor Telepon"] !== "Tidak tercantum" ? (
-                              <a
-                                href={`https://wa.me/${result["Nomor Telepon"]}`}
+                            {result['Nomor Telepon'] && result['Nomor Telepon'] !== 'Tidak tercantum' ? (
+                              <a 
+                                href={`https://wa.me/${result['Nomor Telepon']}`}
                                 className="text-blue-600 hover:text-blue-800 hover:underline block"
-                                title={result["Nomor Telepon"]}
+                                title={result['Nomor Telepon']}
                               >
-                                {result["Nomor Telepon"]}
+                                {result['Nomor Telepon']}
                               </a>
                             ) : (
-                              <span className="text-gray-400 block">
-                                No phone
-                              </span>
+                              <span className="text-gray-400 block">No phone</span>
                             )}
                           </div>
                         </td>
 
+                        
+
                         {/* Education */}
-                        <td className="py-4 px-2">
-                          <div className="max-w-[120px]">
-                            <p
-                              className="text-[12px] text-gray-900 line-clamp-2 cursor-help"
-                              title={result["Pendidikan Terakhir"] || "N/A"}
+                        <td className="py-4 px-4">
+                          <div className="max-w-[180px]">
+                            <p 
+                              className="text-sm text-gray-900 line-clamp-2 cursor-help" 
+                              title={result['Pendidikan Terakhir'] || 'N/A'}
                             >
-                              {result["Pendidikan Terakhir"]
-                                ? result["Pendidikan Terakhir"].length > 40
-                                  ? `${result["Pendidikan Terakhir"].substring(
-                                      0,
-                                      40
-                                    )}...`
-                                  : result["Pendidikan Terakhir"]
-                                : "N/A"}
+                              {result['Pendidikan Terakhir'] ? 
+                                (result['Pendidikan Terakhir'].length > 50 ? 
+                                  `${result['Pendidikan Terakhir'].substring(0, 50)}...` : 
+                                  result['Pendidikan Terakhir']) : 
+                                'N/A'
+                              }
                             </p>
                           </div>
                         </td>
 
                         {/* Match Score */}
-                        <td className="py-4 px-2 text-center">
+                        <td className="py-4 px-4 text-center">
                           <div className="inline-flex items-center">
-                            <div
-                              className={`px-2 py-1 rounded-full text-sm font-medium border ${getScoreBadgeColor(
-                                result["Overall Fit"] || 0
-                              )}`}
-                            >
-                              {result["Overall Fit"] || 0}%
+                            <div className={`px-3 py-1 rounded-full text-sm font-medium border ${getScoreBadgeColor(result['Overall Fit'] || 0)}`}>
+                              {result['Overall Fit'] || 0}%
                             </div>
                           </div>
                         </td>
 
                         {/* Strengths */}
                         <td className="py-4 px-4">
-                          <div className="max-w-[240px]">
-                            <p
-                              className="text-xs text-gray-900 line-clamp-3 cursor-help"
-                              title={result.Kekuatan || "N/A"}
+                          <div className="max-w-[180px]">
+                            <p 
+                              className="text-sm text-gray-900 line-clamp-3 cursor-help" 
+                              title={result.Kekuatan || 'N/A'}
                             >
-                              {result.Kekuatan
-                                ? result.Kekuatan.length > 120
-                                  ? `${result.Kekuatan.substring(0, 120)}...`
-                                  : result.Kekuatan
-                                : "N/A"}
+                              {result.Kekuatan ? 
+                                (result.Kekuatan.length > 80 ? 
+                                  `${result.Kekuatan.substring(0, 80)}...` : 
+                                  result.Kekuatan) : 
+                                'N/A'
+                              }
                             </p>
                           </div>
                         </td>
 
                         {/* Weaknesses */}
                         <td className="py-4 px-4">
-                          <div className="max-w-[240px]">
-                            <p
-                              className="text-xs text-gray-900 line-clamp-3 cursor-help"
-                              title={result.Kekurangan || "N/A"}
+                          <div className="max-w-[180px]">
+                            <p 
+                              className="text-sm text-gray-900 line-clamp-3 cursor-help" 
+                              title={result.Kekurangan || 'N/A'}
                             >
-                              {result.Kekurangan
-                                ? result.Kekurangan.length > 120
-                                  ? `${result.Kekurangan.substring(0, 120)}...`
-                                  : result.Kekurangan
-                                : "N/A"}
+                              {result.Kekurangan ? 
+                                (result.Kekurangan.length > 80 ? 
+                                  `${result.Kekurangan.substring(0, 80)}...` : 
+                                  result.Kekurangan) : 
+                                'N/A'
+                              }
                             </p>
                           </div>
                         </td>
 
+                        
+
                         {/* Analysis */}
                         <td className="py-4 px-4">
-                          <div className="max-w-[240px]">
-                            <p
-                              className="text-xs text-gray-900 line-clamp-3 cursor-help"
-                              title={result.Justifikasi || "N/A"}
+                          <div className="max-w-[180px]">
+                            <p 
+                              className="text-sm text-gray-900 line-clamp-3 cursor-help" 
+                              title={result.Justifikasi || 'N/A'}
                             >
-                              {result.Justifikasi
-                                ? result.Justifikasi.length > 120
-                                  ? `${result.Justifikasi.substring(0, 120)}...`
-                                  : result.Justifikasi
-                                : "N/A"}
+                              {result.Justifikasi ? 
+                                (result.Justifikasi.length > 80 ? 
+                                  `${result.Justifikasi.substring(0, 80)}...` : 
+                                  result.Justifikasi) : 
+                                'N/A'
+                              }
                             </p>
                           </div>
                         </td>
 
                         {/* CV Link */}
-                        <td className="py-4 px-2">
-                          {result["Drive Link"] &&
-                          result["Drive Link"] !== "Gagal upload ke Drive" ? (
-                            <a
-                              href={result["Drive Link"]}
+                        <td className="py-4 px-4">
+                          {result['Drive Link'] && result['Drive Link'] !== 'Gagal upload ke Drive' ? (
+                            <a 
+                              href={result['Drive Link']}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="inline-flex items-center px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium hover:bg-blue-200 transition-colors duration-200"
+                              className="inline-flex items-center px-3 py-1 bg-blue-100 text-blue-700 rounded-md text-sm font-medium hover:bg-blue-200 transition-colors duration-200"
                             >
-                              <svg
-                                className="w-3 h-3 mr-1"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
-                                />
+                              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
                               </svg>
-                              CV
+                              View CV
                             </a>
                           ) : (
-                            <span className="text-gray-400 text-xs">
-                              No link
-                            </span>
+                            <span className="text-gray-400 text-sm">No link</span>
                           )}
                         </td>
 
                         {/* Date */}
-                        <td className="py-4 px-2">
-                          <div className="text-xs text-gray-500">
+                        <td className="py-4 px-4">
+                          <div className="text-sm text-gray-500">
                             {result.Waktu ? (
                               <div>
-                                <p>
-                                  {new Date(result.Waktu).toLocaleDateString(
-                                    "en-GB",
-                                    {
-                                      day: "2-digit",
-                                      month: "2-digit",
-                                      year: "2-digit",
-                                    }
-                                  )}
-                                </p>
+                                <p>{new Date(result.Waktu).toLocaleDateString()}</p>
                                 <p className="text-xs text-gray-400">
-                                  {new Date(result.Waktu).toLocaleTimeString(
-                                    "en-US",
-                                    { hour: "2-digit", minute: "2-digit" }
-                                  )}
+                                  {new Date(result.Waktu).toLocaleTimeString()}
                                 </p>
                               </div>
                             ) : (
-                              "N/A"
+                              'N/A'
                             )}
                           </div>
                         </td>
 
                         {/* Details Button */}
-                        <td className="py-4 px-2 text-center">
+                        <td className="py-4 px-4">
                           <button
                             onClick={() => {
                               // You need to add this state: const [selectedCandidate, setSelectedCandidate] = useState(null);
-                              if (typeof setSelectedCandidate === "function") {
+                              if (typeof setSelectedCandidate === 'function') {
                                 setSelectedCandidate(result);
                               } else {
-                                console.log("Selected candidate:", result);
-                                alert(
-                                  "Please add selectedCandidate state to your component"
-                                );
+                                console.log('Selected candidate:', result);
+                                alert('Please add selectedCandidate state to your component');
                               }
                             }}
-                            className="inline-flex items-center px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs font-medium hover:bg-gray-200 transition-colors duration-200"
+                            className="inline-flex items-center px-3 py-1 bg-gray-100 text-gray-700 rounded-md text-sm font-medium hover:bg-gray-200 transition-colors duration-200"
                           >
-                            <svg
-                              className="w-5 h-5"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                              />
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                              />
+                            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                             </svg>
+                            View
                           </button>
                         </td>
                       </tr>
@@ -1275,300 +1099,179 @@ export default function Home() {
               </div>
 
               {/* Detail Modal */}
-              {typeof selectedCandidate !== "undefined" &&
-                selectedCandidate && (
-                  <div className="fixed inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-lg shadow-xl border border-gray-200 max-w-6xl w-full max-h-[90vh] overflow-y-auto">
-                      {/* Modal Header */}
-                      <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 rounded-t-lg">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center">
-                            <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center mr-4">
-                              <span className="text-gray-700 font-semibold text-lg">
-                                {(selectedCandidate.Nama || "N/A")
-                                  .charAt(0)
-                                  .toUpperCase()}
-                              </span>
-                            </div>
-                            <div>
-                              <h2 className="text-xl font-semibold text-gray-900">
-                                {selectedCandidate.Nama || "N/A"}
-                              </h2>
-                              <p className="text-sm text-gray-500">
-                                Candidate Analysis Report
-                              </p>
-                            </div>
+              {(typeof selectedCandidate !== 'undefined' && selectedCandidate) && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                  <div className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+                    {/* Modal Header */}
+                    <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 rounded-t-xl">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center">
+                          <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mr-4">
+                            <span className="text-blue-600 font-semibold text-lg">
+                              {(selectedCandidate.Nama || 'N/A').charAt(0).toUpperCase()}
+                            </span>
                           </div>
-                          <div className="flex items-center space-x-4">
-                            <div
-                              className={`px-4 py-2 rounded-md text-sm font-medium border ${getScoreBadgeColor(
-                                selectedCandidate["Overall Fit"] || 0
-                              )}`}
-                            >
-                              {selectedCandidate["Overall Fit"] || 0}% Match
-                            </div>
-                            <button
-                              onClick={() => {
-                                if (
-                                  typeof setSelectedCandidate === "function"
-                                ) {
-                                  setSelectedCandidate(null);
-                                } else {
-                                  console.log("Close modal");
-                                }
-                              }}
-                              className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-md transition-colors"
-                            >
-                              <svg
-                                className="w-5 h-5"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M6 18L18 6M6 6l12 12"
-                                />
-                              </svg>
-                            </button>
+                          <div>
+                            <h2 className="text-xl font-semibold text-gray-900">
+                              {selectedCandidate.Nama || 'N/A'}
+                            </h2>
+                            <p className="text-sm text-gray-600">Candidate Details</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-4">
+                          <div className={`px-4 py-2 rounded-full text-sm font-medium border ${getScoreBadgeColor(selectedCandidate['Overall Fit'] || 0)}`}>
+                            {selectedCandidate['Overall Fit'] || 0}% Match
+                          </div>
+                          <button
+                            onClick={() => {
+                              if (typeof setSelectedCandidate === 'function') {
+                                setSelectedCandidate(null);
+                              } else {
+                                console.log('Close modal');
+                              }
+                            }}
+                            className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+                          >
+                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Modal Content */}
+                    <div className="p-6 space-y-6">
+                      {/* Contact Information */}
+                      <div className="bg-gray-50 rounded-lg p-4">
+                        <h3 className="text-lg font-medium text-gray-900 mb-3">Contact Information</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <label className="text-sm font-medium text-gray-700">Email</label>
+                            <p className="text-sm text-gray-900 mt-1">
+                              {selectedCandidate.Email && selectedCandidate.Email !== 'Tidak tercantum' ? (
+                                <a href={`mailto:${selectedCandidate.Email}`} className="text-blue-600 hover:underline">
+                                  {selectedCandidate.Email}
+                                </a>
+                              ) : (
+                                'Not available'
+                              )}
+                            </p>
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium text-gray-700">Phone Number</label>
+                            <p className="text-sm text-gray-900 mt-1">
+                              {selectedCandidate['Nomor Telepon'] && selectedCandidate['Nomor Telepon'] !== 'Tidak tercantum' ? (
+                                <a href={`tel:${selectedCandidate['Nomor Telepon']}`} className="text-blue-600 hover:underline">
+                                  {selectedCandidate['Nomor Telepon']}
+                                </a>
+                              ) : (
+                                'Not available'
+                              )}
+                            </p>
                           </div>
                         </div>
                       </div>
 
-                      {/* Modal Content */}
-                      <div className="p-6 space-y-6">
-                        {/* Contact Information */}
-                        <div className="bg-gray-50/50 rounded-lg p-5 border border-gray-100">
-                          <h3 className="text-lg font-medium text-gray-900 mb-4">
-                            Contact Information
-                          </h3>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                              <label className="text-sm font-medium text-gray-600 mb-1 block">
-                                Email Address
-                              </label>
-                              <p className="text-sm text-gray-900">
-                                {selectedCandidate.Email &&
-                                selectedCandidate.Email !==
-                                  "Tidak tercantum" ? (
-                                  <a
-                                    href={`mailto:${selectedCandidate.Email}`}
-                                    className="text-blue-600 hover:underline flex items-center"
-                                  >
-                                    <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                                    </svg>
-                                    {selectedCandidate.Email}
-                                  </a>
-                                ) : (
-                                  <span className="text-gray-400">Not available</span>
-                                )}
-                              </p>
-                            </div>
-                            <div>
-                              <label className="text-sm font-medium text-gray-600 mb-1 block">
-                                Phone Number
-                              </label>
-                              <p className="text-sm text-gray-900">
-                                {selectedCandidate["Nomor Telepon"] &&
-                                selectedCandidate["Nomor Telepon"] !==
-                                  "Tidak tercantum" ? (
-                                  <a
-                                    href={`tel:${selectedCandidate["Nomor Telepon"]}`}
-                                    className="text-blue-600 hover:underline flex items-center"
-                                  >
-                                    <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                                    </svg>
-                                    {selectedCandidate["Nomor Telepon"]}
-                                  </a>
-                                ) : (
-                                  <span className="text-gray-400">Not available</span>
-                                )}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Education */}
-                        <div className="bg-white border border-gray-100 rounded-lg p-5">
-                          <h3 className="text-lg font-medium text-gray-900 mb-3 flex items-center">
-                            <svg className="w-5 h-5 mr-2 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path d="M12 14l9-5-9-5-9 5 9 5z"></path>
-                              <path d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"></path>
-                            </svg>
-                            Education Background
-                          </h3>
-                          <p className="text-sm text-gray-800 bg-gray-50/50 p-3 rounded border">
-                            {selectedCandidate["Pendidikan Terakhir"] ||
-                              "No education information available"}
+                      {/* Education */}
+                      <div>
+                        <h3 className="text-lg font-medium text-gray-900 mb-3">Education</h3>
+                        <div className="bg-white border border-gray-200 rounded-lg p-4">
+                          <p className="text-sm text-gray-900 leading-relaxed">
+                            {selectedCandidate['Pendidikan Terakhir'] || 'No education information available'}
                           </p>
                         </div>
+                      </div>
 
-                        {/* Analysis Details - Strengths & Weaknesses */}
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                          <div className="bg-white border border-gray-100 rounded-lg p-5">
-                            <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
-                              <svg className="w-5 h-5 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                              </svg>
-                              <span className="text-green-700">Strengths</span>
-                            </h3>
-                            <div className="bg-green-50/70 border border-green-100 rounded-md p-4">
-                              {selectedCandidate.Kekuatan ? (
-                                Array.isArray(selectedCandidate.Kekuatan) ? (
-                                  <ul className="space-y-2">
-                                    {selectedCandidate.Kekuatan.map((strength, index) => (
-                                      <li key={index} className="text-sm text-gray-800 leading-relaxed flex items-start">
-                                        <span className="text-green-600 font-medium mr-2 flex-shrink-0">•</span>
-                                        <span>{strength.replace(/^\d+\.\s*/, '')}</span>
-                                      </li>
-                                    ))}
-                                  </ul>
-                                ) : (
-                                  <div className="text-sm text-gray-800 leading-relaxed whitespace-pre-line">
-                                    {selectedCandidate.Kekuatan}
-                                  </div>
-                                )
-                              ) : (
-                                <p className="text-gray-400 text-sm">No strengths data available</p>
-                              )}
-                            </div>
-                          </div>
-                          
-                          <div className="bg-white border border-gray-100 rounded-lg p-5">
-                            <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
-                              <svg className="w-5 h-5 mr-2 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                              </svg>
-                              <span className="text-orange-700">Areas for Improvement</span>
-                            </h3>
-                            <div className="bg-orange-50/70 border border-orange-100 rounded-md p-4">
-                              {selectedCandidate.Kekurangan ? (
-                                Array.isArray(selectedCandidate.Kekurangan) ? (
-                                  <ul className="space-y-2">
-                                    {selectedCandidate.Kekurangan.map((weakness, index) => (
-                                      <li key={index} className="text-sm text-gray-800 leading-relaxed flex items-start">
-                                        <span className="text-orange-600 font-medium mr-2 flex-shrink-0">•</span>
-                                        <span>{weakness.replace(/^\d+\.\s*/, '')}</span>
-                                      </li>
-                                    ))}
-                                  </ul>
-                                ) : (
-                                  <div className="text-sm text-gray-800 leading-relaxed whitespace-pre-line">
-                                    {selectedCandidate.Kekurangan}
-                                  </div>
-                                )
-                              ) : (
-                                <p className="text-gray-400 text-sm">No weaknesses data available</p>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Risk & Reward Factors */}
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                          <div className="bg-white border border-gray-100 rounded-lg p-5">
-                            <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
-                              <svg className="w-5 h-5 mr-2 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                              </svg>
-                              <span className="text-red-700">Risk Factors</span>
-                            </h3>
-                            <div className="bg-red-50/70 border border-red-100 rounded-md p-4">
-                              <p className="text-sm text-gray-800 leading-relaxed">
-                                {selectedCandidate["Risk Factor"] ||
-                                  "No risk factors data available"}
-                              </p>
-                            </div>
-                          </div>
-                          
-                          <div className="bg-white border border-gray-100 rounded-lg p-5">
-                            <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
-                              <svg className="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                              </svg>
-                              <span className="text-blue-700">Reward Potential</span>
-                            </h3>
-                            <div className="bg-blue-50/70 border border-blue-100 rounded-md p-4">
-                              <p className="text-sm text-gray-800 leading-relaxed">
-                                {selectedCandidate["Reward Factor"] ||
-                                  "No reward factors data available"}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Detailed Analysis */}
-                        <div className="bg-white border border-gray-100 rounded-lg p-5">
-                          <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
-                            <svg className="w-5 h-5 mr-2 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                            </svg>
-                            Analysis Summary
-                          </h3>
-                          <div className="bg-gray-50/50 border border-gray-100 rounded-md p-4">
-                            <p className="text-sm text-gray-800 leading-relaxed whitespace-pre-wrap">
-                              {selectedCandidate.Justifikasi ||
-                                "No analysis data available"}
+                      {/* Analysis Details */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                          <h3 className="text-lg font-medium text-gray-900 mb-3">Strengths</h3>
+                          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                            <p className="text-sm text-gray-900 leading-relaxed">
+                              {selectedCandidate.Kekuatan || 'No strengths data available'}
                             </p>
                           </div>
                         </div>
+                        <div>
+                          <h3 className="text-lg font-medium text-gray-900 mb-3">Weaknesses</h3>
+                          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                            <p className="text-sm text-gray-900 leading-relaxed">
+                              {selectedCandidate.Kekurangan || 'No weaknesses data available'}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
 
-                        {/* Footer Information */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-gray-100">
-                          <div className="bg-gray-50/50 rounded-lg p-4 border border-gray-100">
-                            <h4 className="text-sm font-medium text-gray-700 mb-2 flex items-center">
-                              <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                              </svg>
-                              CV Document
-                            </h4>
-                            {selectedCandidate["Drive Link"] &&
-                            selectedCandidate["Drive Link"] !==
-                              "Gagal upload ke Drive" ? (
-                              <a
-                                href={selectedCandidate["Drive Link"]}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                          <h3 className="text-lg font-medium text-gray-900 mb-3">Risk Factors</h3>
+                          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                            <p className="text-sm text-gray-900 leading-relaxed">
+                              {selectedCandidate['Risk Factor'] || 'No risk factors data available'}
+                            </p>
+                          </div>
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-medium text-gray-900 mb-3">Reward Factors</h3>
+                          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                            <p className="text-sm text-gray-900 leading-relaxed">
+                              {selectedCandidate['Reward Factor'] || 'No reward factors data available'}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Analysis */}
+                      <div>
+                        <h3 className="text-lg font-medium text-gray-900 mb-3">Detailed Analysis</h3>
+                        <div className="bg-white border border-gray-200 rounded-lg p-4">
+                          <p className="text-sm text-gray-900 leading-relaxed whitespace-pre-wrap">
+                            {selectedCandidate.Justifikasi || 'No analysis data available'}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* CV Link and Date */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                          <h3 className="text-lg font-medium text-gray-900 mb-3">CV Document</h3>
+                          <div className="bg-white border border-gray-200 rounded-lg p-4">
+                            {selectedCandidate['Drive Link'] && selectedCandidate['Drive Link'] !== 'Gagal upload ke Drive' ? (
+                              <a 
+                                href={selectedCandidate['Drive Link']}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="inline-flex items-center px-3 py-2 bg-blue-50 text-blue-700 rounded-md text-sm font-medium hover:bg-blue-100 transition-colors duration-200 border border-blue-200"
+                                className="inline-flex items-center px-4 py-2 bg-blue-100 text-blue-700 rounded-md text-sm font-medium hover:bg-blue-200 transition-colors duration-200"
                               >
                                 <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
                                 </svg>
-                                View Document
+                                Open CV Document
                               </a>
                             ) : (
-                              <p className="text-gray-400 text-sm">Document not available</p>
+                              <p className="text-gray-400 text-sm">CV document not available</p>
                             )}
                           </div>
-                          
-                          <div className="bg-gray-50/50 rounded-lg p-4 border border-gray-100">
-                            <h4 className="text-sm font-medium text-gray-700 mb-2 flex items-center">
-                              <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                              </svg>
-                              Analysis Date
-                            </h4>
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-medium text-gray-900 mb-3">Analysis Date</h3>
+                          <div className="bg-white border border-gray-200 rounded-lg p-4">
                             {selectedCandidate.Waktu ? (
-                              <div className="text-sm text-gray-700">
+                              <div className="text-sm text-gray-900">
                                 <p className="font-medium">
-                                  {new Date(
-                                    selectedCandidate.Waktu
-                                  ).toLocaleDateString("en-US", {
-                                    year: "numeric",
-                                    month: "long",
-                                    day: "numeric",
+                                  {new Date(selectedCandidate.Waktu).toLocaleDateString('en-US', {
+                                    weekday: 'long',
+                                    year: 'numeric',
+                                    month: 'long',
+                                    day: 'numeric'
                                   })}
                                 </p>
-                                <p className="text-gray-500 text-xs mt-1">
-                                  {new Date(
-                                    selectedCandidate.Waktu
-                                  ).toLocaleTimeString("en-US", {
-                                    hour: "2-digit",
-                                    minute: "2-digit",
+                                <p className="text-gray-600 mt-1">
+                                  {new Date(selectedCandidate.Waktu).toLocaleTimeString('en-US', {
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                    second: '2-digit'
                                   })}
                                 </p>
                               </div>
@@ -1580,37 +1283,20 @@ export default function Home() {
                       </div>
                     </div>
                   </div>
-                )}
+                </div>
+              )}
             </>
           ) : (
             <div className="text-center py-12">
               <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg
-                  className="w-8 h-8 text-gray-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-                  />
+                <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                 </svg>
               </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
-                No Analysis Data
-              </h3>
-              <p className="text-gray-600 mb-4">
-                Start the screening process to see candidate analysis results
-                here.
-              </p>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No Analysis Data</h3>
+              <p className="text-gray-600 mb-4">Start the screening process to see candidate analysis results here.</p>
               <div className="text-sm text-gray-500">
-                <p>
-                  💡 <strong>Tip:</strong> Make sure your Gmail contains emails
-                  with subjects including "resume" or "cv" with PDF attachments.
-                </p>
+                <p>💡 <strong>Tip:</strong> Make sure your Gmail contains emails with subjects including "resume" or "cv" with PDF attachments.</p>
               </div>
             </div>
           )}
