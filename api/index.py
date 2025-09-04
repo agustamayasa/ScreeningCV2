@@ -164,61 +164,166 @@ def check_auth_status():
         print(f"Error checking auth status: {e}")
         return False
 
-def get_or_create_folder(drive, folder_name: str, parent_folder_id: str = None) -> str:
-    """Mendapatkan atau membuat folder di Google Drive"""
+def ensure_spreadsheet_exists(gc, spreadsheet_name: str, job_position: str, drive=None):
+    """Pastikan spreadsheet ada dalam folder yang tepat"""
+    try:
+        # Coba cari spreadsheet yang sudah ada
+        try:
+            spreadsheet = gc.open(spreadsheet_name)
+            print(f"Spreadsheet '{spreadsheet_name}' ditemukan")
+            return spreadsheet
+        except gspread.exceptions.SpreadsheetNotFound:
+            pass
+        
+        print(f"Spreadsheet '{spreadsheet_name}' tidak ditemukan, membuat yang baru...")
+        
+        # Buat spreadsheet baru
+        spreadsheet = gc.create(spreadsheet_name)
+        
+        # Jika ada drive service, pindahkan ke folder yang tepat
+        if drive:
+            try:
+                folder_structure = create_folder_structure(drive, job_position)
+                if folder_structure and folder_structure.get('screening_folder_id'):
+                    # Pindahkan spreadsheet ke folder screening
+                    file = drive.files().get(fileId=spreadsheet.id, fields='parents').execute()
+                    previous_parents = ",".join(file.get('parents'))
+                    
+                    drive.files().update(
+                        fileId=spreadsheet.id,
+                        addParents=folder_structure['screening_folder_id'],
+                        removeParents=previous_parents,
+                        fields='id, parents'
+                    ).execute()
+                    print(f"Spreadsheet dipindahkan ke folder screening")
+            except Exception as move_error:
+                print(f"Warning: Could not move spreadsheet to folder: {move_error}")
+        
+        # Tambahkan header
+        sheet = spreadsheet.sheet1
+        headers = [
+            'Waktu', 'Drive Link', 'Nama', 'Email', 'Nomor Telepon',
+            'Pendidikan Terakhir', 'Kekuatan', 'Kekurangan', 
+            'Risk Factor', 'Reward Factor', 'Overall Fit', 'Justifikasi', 'CV_Hash'
+        ]
+        sheet.append_row(headers)
+        
+        print(f"Spreadsheet '{spreadsheet_name}' berhasil dibuat!")
+        return spreadsheet
+        
+    except Exception as e:
+        print(f"Error creating spreadsheet: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to create spreadsheet: {str(e)}")
+
+
+folder_cache = {}
+
+def create_folder_structure(drive, job_position: str):
+    """Membuat struktur folder dan return folder IDs dengan caching"""
+    global folder_cache
+    
+    # Buat cache key berdasarkan nama posisi
+    cache_key = f"screening_{job_position}"
+    
+    # Jika sudah ada di cache, return langsung
+    if cache_key in folder_cache:
+        return folder_cache[cache_key]
+    
+    try:
+        # Nama folder utama
+        main_folder_name = "AI Resume Screening"
+        screening_folder_name = f"Screening - {job_position}"
+        cv_folder_name = "CV"
+        
+        # 1. Cek/buat folder utama "AI Resume Screening"
+        main_folder_id = find_or_create_folder(drive, main_folder_name)
+        
+        # 2. Cek/buat folder screening di dalam folder utama
+        screening_folder_id = find_or_create_folder(drive, screening_folder_name, main_folder_id)
+        
+        # 3. Cek/buat folder CV di dalam folder screening
+        cv_folder_id = find_or_create_folder(drive, cv_folder_name, screening_folder_id)
+        
+        # Simpan di cache
+        folder_structure = {
+            'main_folder_id': main_folder_id,
+            'screening_folder_id': screening_folder_id,
+            'cv_folder_id': cv_folder_id
+        }
+        folder_cache[cache_key] = folder_structure
+        
+        return folder_structure
+        
+    except Exception as e:
+        print(f"Error creating folder structure: {e}")
+        # Return None jika gagal, upload akan dilakukan ke root
+        return None
+
+def find_or_create_folder(drive, folder_name: str, parent_folder_id: str = None):
+    """Cari folder, jika tidak ada buat baru"""
     try:
         # Query untuk mencari folder
         query = f"name='{folder_name}' and mimeType='application/vnd.google-apps.folder' and trashed=false"
         if parent_folder_id:
             query += f" and '{parent_folder_id}' in parents"
         
-        # Cari folder yang sudah ada
-        results = drive.files().list(q=query, fields="files(id, name)").execute()
+        results = drive.files().list(
+            q=query,
+            spaces='drive',
+            fields='files(id, name)'
+        ).execute()
+        
         folders = results.get('files', [])
         
         if folders:
-            print(f"Folder '{folder_name}' ditemukan")
+            # Folder sudah ada, return ID
             return folders[0]['id']
         else:
-            # Buat folder baru
+            # Folder tidak ada, buat baru
             folder_metadata = {
                 'name': folder_name,
                 'mimeType': 'application/vnd.google-apps.folder'
             }
+            
             if parent_folder_id:
                 folder_metadata['parents'] = [parent_folder_id]
             
-            folder = drive.files().create(body=folder_metadata, fields='id').execute()
-            print(f"Folder '{folder_name}' berhasil dibuat")
+            folder = drive.files().create(
+                body=folder_metadata,
+                fields='id'
+            ).execute()
+            
             return folder.get('id')
             
     except Exception as e:
-        print(f"Error creating/getting folder: {e}")
+        print(f"Error in find_or_create_folder: {e}")
         return None
-
-# Perbaikan fungsi upload_to_drive
-def upload_to_drive(drive, file_data, filename):
-    """Upload file ke Google Drive dalam folder CV dan return link"""
+    
+def upload_to_drive(drive, file_data, filename, job_position: str):
+    """Upload file ke Google Drive dalam struktur folder yang terorganisir"""
     try:
-        # Dapatkan atau buat folder CV
-        cv_folder_id = get_or_create_folder(drive, "CV")
-        if not cv_folder_id:
-            print("Gagal membuat/mendapatkan folder CV, upload ke root directory")
-            cv_folder_id = None
+        # Buat/dapatkan struktur folder
+        folder_structure = create_folder_structure(drive, job_position)
         
-        # Buat file metadata
+        # Tentukan parent folder (CV folder atau root jika gagal)
+        parent_folder_id = None
+        if folder_structure and folder_structure.get('cv_folder_id'):
+            parent_folder_id = folder_structure['cv_folder_id']
+        
+        # Buat file metadata dengan timestamp untuk mencegah duplikasi
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        clean_filename = "".join(c for c in filename if c.isalnum() or c in (' ', '-', '_', '.')).strip()
+        final_filename = f"CV_{timestamp}_{clean_filename}"
+        
         file_metadata = {
-            'name': f"CV_{filename}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+            'name': final_filename
         }
         
-        # Set parent folder jika berhasil dibuat
-        if cv_folder_id:
-            file_metadata['parents'] = [cv_folder_id]
+        if parent_folder_id:
+            file_metadata['parents'] = [parent_folder_id]
         
-        # Upload file
+        # Upload file dengan timeout yang lebih pendek
         media = io.BytesIO(file_data)
-        
-        # Import googleapiclient.http
         from googleapiclient.http import MediaIoBaseUpload
         media_upload = MediaIoBaseUpload(media, mimetype='application/pdf')
         
@@ -230,11 +335,14 @@ def upload_to_drive(drive, file_data, filename):
         
         file_id = file.get('id')
         
-        # Set file permission menjadi readable
-        drive.permissions().create(
-            fileId=file_id,
-            body={'role': 'reader', 'type': 'anyone'}
-        ).execute()
+        # Set file permission dengan batch request untuk efisiensi
+        try:
+            drive.permissions().create(
+                fileId=file_id,
+                body={'role': 'reader', 'type': 'anyone'}
+            ).execute()
+        except Exception as perm_error:
+            print(f"Warning: Could not set permissions for {filename}: {perm_error}")
         
         # Return Google Drive link
         drive_link = f"https://drive.google.com/file/d/{file_id}/view"
@@ -242,56 +350,7 @@ def upload_to_drive(drive, file_data, filename):
         
     except Exception as e:
         print(f"Error uploading to Drive: {e}")
-        return None
-
-# Perbaikan fungsi ensure_spreadsheet_exists
-def ensure_spreadsheet_exists(gc, drive, spreadsheet_name: str):
-    """Pastikan spreadsheet ada dalam folder Spreadsheet, jika tidak buat baru"""
-    try:
-        # Coba buka spreadsheet yang sudah ada
-        spreadsheet = gc.open(spreadsheet_name)
-        print(f"Spreadsheet '{spreadsheet_name}' ditemukan")
-        return spreadsheet
-    except gspread.exceptions.SpreadsheetNotFound:
-        print(f"Spreadsheet '{spreadsheet_name}' tidak ditemukan, membuat yang baru...")
-        try:
-            # Dapatkan atau buat folder Spreadsheet
-            spreadsheet_folder_id = get_or_create_folder(drive, "Spreadsheet")
-            
-            # Buat spreadsheet baru
-            spreadsheet = gc.create(spreadsheet_name)
-            
-            # Pindahkan spreadsheet ke folder jika berhasil dibuat
-            if spreadsheet_folder_id:
-                try:
-                    # Dapatkan file spreadsheet
-                    file_id = spreadsheet.id
-                    
-                    # Pindahkan ke folder
-                    drive.files().update(
-                        fileId=file_id,
-                        addParents=spreadsheet_folder_id,
-                        fields='id, parents'
-                    ).execute()
-                    print(f"Spreadsheet dipindahkan ke folder 'Spreadsheet'")
-                except Exception as e:
-                    print(f"Gagal memindahkan spreadsheet ke folder: {e}")
-            
-            sheet = spreadsheet.sheet1
-            
-            # Tambahkan header
-            headers = [
-                'Waktu', 'Drive Link', 'Nama', 'Email', 'Nomor Telepon',
-                'Pendidikan Terakhir', 'Kekuatan', 'Kekurangan', 
-                'Risk Factor', 'Reward Factor', 'Overall Fit', 'Justifikasi', 'CV_Hash'
-            ]
-            sheet.append_row(headers)
-            
-            print(f"Spreadsheet '{spreadsheet_name}' berhasil dibuat!")
-            return spreadsheet
-        except Exception as e:
-            print(f"Error creating spreadsheet: {e}")
-            raise HTTPException(status_code=500, detail=f"Failed to create spreadsheet: {str(e)}")
+        return f"Upload gagal: {filename}"
 
 def extract_text_from_pdf_bytes(pdf_bytes: bytes) -> str:
     text = ""
@@ -652,34 +711,34 @@ async def start_screening(request: Request):
         raise HTTPException(status_code=400, detail="Deskripsi pekerjaan belum di-upload.")
     
     if not job_position_name:
-        raise HTTPException(status_code=400, detail="Nama posisi pekerjaan belum diset. Gunakan endpoint /api/set-screening-config terlebih dahulu.")
+        raise HTTPException(status_code=400, detail="Nama posisi pekerjaan belum diset.")
     
     if not email_subjects:
-        raise HTTPException(status_code=400, detail="Subjek email belum diset. Gunakan endpoint /api/set-screening-config terlebih dahulu.")
+        raise HTTPException(status_code=400, detail="Subjek email belum diset.")
     
     try:
         gmail, drive, gc, refreshed_creds = get_google_services(request=request)
         
         # Generate nama spreadsheet berdasarkan posisi pekerjaan
         spreadsheet_name = generate_spreadsheet_name(job_position_name)
-        # PERBAIKAN: Tambahkan parameter drive
-        spreadsheet = ensure_spreadsheet_exists(gc, drive, spreadsheet_name)
+        spreadsheet = ensure_spreadsheet_exists(gc, spreadsheet_name, job_position_name, drive)
         sheet = spreadsheet.sheet1
         
-        # Pastikan headers termasuk CV_Hash ada
+        # Pastikan headers ada
         ensure_headers_exist(sheet)
         
-        # Dapatkan hash CV yang sudah ada
+        # Dapatkan hash CV yang sudah ada (batch request untuk efisiensi)
         existing_hashes = get_existing_hashes(sheet)
         
-        # Build query berdasarkan subjek email yang diinput
+        # Build query Gmail
         gmail_query = build_gmail_query(email_subjects)
         print(f"Gmail query: {gmail_query}")
         
-        # Query Gmail untuk email dengan resume
+        # Query Gmail dengan limit yang lebih kecil untuk menghindari timeout
         results = gmail.users().messages().list(
             userId='me', 
-            q=gmail_query
+            q=gmail_query,
+            maxResults=20  # Kurangi dari 50 ke 20 untuk menghindari timeout
         ).execute()
         
         messages = results.get('messages', [])
@@ -694,106 +753,164 @@ async def start_screening(request: Request):
         processed_results = []
         processed_count = 0
         skipped_count = 0
+        error_count = 0
         
-        for message in messages[:50]:  # Proses maksimal 50 email untuk menghindari timeout
-            try:
-                msg = gmail.users().messages().get(userId='me', id=message['id']).execute()
-                
-                # Periksa apakah email memiliki attachments
-                payload = msg['payload']
-                parts = payload.get('parts', [])
-                if not parts:
+        # Batch processing untuk efisiensi
+        batch_size = 5  # Proses 5 email dalam satu batch
+        
+        for i in range(0, min(len(messages), 20), batch_size):  # Maksimal 20 email
+            batch_messages = messages[i:i+batch_size]
+            batch_results = []
+            
+            for message in batch_messages:
+                try:
+                    # Gunakan format minimal untuk mengurangi data transfer
+                    msg = gmail.users().messages().get(
+                        userId='me', 
+                        id=message['id'],
+                        format='full'  # Bisa diganti ke 'metadata' jika tidak butuh body lengkap
+                    ).execute()
+                    
+                    # Periksa attachments
+                    payload = msg['payload']
+                    parts = payload.get('parts', [])
+                    if not parts:
+                        continue
+                    
+                    for part in parts:
+                        filename = part.get('filename', '')
+                        if filename and filename.lower().endswith('.pdf'):
+                            try:
+                                # Get attachment dengan size limit
+                                attachment_id = part['body']['attachmentId']
+                                
+                                # Skip file yang terlalu besar (>5MB)
+                                if part['body'].get('size', 0) > 5 * 1024 * 1024:
+                                    print(f"File {filename} terlalu besar, skip.")
+                                    continue
+                                
+                                attachment = gmail.users().messages().attachments().get(
+                                    userId='me', 
+                                    messageId=message['id'], 
+                                    id=attachment_id
+                                ).execute()
+                                
+                                file_data = base64.urlsafe_b64decode(attachment['data'].encode('UTF-8'))
+                                resume_text = extract_text_from_pdf_bytes(file_data)
+                                
+                                if not resume_text:
+                                    print(f"Gagal ekstrak teks dari {filename}")
+                                    error_count += 1
+                                    continue
+                                
+                                # Buat hash untuk deteksi duplikasi
+                                cv_hash = create_cv_hash(filename, resume_text)
+                                
+                                if cv_hash in existing_hashes:
+                                    print(f"CV {filename} sudah pernah diproses, skip.")
+                                    skipped_count += 1
+                                    continue
+                                
+                                # Upload ke Drive dengan folder structure
+                                drive_link = upload_to_drive(drive, file_data, filename, job_position_name)
+                                
+                                # Analisis dengan Gemini (dengan timeout handling)
+                                analysis_result = analyze_with_gemini(job_description_text, resume_text)
+                                if not analysis_result:
+                                    print(f"Gagal analisis {filename}")
+                                    error_count += 1
+                                    continue
+                                
+                                # Siapkan data untuk batch insert
+                                current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                                row_data = {
+                                    'time': current_time,
+                                    'drive_link': drive_link,
+                                    'analysis': analysis_result,
+                                    'cv_hash': cv_hash,
+                                    'filename': filename
+                                }
+                                
+                                batch_results.append(row_data)
+                                existing_hashes.add(cv_hash)
+                                
+                            except Exception as e:
+                                print(f"Error processing attachment {filename}: {e}")
+                                error_count += 1
+                                continue
+                                
+                except Exception as e:
+                    print(f"Error processing message {message['id']}: {e}")
+                    error_count += 1
                     continue
+            
+            # Batch insert ke spreadsheet
+            if batch_results:
+                try:
+                    rows_to_insert = []
+                    for row_data in batch_results:
+                        analysis = row_data['analysis']
+                        row = [
+                            row_data['time'],
+                            row_data['drive_link'],
+                            analysis.get('nama', 'Tidak tercantum'),
+                            analysis.get('email', 'Tidak tercantum'),
+                            analysis.get('nomor_telepon', 'Tidak tercantum'),
+                            analysis.get('pendidikan_terakhir', 'Tidak tercantum'),
+                            analysis.get('kekuatan', 'Tidak dapat dianalisis'),
+                            analysis.get('kekurangan', 'Tidak dapat dianalisis'),
+                            analysis.get('risk_factor', 'Tidak dapat dianalisis'),
+                            analysis.get('reward_factor', 'Tidak dapat dianalisis'),
+                            analysis.get('overall_fit', 0),
+                            analysis.get('justifikasi', 'Tidak dapat dianalisis'),
+                            row_data['cv_hash']
+                        ]
+                        rows_to_insert.append(row)
+                        
+                        # Siapkan hasil untuk response
+                        processed_results.append({
+                            "Waktu": row_data['time'],
+                            "Drive Link": row_data['drive_link'],
+                            "Nama": analysis.get('nama', 'Tidak tercantum'),
+                            "Email": analysis.get('email', 'Tidak tercantum'),
+                            "Nomor Telepon": analysis.get('nomor_telepon', 'Tidak tercantum'),
+                            "Pendidikan Terakhir": analysis.get('pendidikan_terakhir', 'Tidak tercantum'),
+                            "Kekuatan": analysis.get('kekuatan', 'Tidak dapat dianalisis'),
+                            "Kekurangan": analysis.get('kekurangan', 'Tidak dapat dianalisis'),
+                            "Risk Factor": analysis.get('risk_factor', 'Tidak dapat dianalisis'),
+                            "Reward Factor": analysis.get('reward_factor', 'Tidak dapat dianalisis'),
+                            "Overall Fit": analysis.get('overall_fit', 0),
+                            "Justifikasi": analysis.get('justifikasi', 'Tidak dapat dianalisis')
+                        })
+                    
+                    # Insert semua rows sekaligus (batch insert)
+                    if rows_to_insert:
+                        sheet.append_rows(rows_to_insert)
+                        processed_count += len(rows_to_insert)
+                        print(f"Batch insert {len(rows_to_insert)} records berhasil")
                 
-                for part in parts:
-                    filename = part.get('filename', '')
-                    if filename and filename.lower().endswith('.pdf'):
-                        try:
-                            attachment_id = part['body']['attachmentId']
-                            attachment = gmail.users().messages().attachments().get(
-                                userId='me', 
-                                messageId=message['id'], 
-                                id=attachment_id
-                            ).execute()
-                            
-                            file_data = base64.urlsafe_b64decode(attachment['data'].encode('UTF-8'))
-                            resume_text = extract_text_from_pdf_bytes(file_data)
-                            
-                            if not resume_text:
-                                print(f"Gagal ekstrak teks dari {filename}")
-                                continue
-                            
-                            # Buat hash untuk CV ini
-                            cv_hash = create_cv_hash(filename, resume_text)
-                            
-                            # Periksa apakah CV sudah pernah diproses
-                            if cv_hash in existing_hashes:
-                                print(f"CV {filename} sudah pernah diproses, skip.")
-                                skipped_count += 1
-                                continue
-                            
-                            # Upload ke Google Drive (sudah otomatis masuk folder CV)
-                            drive_link = upload_to_drive(drive, file_data, filename)
-                            if not drive_link:
-                                drive_link = "Gagal upload ke Drive"
-                            
-                            analysis_result = analyze_with_gemini(job_description_text, resume_text)
-                            if not analysis_result:
-                                print(f"Gagal analisis {filename}")
-                                continue
-                            
-                            current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                            row_to_insert = [
-                                current_time,
-                                drive_link,
-                                analysis_result.get('nama', 'Tidak tercantum'),
-                                analysis_result.get('email', 'Tidak tercantum'),
-                                analysis_result.get('nomor_telepon', 'Tidak tercantum'),
-                                analysis_result.get('pendidikan_terakhir', 'Tidak tercantum'),
-                                analysis_result.get('kekuatan', 'Tidak dapat dianalisis'),
-                                analysis_result.get('kekurangan', 'Tidak dapat dianalisis'),
-                                analysis_result.get('risk_factor', 'Tidak dapat dianalisis'),
-                                analysis_result.get('reward_factor', 'Tidak dapat dianalisis'),
-                                analysis_result.get('overall_fit', 0),
-                                analysis_result.get('justifikasi', 'Tidak dapat dianalisis'),
-                                cv_hash  # Tambahkan hash sebagai kolom terakhir
-                            ]
-                            
-                            sheet.append_row(row_to_insert)
-                            existing_hashes.add(cv_hash)  # Tambahkan ke set agar tidak diproses lagi dalam sesi ini
-                            
-                            processed_results.append({
-                                "Waktu": current_time,
-                                "Drive Link": drive_link,
-                                "Nama": analysis_result.get('nama', 'Tidak tercantum'),
-                                "Email": analysis_result.get('email', 'Tidak tercantum'),
-                                "Nomor Telepon": analysis_result.get('nomor_telepon', 'Tidak tercantum'),
-                                "Pendidikan Terakhir": analysis_result.get('pendidikan_terakhir', 'Tidak tercantum'),
-                                "Kekuatan": analysis_result.get('kekuatan', 'Tidak dapat dianalisis'),
-                                "Kekurangan": analysis_result.get('kekurangan', 'Tidak dapat dianalisis'),
-                                "Risk Factor": analysis_result.get('risk_factor', 'Tidak dapat dianalisis'),
-                                "Reward Factor": analysis_result.get('reward_factor', 'Tidak dapat dianalisis'),
-                                "Overall Fit": analysis_result.get('overall_fit', 0),
-                                "Justifikasi": analysis_result.get('justifikasi', 'Tidak dapat dianalisis')
-                            })
-                            processed_count += 1
-                            print(f"Berhasil proses: {filename}")
-                            
-                        except Exception as e:
-                            print(f"Error processing attachment {filename}: {e}")
-                            continue
-                            
-            except Exception as e:
-                print(f"Error processing message {message['id']}: {e}")
-                continue
+                except Exception as e:
+                    print(f"Error batch inserting to spreadsheet: {e}")
+                    error_count += len(batch_results)
 
-        message = f"{processed_count} resume baru berhasil diproses, {skipped_count} resume sudah ada sebelumnya dari {len(messages)} email."
+        # Buat pesan hasil
+        message_parts = []
+        if processed_count > 0:
+            message_parts.append(f"{processed_count} resume baru berhasil diproses")
+        if skipped_count > 0:
+            message_parts.append(f"{skipped_count} resume sudah ada sebelumnya")
+        if error_count > 0:
+            message_parts.append(f"{error_count} resume gagal diproses")
+        
+        message_parts.append(f"dari {len(messages)} email ditemukan")
+        final_message = ", ".join(message_parts) + "."
         
         return JSONResponse(content={
-            "message": message, 
+            "message": final_message, 
             "results": processed_results,
             "processed_count": processed_count,
             "skipped_count": skipped_count,
+            "error_count": error_count,
             "total_emails": len(messages),
             "spreadsheet_name": spreadsheet_name,
             "gmail_query_used": gmail_query
@@ -802,16 +919,15 @@ async def start_screening(request: Request):
     except HTTPException as e:
         raise e
     except Exception as e:
-        print(f"Terjadi error tak terduga di start_screening: {e}")
+        print(f"Error dalam start_screening: {e}")
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
-# Perbaikan untuk endpoint get_results
 @app.get("/api/get-results")
 async def get_results(request: Request):
     global job_position_name
     
     try:
-        _, drive, gc, _ = get_google_services(request=request)  # Tambahkan drive
+        _, _, gc, _ = get_google_services(request=request)
         
         # Jika tidak ada nama posisi yang diset, gunakan spreadsheet default
         if not job_position_name:
@@ -819,8 +935,7 @@ async def get_results(request: Request):
         else:
             spreadsheet_name = generate_spreadsheet_name(job_position_name)
         
-        # PERBAIKAN: Tambahkan parameter drive
-        spreadsheet = ensure_spreadsheet_exists(gc, drive, spreadsheet_name)
+        spreadsheet = ensure_spreadsheet_exists(gc, spreadsheet_name)
         sheet = spreadsheet.sheet1
         
         # Ambil semua data
@@ -843,20 +958,21 @@ async def get_results(request: Request):
         print(f"Error in get_results: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to fetch results: {str(e)}")
 
+# Di file backend FastAPI Anda (main.py)
+
 @app.delete("/api/clear-results")
 async def clear_results(request: Request):
     global job_position_name
     
     try:
-        _, drive, gc, _ = get_google_services(request=request)  # Tambahkan drive
+        _, _, gc, _ = get_google_services(request=request)
         
         if not job_position_name:
             spreadsheet_name = "Analisis Resume AI"
         else:
             spreadsheet_name = generate_spreadsheet_name(job_position_name)
             
-        # PERBAIKAN: Tambahkan parameter drive
-        spreadsheet = ensure_spreadsheet_exists(gc, drive, spreadsheet_name)
+        spreadsheet = ensure_spreadsheet_exists(gc, spreadsheet_name)
         sheet = spreadsheet.sheet1
         
         # --- PERBAIKAN: Kosongkan isi cell, bukan hapus baris ---
@@ -881,46 +997,25 @@ async def clear_results(request: Request):
         print(f"Error in clear_results: {e}")
         raise HTTPException(status_code=500, detail=f"Gagal menghapus data: {str(e)}")
 
-# Perbaikan untuk endpoint list_spreadsheets
+
 @app.get("/api/list-spreadsheets")
 async def list_spreadsheets(request: Request):
     """Menampilkan daftar spreadsheet yang ada"""
     try:
-        _, drive, gc, _ = get_google_services(request=request)  # Tambahkan drive untuk konsistensi
+        _, _, gc, _ = get_google_services(request=request)
         
         # Cari semua spreadsheet yang dimulai dengan "Analisis Resume AI"
         all_spreadsheets = []
         try:
-            # Cari dalam folder Spreadsheet jika ada
-            spreadsheet_folder_id = get_or_create_folder(drive, "Spreadsheet")
-            
-            # Query untuk mencari file spreadsheet dalam folder
-            if spreadsheet_folder_id:
-                query = f"name contains 'Analisis Resume AI' and mimeType='application/vnd.google-apps.spreadsheet' and '{spreadsheet_folder_id}' in parents and trashed=false"
-                results = drive.files().list(q=query, fields="files(id, name)").execute()
-                files = results.get('files', [])
-                
-                for file_info in files:
-                    all_spreadsheets.append({
-                        'name': file_info.get('name', ''),
-                        'id': file_info.get('id', ''),
-                        'url': f"https://docs.google.com/spreadsheets/d/{file_info.get('id', '')}/edit"
-                    })
-            
-            # Juga cari di root untuk backward compatibility
             spreadsheet_list = gc.list_spreadsheet_files()
             for spreadsheet_info in spreadsheet_list:
                 name = spreadsheet_info.get('name', '')
-                spreadsheet_id = spreadsheet_info.get('id', '')
-                
-                # Avoid duplicates
-                if name.startswith('Analisis Resume AI') and not any(s['id'] == spreadsheet_id for s in all_spreadsheets):
+                if name.startswith('Analisis Resume AI'):
                     all_spreadsheets.append({
                         'name': name,
-                        'id': spreadsheet_id,
-                        'url': f"https://docs.google.com/spreadsheets/d/{spreadsheet_id}/edit"
+                        'id': spreadsheet_info.get('id', ''),
+                        'url': f"https://docs.google.com/spreadsheets/d/{spreadsheet_info.get('id', '')}/edit"
                     })
-                    
         except Exception as e:
             print(f"Error listing spreadsheets: {e}")
         
@@ -932,46 +1027,6 @@ async def list_spreadsheets(request: Request):
     except Exception as e:
         print(f"Error in list_spreadsheets: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to list spreadsheets: {str(e)}")
-
-# Tambahkan endpoint baru untuk melihat struktur folder
-@app.get("/api/folder-info")
-async def get_folder_info(request: Request):
-    """Mendapatkan informasi folder CV dan Spreadsheet"""
-    try:
-        _, drive, gc, _ = get_google_services(request=request)
-        
-        # Cek folder CV
-        cv_folder_id = get_or_create_folder(drive, "CV")
-        cv_files_count = 0
-        if cv_folder_id:
-            query = f"'{cv_folder_id}' in parents and trashed=false"
-            results = drive.files().list(q=query, fields="files(id, name)").execute()
-            cv_files_count = len(results.get('files', []))
-        
-        # Cek folder Spreadsheet
-        spreadsheet_folder_id = get_or_create_folder(drive, "Spreadsheet")
-        spreadsheet_files_count = 0
-        if spreadsheet_folder_id:
-            query = f"'{spreadsheet_folder_id}' in parents and trashed=false"
-            results = drive.files().list(q=query, fields="files(id, name)").execute()
-            spreadsheet_files_count = len(results.get('files', []))
-        
-        return JSONResponse(content={
-            "cv_folder": {
-                "exists": bool(cv_folder_id),
-                "files_count": cv_files_count,
-                "folder_id": cv_folder_id
-            },
-            "spreadsheet_folder": {
-                "exists": bool(spreadsheet_folder_id),
-                "files_count": spreadsheet_files_count,
-                "folder_id": spreadsheet_folder_id
-            }
-        })
-        
-    except Exception as e:
-        print(f"Error in folder_info: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to get folder info: {str(e)}")
 
 @app.get("/api/health")
 def health_check():
