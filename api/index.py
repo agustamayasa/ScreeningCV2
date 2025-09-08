@@ -935,8 +935,10 @@ async def get_results(request: Request):
         # Jika tidak ada nama posisi yang diset, gunakan spreadsheet default
         if not job_position_name:
             spreadsheet_name = "Analisis Resume AI"
+            spreadsheet = ensure_spreadsheet_exists_fallback(gc, spreadsheet_name)
         else:
             spreadsheet_name = generate_spreadsheet_name(job_position_name)
+            spreadsheet = ensure_spreadsheet_exists(gc, spreadsheet_name, job_position_name, drive)
         
         spreadsheet = ensure_spreadsheet_exists(gc, spreadsheet_name)
         sheet = spreadsheet.sheet1
