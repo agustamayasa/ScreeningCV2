@@ -529,6 +529,17 @@ def build_gmail_query(email_subjects: List[str]) -> str:
     query = ' OR '.join(subject_queries) + ' has:attachment filename:pdf'
     return query
 
+def get_spreadsheet_safe(gc, spreadsheet_name: str):
+    """
+    Fungsi helper untuk mendapatkan spreadsheet yang sudah ada tanpa membuat baru
+    Digunakan untuk operasi read-only
+    """
+    try:
+        spreadsheet = gc.open(spreadsheet_name)
+        return spreadsheet
+    except gspread.exceptions.SpreadsheetNotFound:
+        return None
+    
 def check_spreadsheet_exists(gc, spreadsheet_name: str) -> bool:
     """Periksa apakah spreadsheet dengan nama tertentu sudah ada"""
     try:
@@ -893,15 +904,18 @@ async def get_results(request: Request):
     global job_position_name
     
     try:
-        _, _, gc, _ = get_google_services(request=request)
+        gmail, drive, gc, _ = get_google_services(request=request)
         
-        # Jika tidak ada nama posisi yang diset, gunakan spreadsheet default
+        # Jika tidak ada nama posisi yang diset, gunakan default
         if not job_position_name:
             spreadsheet_name = "Analisis Resume AI"
+            position_for_folder = "General"  # Default position untuk folder
         else:
             spreadsheet_name = generate_spreadsheet_name(job_position_name)
+            position_for_folder = job_position_name
         
-        spreadsheet = ensure_spreadsheet_exists(gc, spreadsheet_name)
+        # Panggil ensure_spreadsheet_exists dengan parameter lengkap
+        spreadsheet = ensure_spreadsheet_exists(gc, drive, spreadsheet_name, position_for_folder)
         sheet = spreadsheet.sheet1
         
         # Ambil semua data
@@ -924,24 +938,29 @@ async def get_results(request: Request):
         print(f"Error in get_results: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to fetch results: {str(e)}")
 
-# Di file backend FastAPI Anda (main.py)
+# ==============================================================================
+# MODIFIKASI ENDPOINT /api/clear-results
+# ==============================================================================
 
 @app.delete("/api/clear-results")
 async def clear_results(request: Request):
     global job_position_name
     
     try:
-        _, _, gc, _ = get_google_services(request=request)
+        gmail, drive, gc, _ = get_google_services(request=request)
         
         if not job_position_name:
             spreadsheet_name = "Analisis Resume AI"
+            position_for_folder = "General"
         else:
             spreadsheet_name = generate_spreadsheet_name(job_position_name)
+            position_for_folder = job_position_name
             
-        spreadsheet = ensure_spreadsheet_exists(gc, spreadsheet_name)
+        # Panggil ensure_spreadsheet_exists dengan parameter lengkap
+        spreadsheet = ensure_spreadsheet_exists(gc, drive, spreadsheet_name, position_for_folder)
         sheet = spreadsheet.sheet1
         
-        # --- PERBAIKAN: Kosongkan isi cell, bukan hapus baris ---
+        # Kosongkan isi cell, bukan hapus baris
         row_count = sheet.row_count
         col_count = sheet.col_count
 
