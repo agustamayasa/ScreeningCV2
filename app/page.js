@@ -1927,21 +1927,37 @@ export default function Home() {
                                 Array.isArray(selectedCandidate.Kekuatan) ? (
                                   <ol className="list-decimal list-inside space-y-1 text-sm text-gray-800 leading-relaxed">
                                     {selectedCandidate.Kekuatan.map(
-                                      (strength, index) => (
-                                        <li key={index}>
-                                          {strength.replace(/^\d+\.\s*/, "")}
+                                      (item, idx) => (
+                                        <li key={idx}>
+                                          {item.replace(/^\d+\.\s*/, "").trim()}
                                         </li>
                                       )
                                     )}
                                   </ol>
                                 ) : (
                                   <ol className="list-decimal list-inside space-y-1 text-sm text-gray-800 leading-relaxed">
-                                    {selectedCandidate.Kekuatan.split(
-                                      /\r?\n|\d+\.\s*/
-                                    )
-                                      .filter((item) => item.trim() !== "")
-                                      .map((strength, index) => (
-                                        <li key={index}>{strength.trim()}</li>
+                                    {selectedCandidate.Kekuatan
+                                      // Pecah hanya berdasarkan baris baru, buang baris kosong
+                                      .split(/\r?\n+/)
+                                      .map((line) =>
+                                        line.replace(/^\d+\.\s*/, "").trim()
+                                      ) // Hapus nomor di awal baris
+                                      .filter((line) => line.length > 0) // Buang baris kosong
+                                      // Gabungkan potongan pendek yang tampaknya kelanjutan baris sebelumnya
+                                      .reduce((acc, line) => {
+                                        if (
+                                          acc.length &&
+                                          line.match(/^[\d./]+$/)
+                                        ) {
+                                          // Jika baris hanya angka atau pecahan seperti "97/", gabungkan ke baris sebelumnya
+                                          acc[acc.length - 1] += " " + line;
+                                        } else {
+                                          acc.push(line);
+                                        }
+                                        return acc;
+                                      }, [])
+                                      .map((strength, idx) => (
+                                        <li key={idx}>{strength}</li>
                                       ))}
                                   </ol>
                                 )
