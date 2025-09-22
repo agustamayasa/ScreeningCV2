@@ -384,6 +384,8 @@ def analyze_with_gemini(job_desc: str, resume_text: str) -> dict:
         model = genai.GenerativeModel('gemini-2.5-flash')
         prompt = f"""
         Sebagai seorang HR Specialist yang berpengalaman, analisis resume pelamar berikut dengan detail dan objektif berdasarkan deskripsi pekerjaan yang diberikan.
+        Berikan output HANYA dalam format JSON yang valid. Untuk field 'kekuatan', 'kekurangan', 'risk_factor', dan 'reward_factor', kembalikan nilainya sebagai SEBUAH LIST OF STRINGS.
+
 
         INSTRUKSI ANALISIS:
         1. Baca resume dengan teliti dan ekstrak informasi penting
@@ -397,10 +399,10 @@ def analyze_with_gemini(job_desc: str, resume_text: str) -> dict:
             "email": "Email pelamar jika tersedia, jika tidak ada tulis 'Tidak tercantum'",
             "nomor_telepon": "Nomor telepon jika tersedia, jika tidak ada tulis 'Tidak tercantum', Gunakan format contoh +6289836718275",
             "pendidikan_terakhir": "Jenjang dan jurusan pendidikan terakhir (Rubah Seluruhnya Gunakan bahasa indonesia dengan Format contoh: S1 Informatika)",
-            "kekuatan": "3-4 kekuatan utama kandidat yang relevan dengan posisi (maksimal 200 kata)",
-            "kekurangan": "Area yang perlu ditingkatkan atau gap yang ditemukan (maksimal 150 kata)",
-            "risk_factor": "Potensi risiko dalam merekrut kandidat ini (maksimal 150 kata)",
-            "reward_factor": "Potensi manfaat dan value yang akan dibawa kandidat (maksimal 150 kata)",
+            "kekuatan": ["Kekuatan pertama.", "Kekuatan kedua."], "3-4 kekuatan utama kandidat yang relevan dengan posisi (maksimal 200 kata)",
+            "kekurangan": ["Kekurangan pertama.", "Kekurangan kedua."], "Area yang perlu ditingkatkan atau gap yang ditemukan (maksimal 150 kata)",
+            "risk_factor": ["Faktor risiko pertama."], "Potensi risiko dalam merekrut kandidat ini (maksimal 150 kata)",
+            "reward_factor": ["Faktor keuntungan pertama."], "Potensi manfaat dan value yang akan dibawa kandidat (maksimal 150 kata)",
             "overall_fit": 85,
             "justifikasi": "Penjelasan detail mengapa memberikan score tersebut (maksimal 200 kata)"
         }}
@@ -555,6 +557,14 @@ def get_spreadsheet_url(gc, spreadsheet_name: str) -> str:
         return f"https://docs.google.com/spreadsheets/d/{spreadsheet.id}/edit"
     except gspread.exceptions.SpreadsheetNotFound:
         return ""
+    
+def format_list_to_string(data_list):
+    """Mengubah list menjadi string bernomor (1. ..., 2. ...)."""
+    if not isinstance(data_list, list) or not data_list:
+        return "Tidak ada data."
+    
+    # Membuat string dengan format "1. item\n2. item\n..."
+    return "\n".join(f"{i+1}. {item}" for i, item in enumerate(data_list))
 # ==============================================================================
 # ENDPOINTS API
 # ==============================================================================
@@ -834,7 +844,12 @@ async def start_screening(request: Request):
                             if not analysis_result:
                                 print(f"Gagal analisis {filename}")
                                 continue
-                            
+
+                            kekuatan_data = analysis_result.get('kekuatan', [])
+                            kekurangan_data = analysis_result.get('kekurangan', [])
+                            risk_factor_data = analysis_result.get('risk_factor', [])
+                            reward_factor_data = analysis_result.get('reward_factor', [])
+
                             current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                             row_to_insert = [
                                 current_time,
@@ -843,10 +858,10 @@ async def start_screening(request: Request):
                                 analysis_result.get('email', 'Tidak tercantum'),
                                 analysis_result.get('nomor_telepon', 'Tidak tercantum'),
                                 analysis_result.get('pendidikan_terakhir', 'Tidak tercantum'),
-                                analysis_result.get('kekuatan', 'Tidak dapat dianalisis'),
-                                analysis_result.get('kekurangan', 'Tidak dapat dianalisis'),
-                                analysis_result.get('risk_factor', 'Tidak dapat dianalisis'),
-                                analysis_result.get('reward_factor', 'Tidak dapat dianalisis'),
+                                format_list_to_string(kekuatan_data),
+                                format_list_to_string(kekurangan_data),
+                                format_list_to_string(risk_factor_data),
+                                format_list_to_string(reward_factor_data),
                                 analysis_result.get('overall_fit', 0),
                                 analysis_result.get('justifikasi', 'Tidak dapat dianalisis'),
                                 cv_hash
