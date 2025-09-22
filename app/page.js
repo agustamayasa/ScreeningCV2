@@ -1,56 +1,59 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import axios from 'axios';
+import { useState, useEffect } from "react";
+import axios from "axios";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export default function Home() {
   const [selectedFile, setSelectedFile] = useState(null);
-  const [uploadStatus, setUploadStatus] = useState('');
-  const [screeningStatus, setScreeningStatus] = useState('');
+  const [uploadStatus, setUploadStatus] = useState("");
+  const [screeningStatus, setScreeningStatus] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [results, setResults] = useState([]);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [isDragOver, setIsDragOver] = useState(false);
   const [selectedCandidate, setSelectedCandidate] = useState(null);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  
-  // New state for configuration forms
-  const [jobPosition, setJobPosition] = useState('');
-  const [emailSubjects, setEmailSubjects] = useState(['']);
-  const [configStatus, setConfigStatus] = useState('');
-  const [isConfigSaved, setIsConfigSaved] = useState(false);
-  const [currentSpreadsheetName, setCurrentSpreadsheetName] = useState('');
 
-  const [currentSpreadsheetUrl, setCurrentSpreadsheetUrl] = useState('');
+  // New state for configuration forms
+  const [jobPosition, setJobPosition] = useState("");
+  const [emailSubjects, setEmailSubjects] = useState([""]);
+  const [configStatus, setConfigStatus] = useState("");
+  const [isConfigSaved, setIsConfigSaved] = useState(false);
+  const [currentSpreadsheetName, setCurrentSpreadsheetName] = useState("");
+
+  const [currentSpreadsheetUrl, setCurrentSpreadsheetUrl] = useState("");
   // Tambahkan state ini di bagian atas dengan state lainnya
-  const [searchTerm, setSearchTerm] = useState('');
-  const [sortConfig, setSortConfig] = useState({ key: 'Overall Fit', direction: 'desc' });
+  const [searchTerm, setSearchTerm] = useState("");
+  const [sortConfig, setSortConfig] = useState({
+    key: "Overall Fit",
+    direction: "desc",
+  });
 
   // Fungsi untuk menangani error dengan lebih baik
   const handleApiError = (error, defaultMessage) => {
     console.error(defaultMessage, error);
-    
+
     if (error.response) {
       const status = error.response.status;
       const detail = error.response.data?.detail || error.message;
-      
+
       switch (status) {
         case 401:
           setIsLoggedIn(false);
-          return 'Sesi expired, silakan login kembali.';
+          return "Sesi expired, silakan login kembali.";
         case 404:
-          return 'Resource tidak ditemukan. Mungkin spreadsheet belum dibuat.';
+          return "Resource tidak ditemukan. Mungkin spreadsheet belum dibuat.";
         case 500:
           return `Server error: ${detail}`;
         default:
           return `Error ${status}: ${detail}`;
       }
     } else if (error.request) {
-      return 'Tidak dapat terhubung ke server. Pastikan server berjalan.';
+      return "Tidak dapat terhubung ke server. Pastikan server berjalan.";
     } else {
       return error.message || defaultMessage;
     }
@@ -61,14 +64,17 @@ export default function Home() {
       setIsCheckingAuth(true);
       const response = await axios.get(`${API_BASE_URL}/api/auth-status`);
       setIsLoggedIn(response.data.authenticated);
-      
+
       if (response.data.authenticated) {
         await fetchScreeningConfig();
         await fetchResults();
       }
     } catch (error) {
       setIsLoggedIn(false);
-      const errorMessage = handleApiError(error, "Gagal mengambil status autentikasi");
+      const errorMessage = handleApiError(
+        error,
+        "Gagal mengambil status autentikasi"
+      );
       setError(errorMessage);
     } finally {
       setIsCheckingAuth(false);
@@ -77,34 +83,38 @@ export default function Home() {
 
   const fetchScreeningConfig = async () => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/api/get-screening-config`);
+      const response = await axios.get(
+        `${API_BASE_URL}/api/get-screening-config`
+      );
       const config = response.data;
-      
-      setJobPosition(config.job_position || '');
-      setEmailSubjects(config.email_subjects.length > 0 ? config.email_subjects : ['']);
-      setCurrentSpreadsheetName(config.spreadsheet_name || '');
-      setCurrentSpreadsheetUrl(config.spreadsheet_url || ''); // Tambah ini
+
+      setJobPosition(config.job_position || "");
+      setEmailSubjects(
+        config.email_subjects.length > 0 ? config.email_subjects : [""]
+      );
+      setCurrentSpreadsheetName(config.spreadsheet_name || "");
+      setCurrentSpreadsheetUrl(config.spreadsheet_url || ""); // Tambah ini
       setIsConfigSaved(config.job_position && config.email_subjects.length > 0);
-      
+
       if (config.has_job_description) {
-        setUploadStatus('Sukses: Deskripsi pekerjaan sudah tersedia');
+        setUploadStatus("Sukses: Deskripsi pekerjaan sudah tersedia");
       }
     } catch (error) {
-      console.error('Error fetching config:', error);
+      console.error("Error fetching config:", error);
     }
   };
 
   const fetchResults = async () => {
     if (!isLoggedIn) return;
-    
+
     try {
-      setError('');
+      setError("");
       const response = await axios.get(`${API_BASE_URL}/api/get-results`);
       setResults(response.data.results || []);
-      setCurrentSpreadsheetName(response.data.spreadsheet_name || '');
+      setCurrentSpreadsheetName(response.data.spreadsheet_name || "");
     } catch (error) {
       const errorMessage = handleApiError(error, "Gagal mengambil hasil");
-      
+
       if (error.response?.status === 401) {
         setIsLoggedIn(false);
         setResults([]);
@@ -117,64 +127,65 @@ export default function Home() {
   const testServerConnection = async () => {
     try {
       await axios.get(`${API_BASE_URL}/api/health`);
-      console.log('Server connection: OK');
+      console.log("Server connection: OK");
     } catch (error) {
-      console.error('Server connection failed:', error);
-      setError('Tidak dapat terhubung ke server. Pastikan FastAPI berjalan di http://localhost:8000');
+      console.error("Server connection failed:", error);
+      setError(
+        "Tidak dapat terhubung ke server. Pastikan FastAPI berjalan di http://localhost:8000"
+      );
     }
   };
 
   const handleLogout = async () => {
     try {
       setIsLoggingOut(true);
-      
+
       // Call backend logout endpoint
       await axios.post(`${API_BASE_URL}/api/logout`);
-      
+
       // Clear client-side state
       setIsLoggedIn(false);
       setResults([]);
-      setUploadStatus('');
-      setScreeningStatus('');
+      setUploadStatus("");
+      setScreeningStatus("");
       setSelectedFile(null);
-      setError('');
+      setError("");
       setSelectedCandidate(null);
-      setJobPosition('');
-      setEmailSubjects(['']);
-      setConfigStatus('');
+      setJobPosition("");
+      setEmailSubjects([""]);
+      setConfigStatus("");
       setIsConfigSaved(false);
-      setCurrentSpreadsheetName('');
-      setCurrentSpreadsheetUrl('');
+      setCurrentSpreadsheetName("");
+      setCurrentSpreadsheetUrl("");
       // Tambahkan ini di dalam handleLogout bersama reset state lainnya:
-      setSearchTerm('');
-      setSortConfig({ key: 'Overall Fit', direction: 'desc' });
-      
+      setSearchTerm("");
+      setSortConfig({ key: "Overall Fit", direction: "desc" });
+
       // Show success message briefly
-      setScreeningStatus('Logout berhasil!');
+      setScreeningStatus("Logout berhasil!");
       setTimeout(() => {
-        setScreeningStatus('');
+        setScreeningStatus("");
       }, 3000);
-      
     } catch (error) {
-      console.error('Logout error:', error);
+      console.error("Logout error:", error);
       // Force logout even if there's an error
       setIsLoggedIn(false);
       setResults([]);
-      setUploadStatus('');
-      setScreeningStatus('');
+      setUploadStatus("");
+      setScreeningStatus("");
       setSelectedFile(null);
-      setError('');
+      setError("");
       setSelectedCandidate(null);
-      setJobPosition('');
-      setEmailSubjects(['']);
-      setConfigStatus('');
+      setJobPosition("");
+      setEmailSubjects([""]);
+      setConfigStatus("");
       setIsConfigSaved(false);
-      setCurrentSpreadsheetName('');
-      
+      setCurrentSpreadsheetName("");
+
       // Show that logout completed
-      setScreeningStatus('Logout selesai!');
+      setScreeningStatus("Logout selesai!");
       setTimeout(() => {
-        setScreeningStatus('');
+        setScreeningStatus("");
       }, 3000);
     } finally {
       setIsLoggingOut(false);
@@ -184,40 +195,47 @@ export default function Home() {
   // New functions for configuration
   const handleSaveConfig = async () => {
     if (!jobPosition.trim()) {
-      setConfigStatus('Nama posisi pekerjaan tidak boleh kosong');
+      setConfigStatus("Nama posisi pekerjaan tidak boleh kosong");
       return;
     }
 
-    const validSubjects = emailSubjects.filter(subject => subject.trim() !== '');
+    const validSubjects = emailSubjects.filter(
+      (subject) => subject.trim() !== ""
+    );
     if (validSubjects.length === 0) {
-      setConfigStatus('Minimal satu subjek email harus diisi');
+      setConfigStatus("Minimal satu subjek email harus diisi");
       return;
     }
 
     try {
-      setConfigStatus('Menyimpan konfigurasi...');
-      const response = await axios.post(`${API_BASE_URL}/api/set-screening-config`, {
-        job_position: jobPosition.trim(),
-        email_subjects: validSubjects
-      });
+      setConfigStatus("Menyimpan konfigurasi...");
+      const response = await axios.post(
+        `${API_BASE_URL}/api/set-screening-config`,
+        {
+          job_position: jobPosition.trim(),
+          email_subjects: validSubjects,
+        }
+      );
 
       setIsConfigSaved(true);
       setCurrentSpreadsheetName(response.data.spreadsheet_name);
-      setCurrentSpreadsheetUrl(response.data.spreadsheet_url || ''); // Tambah ini
-      setConfigStatus(`Konfigurasi berhasil disimpan! Spreadsheet: ${response.data.spreadsheet_name}`);
-      
+      setCurrentSpreadsheetUrl(response.data.spreadsheet_url || ""); // Tambah ini
+      setConfigStatus(
+        `Konfigurasi berhasil disimpan! Spreadsheet: ${response.data.spreadsheet_name}`
+      );
+
       // Clear success message after 5 seconds
       setTimeout(() => {
-        setConfigStatus('');
+        setConfigStatus("");
       }, 5000);
     } catch (error) {
-      const errorMessage = handleApiError(error, 'Gagal menyimpan konfigurasi');
+      const errorMessage = handleApiError(error, "Gagal menyimpan konfigurasi");
       setConfigStatus(`Error: ${errorMessage}`);
     }
   };
 
   const addEmailSubject = () => {
-    setEmailSubjects([...emailSubjects, '']);
+    setEmailSubjects([...emailSubjects, ""]);
   };
 
   const removeEmailSubject = (index) => {
@@ -241,11 +259,11 @@ export default function Home() {
   const handleFileChange = (event) => {
     const file = event.target.files[0];
     setSelectedFile(file);
-    setUploadStatus('');
-    setError('');
-    
-    if (file && !file.name.toLowerCase().endsWith('.pdf')) {
-      setError('File harus berformat PDF');
+    setUploadStatus("");
+    setError("");
+
+    if (file && !file.name.toLowerCase().endsWith(".pdf")) {
+      setError("File harus berformat PDF");
       setSelectedFile(null);
     }
   };
@@ -264,78 +282,85 @@ export default function Home() {
     e.preventDefault();
     setIsDragOver(false);
     const file = e.dataTransfer.files[0];
-    if (file && file.name.toLowerCase().endsWith('.pdf')) {
+    if (file && file.name.toLowerCase().endsWith(".pdf")) {
       setSelectedFile(file);
-      setUploadStatus('');
-      setError('');
+      setUploadStatus("");
+      setError("");
     } else {
-      setError('File harus berformat PDF');
+      setError("File harus berformat PDF");
     }
   };
 
   const handleUpload = async () => {
     if (!selectedFile) {
-      setError('Pilih file PDF terlebih dahulu');
+      setError("Pilih file PDF terlebih dahulu");
       return;
     }
 
     if (!isConfigSaved) {
-      setError('Simpan konfigurasi screening terlebih dahulu');
+      setError("Simpan konfigurasi screening terlebih dahulu");
       return;
     }
 
     const formData = new FormData();
-    formData.append('file', selectedFile);
-    setUploadStatus('Mengupload...');
-    setError('');
-    
+    formData.append("file", selectedFile);
+    setUploadStatus("Mengupload...");
+    setError("");
+
     try {
-      const response = await axios.post(`${API_BASE_URL}/api/upload-job-description`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-        timeout: 30000,
-      });
-      
+      const response = await axios.post(
+        `${API_BASE_URL}/api/upload-job-description`,
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+          timeout: 30000,
+        }
+      );
+
       setUploadStatus(`Sukses: ${response.data.message}`);
     } catch (error) {
-      const errorMessage = handleApiError(error, 'Gagal mengupload file');
+      const errorMessage = handleApiError(error, "Gagal mengupload file");
       setUploadStatus(`Gagal: ${errorMessage}`);
     }
   };
 
   const handleStartScreening = async () => {
-    if (!uploadStatus.includes('Sukses')) {
-      setError('Upload deskripsi pekerjaan terlebih dahulu');
+    if (!uploadStatus.includes("Sukses")) {
+      setError("Upload deskripsi pekerjaan terlebih dahulu");
       return;
     }
 
     if (!isConfigSaved) {
-      setError('Simpan konfigurasi screening terlebih dahulu');
+      setError("Simpan konfigurasi screening terlebih dahulu");
       return;
     }
 
     setIsLoading(true);
-    setScreeningStatus('Memulai proses screening...');
-    setError('');
-    
+    setScreeningStatus("Memulai proses screening...");
+    setError("");
+
     try {
-      const response = await axios.post(`${API_BASE_URL}/api/start-screening`, {}, {
-        timeout: 300000,
-      });
-      
+      const response = await axios.post(
+        `${API_BASE_URL}/api/start-screening`,
+        {},
+        {
+          timeout: 300000,
+        }
+      );
+
       setScreeningStatus(`${response.data.message}`);
-      
+
       setTimeout(async () => {
         await fetchResults();
-        setScreeningStatus(prev => prev + ' Data berhasil diperbarui!');
+        setScreeningStatus((prev) => prev + " Data berhasil diperbarui!");
       }, 2000);
-      
     } catch (error) {
-      const errorMessage = handleApiError(error, 'Gagal melakukan screening');
-      
+      const errorMessage = handleApiError(error, "Gagal melakukan screening");
+
       if (error.response?.status === 401) {
-        setScreeningStatus('Sesi expired, mengarahkan ke login...');
+        setScreeningStatus("Sesi expired, mengarahkan ke login...");
         setTimeout(() => {
           window.location.href = `${API_BASE_URL}/api/login`;
         }, 2000);
@@ -352,109 +377,158 @@ export default function Home() {
   };
 
   const handleClearResults = async () => {
-    if (!confirm('Apakah Anda yakin ingin menghapus semua data hasil screening?')) {
+    if (
+      !confirm("Apakah Anda yakin ingin menghapus semua data hasil screening?")
+    ) {
       return;
     }
-    
+
     try {
       const response = await axios.delete(`${API_BASE_URL}/api/clear-results`);
       setScreeningStatus(`${response.data.message}`);
       setResults([]);
     } catch (error) {
-      const errorMessage = handleApiError(error, 'Gagal menghapus data');
+      const errorMessage = handleApiError(error, "Gagal menghapus data");
       setError(errorMessage);
     }
   };
 
   const getScoreColor = (score) => {
-    if (score >= 80) return 'text-green-600 bg-green-50';
-    if (score >= 60) return 'text-yellow-600 bg-yellow-50';
-    return 'text-red-600 bg-red-50';
+    if (score >= 80) return "text-green-600 bg-green-50";
+    if (score >= 60) return "text-yellow-600 bg-yellow-50";
+    return "text-red-600 bg-red-50";
   };
 
   const getScoreBadgeColor = (score) => {
-    if (score >= 80) return 'bg-green-100 text-green-800 border-green-200';
-    if (score >= 60) return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-    return 'bg-red-100 text-red-800 border-red-200';
+    if (score >= 80) return "bg-green-100 text-green-800 border-green-200";
+    if (score >= 60) return "bg-yellow-100 text-yellow-800 border-yellow-200";
+    return "bg-red-100 text-red-800 border-red-200";
   };
 
   // Tambahkan fungsi ini sebelum return statement
-const getFilteredAndSortedResults = () => {
-  let filtered = results.filter(result => {
-    const searchLower = searchTerm.toLowerCase();
-    return (
-      (result.Nama || '').toLowerCase().includes(searchLower) ||
-      (result.Email || '').toLowerCase().includes(searchLower) ||
-      (result['Pendidikan Terakhir'] || '').toLowerCase().includes(searchLower) ||
-      (result.Kekuatan || '').toLowerCase().includes(searchLower) ||
-      (result.Kekurangan || '').toLowerCase().includes(searchLower)
-    );
-  });
-
-  if (sortConfig.key) {
-    filtered.sort((a, b) => {
-      let aValue = a[sortConfig.key] || 0;
-      let bValue = b[sortConfig.key] || 0;
-      
-      // Special handling for Overall Fit (numeric)
-      if (sortConfig.key === 'Overall Fit') {
-        aValue = Number(aValue) || 0;
-        bValue = Number(bValue) || 0;
-      }
-      
-      if (aValue < bValue) {
-        return sortConfig.direction === 'asc' ? -1 : 1;
-      }
-      if (aValue > bValue) {
-        return sortConfig.direction === 'asc' ? 1 : -1;
-      }
-      return 0;
+  const getFilteredAndSortedResults = () => {
+    let filtered = results.filter((result) => {
+      const searchLower = searchTerm.toLowerCase();
+      return (
+        (result.Nama || "").toLowerCase().includes(searchLower) ||
+        (result.Email || "").toLowerCase().includes(searchLower) ||
+        (result["Pendidikan Terakhir"] || "")
+          .toLowerCase()
+          .includes(searchLower) ||
+        (result.Kekuatan || "").toLowerCase().includes(searchLower) ||
+        (result.Kekurangan || "").toLowerCase().includes(searchLower)
+      );
     });
-  }
 
-  return filtered;
-};
+    if (sortConfig.key) {
+      filtered.sort((a, b) => {
+        let aValue = a[sortConfig.key] || 0;
+        let bValue = b[sortConfig.key] || 0;
 
-const handleSort = (key) => {
-  let direction = 'asc';
-  if (sortConfig.key === key && sortConfig.direction === 'asc') {
-    direction = 'desc';
-  }
-  setSortConfig({ key, direction });
-};
+        // Special handling for Overall Fit (numeric)
+        if (sortConfig.key === "Overall Fit") {
+          aValue = Number(aValue) || 0;
+          bValue = Number(bValue) || 0;
+        }
 
-const getSortIcon = (columnName) => {
-  if (sortConfig.key !== columnName) {
-    return (
-      <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
-      </svg>
-    );
-  }
-  
-  if (sortConfig.direction === 'asc') {
-    return (
-      <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-      </svg>
-    );
-  } else {
-    return (
-      <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-      </svg>
-    );
-  }
-};
+        if (aValue < bValue) {
+          return sortConfig.direction === "asc" ? -1 : 1;
+        }
+        if (aValue > bValue) {
+          return sortConfig.direction === "asc" ? 1 : -1;
+        }
+        return 0;
+      });
+    }
+
+    return filtered;
+  };
+
+  const handleSort = (key) => {
+    let direction = "asc";
+    if (sortConfig.key === key && sortConfig.direction === "asc") {
+      direction = "desc";
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const getSortIcon = (columnName) => {
+    if (sortConfig.key !== columnName) {
+      return (
+        <svg
+          className="w-4 h-4 text-gray-400"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"
+          />
+        </svg>
+      );
+    }
+
+    if (sortConfig.direction === "asc") {
+      return (
+        <svg
+          className="w-4 h-4 text-blue-600"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M5 15l7-7 7 7"
+          />
+        </svg>
+      );
+    } else {
+      return (
+        <svg
+          className="w-4 h-4 text-blue-600"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M19 9l-7 7-7-7"
+          />
+        </svg>
+      );
+    }
+  };
 
   // Show loading state while checking authentication
   if (isCheckingAuth) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
-          <svg className="animate-spin w-8 h-8 text-blue-600 mx-auto mb-4" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          <svg
+            className="animate-spin w-8 h-8 text-blue-600 mx-auto mb-4"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <circle
+              className="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              strokeWidth="4"
+            ></circle>
+            <path
+              className="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+            ></path>
           </svg>
           <p className="text-gray-600">Checking authentication...</p>
         </div>
@@ -463,7 +537,6 @@ const getSortIcon = (columnName) => {
   }
 
   // Show login page if not authenticated
-  
 
   return (
     <div className="min-h-screen bg-white">
@@ -473,16 +546,28 @@ const getSortIcon = (columnName) => {
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                <svg
+                  className="w-6 h-6 text-white"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                  />
                 </svg>
               </div>
               <div>
-                <h1 className="text-xl font-semibold text-gray-900">CV Screening</h1>
+                <h1 className="text-xl font-semibold text-gray-900">
+                  CV Screening
+                </h1>
                 <p className="text-sm text-gray-500">AI-Powered Recruitment</p>
               </div>
             </div>
-            
+
             <div className="flex items-center space-x-4">
               {isLoggedIn ? (
                 <div className="flex items-center space-x-4">
@@ -490,12 +575,20 @@ const getSortIcon = (columnName) => {
                     <div className="w-2 h-2 bg-green-400 rounded-full"></div>
                     <span className="text-sm text-gray-600">Connected</span>
                     <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                      <svg className="w-4 h-4 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                      <svg
+                        className="w-4 h-4 text-blue-600"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
+                          clipRule="evenodd"
+                        />
                       </svg>
                     </div>
                   </div>
-                  
+
                   {/* Logout Button */}
                   <button
                     onClick={handleLogout}
@@ -504,16 +597,41 @@ const getSortIcon = (columnName) => {
                   >
                     {isLoggingOut ? (
                       <>
-                        <svg className="animate-spin w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        <svg
+                          className="animate-spin w-4 h-4 mr-2"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          ></circle>
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                          ></path>
                         </svg>
                         Logging out...
                       </>
                     ) : (
                       <>
-                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                        <svg
+                          className="w-4 h-4 mr-2"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                          />
                         </svg>
                         Logout
                       </>
@@ -525,8 +643,16 @@ const getSortIcon = (columnName) => {
                   onClick={handleLogin}
                   className="inline-flex items-center px-4 py-2 border border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors duration-200 font-medium"
                 >
-                  <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M3 3a1 1 0 011 1v12a1 1 0 11-2 0V4a1 1 0 011-1zm7.707 3.293a1 1 0 010 1.414L9.414 9H17a1 1 0 110 2H9.414l1.293 1.293a1 1 0 01-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 011.414 0z" clipRule="evenodd" />
+                  <svg
+                    className="w-4 h-4 mr-2"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M3 3a1 1 0 011 1v12a1 1 0 11-2 0V4a1 1 0 011-1zm7.707 3.293a1 1 0 010 1.414L9.414 9H17a1 1 0 110 2H9.414l1.293 1.293a1 1 0 01-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 011.414 0z"
+                      clipRule="evenodd"
+                    />
                   </svg>
                   Login with Google
                 </button>
@@ -542,8 +668,16 @@ const getSortIcon = (columnName) => {
         {error && (
           <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
             <div className="flex items-center">
-              <svg className="w-5 h-5 text-red-400 mr-3" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              <svg
+                className="w-5 h-5 text-red-400 mr-3"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                  clipRule="evenodd"
+                />
               </svg>
               <p className="text-red-700 font-medium">{error}</p>
             </div>
@@ -554,14 +688,33 @@ const getSortIcon = (columnName) => {
         <div className="bg-white border border-gray-200 rounded-xl p-6 mb-8">
           <div className="flex items-center mb-6">
             <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center mr-3">
-              <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              <svg
+                className="w-5 h-5 text-purple-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+                />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                />
               </svg>
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-gray-900">Screening Configuration</h2>
-              <p className="text-sm text-gray-600">Setup job position and email criteria</p>
+              <h2 className="text-lg font-semibold text-gray-900">
+                Screening Configuration
+              </h2>
+              <p className="text-sm text-gray-600">
+                Setup job position and email criteria
+              </p>
             </div>
           </div>
 
@@ -569,7 +722,10 @@ const getSortIcon = (columnName) => {
             {/* Job Position Form */}
             <div className="space-y-4">
               <div>
-                <label htmlFor="jobPosition" className="block text-sm font-medium text-gray-700 mb-2">
+                <label
+                  htmlFor="jobPosition"
+                  className="block text-sm font-medium text-gray-700 mb-2"
+                >
                   Nama Posisi Pekerjaan
                 </label>
                 <input
@@ -598,7 +754,9 @@ const getSortIcon = (columnName) => {
                       <input
                         type="text"
                         value={subject}
-                        onChange={(e) => updateEmailSubject(index, e.target.value)}
+                        onChange={(e) =>
+                          updateEmailSubject(index, e.target.value)
+                        }
                         placeholder="e.g., cv-ui/ux, resume-frontend"
                         className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
                       />
@@ -607,25 +765,45 @@ const getSortIcon = (columnName) => {
                           onClick={() => removeEmailSubject(index)}
                           className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors duration-200"
                         >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          <svg
+                            className="w-4 h-4"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                            />
                           </svg>
                         </button>
                       )}
                     </div>
                   ))}
                 </div>
-                
+
                 <button
                   onClick={addEmailSubject}
                   className="mt-2 inline-flex items-center px-3 py-2 text-sm text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors duration-200"
                 >
-                  <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  <svg
+                    className="w-4 h-4 mr-1"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 4v16m8-8H4"
+                    />
                   </svg>
                   Tambah Subjek Email
                 </button>
-                
+
                 <p className="text-xs text-gray-500 mt-1">
                   Email dengan subjek ini akan di-scan untuk mencari CV
                 </p>
@@ -639,17 +817,27 @@ const getSortIcon = (columnName) => {
               <div className="flex-1">
                 {currentSpreadsheetName && (
                   <p className="text-sm text-gray-600">
-                    <span className="font-medium">Spreadsheet:</span> 
+                    <span className="font-medium">Spreadsheet:</span>
                     {currentSpreadsheetUrl ? (
-                      <a 
-                        href={currentSpreadsheetUrl} 
-                        target="_blank" 
+                      <a
+                        href={currentSpreadsheetUrl}
+                        target="_blank"
                         rel="noopener noreferrer"
                         className="text-blue-600 hover:text-blue-800 hover:underline ml-1"
                       >
                         {currentSpreadsheetName}
-                        <svg className="w-3 h-3 inline ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                        <svg
+                          className="w-3 h-3 inline ml-1"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                          />
                         </svg>
                       </a>
                     ) : (
@@ -658,34 +846,60 @@ const getSortIcon = (columnName) => {
                   </p>
                 )}
                 {configStatus && (
-                  <div className={`mt-2 p-3 rounded-lg text-sm font-medium ${
-                    configStatus.includes('berhasil') || configStatus.includes('Sukses')
-                      ? 'bg-green-50 text-green-700 border border-green-200' 
-                      : configStatus.includes('Error') || configStatus.includes('kosong')
-                      ? 'bg-red-50 text-red-700 border border-red-200'
-                      : 'bg-blue-50 text-blue-700 border border-blue-200'
-                  }`}>
+                  <div
+                    className={`mt-2 p-3 rounded-lg text-sm font-medium ${
+                      configStatus.includes("berhasil") ||
+                      configStatus.includes("Sukses")
+                        ? "bg-green-50 text-green-700 border border-green-200"
+                        : configStatus.includes("Error") ||
+                          configStatus.includes("kosong")
+                        ? "bg-red-50 text-red-700 border border-red-200"
+                        : "bg-blue-50 text-blue-700 border border-blue-200"
+                    }`}
+                  >
                     {configStatus}
                   </div>
                 )}
               </div>
-              
+
               <button
                 onClick={handleSaveConfig}
-                disabled={!jobPosition.trim() || emailSubjects.every(s => !s.trim())}
+                disabled={
+                  !jobPosition.trim() || emailSubjects.every((s) => !s.trim())
+                }
                 className="ml-4 bg-purple-600 text-white py-2 px-6 rounded-lg hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors duration-200 font-medium flex items-center"
               >
                 {isConfigSaved ? (
                   <>
-                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    <svg
+                      className="w-4 h-4 mr-2"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M5 13l4 4L19 7"
+                      />
                     </svg>
                     Update Config
                   </>
                 ) : (
                   <>
-                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 0V4a2 2 0 00-2-2H9a2 2 0 00-2 2v3m1 0h4" />
+                    <svg
+                      className="w-4 h-4 mr-2"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 0V4a2 2 0 00-2-2H9a2 2 0 00-2 2v3m1 0h4"
+                      />
                     </svg>
                     Save Config
                   </>
@@ -701,13 +915,27 @@ const getSortIcon = (columnName) => {
           <div className="bg-white border border-gray-200 rounded-xl p-6">
             <div className="flex items-center mb-6">
               <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
-                <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                <svg
+                  className="w-5 h-5 text-blue-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                  />
                 </svg>
               </div>
               <div>
-                <h2 className="text-lg font-semibold text-gray-900">Job Description Upload</h2>
-                <p className="text-sm text-gray-600">Upload PDF file containing job requirements</p>
+                <h2 className="text-lg font-semibold text-gray-900">
+                  Job Description Upload
+                </h2>
+                <p className="text-sm text-gray-600">
+                  Upload PDF file containing job requirements
+                </p>
               </div>
             </div>
 
@@ -715,10 +943,20 @@ const getSortIcon = (columnName) => {
             {!isConfigSaved && (
               <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
                 <div className="flex items-center">
-                  <svg className="w-4 h-4 text-amber-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                  <svg
+                    className="w-4 h-4 text-amber-500 mr-2"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                      clipRule="evenodd"
+                    />
                   </svg>
-                  <p className="text-amber-700 text-sm">Simpan konfigurasi screening terlebih dahulu</p>
+                  <p className="text-amber-700 text-sm">
+                    Simpan konfigurasi screening terlebih dahulu
+                  </p>
                 </div>
               </div>
             )}
@@ -727,10 +965,10 @@ const getSortIcon = (columnName) => {
             <div
               className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors duration-200 ${
                 isDragOver
-                  ? 'border-blue-400 bg-blue-50'
+                  ? "border-blue-400 bg-blue-50"
                   : selectedFile
-                  ? 'border-green-300 bg-green-50'
-                  : 'border-gray-300 hover:border-gray-400'
+                  ? "border-green-300 bg-green-50"
+                  : "border-gray-300 hover:border-gray-400"
               }`}
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
@@ -743,25 +981,51 @@ const getSortIcon = (columnName) => {
                 className="hidden"
                 id="file-upload"
               />
-              
+
               {selectedFile ? (
                 <div className="space-y-3">
-                  <svg className="w-12 h-12 text-green-500 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  <svg
+                    className="w-12 h-12 text-green-500 mx-auto"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
                   </svg>
                   <div>
-                    <p className="font-medium text-gray-900">{selectedFile.name}</p>
-                    <p className="text-sm text-gray-500">{(selectedFile.size / 1024 / 1024).toFixed(2)} MB</p>
+                    <p className="font-medium text-gray-900">
+                      {selectedFile.name}
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                    </p>
                   </div>
                 </div>
               ) : (
                 <div className="space-y-3">
-                  <svg className="w-12 h-12 text-gray-400 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                  <svg
+                    className="w-12 h-12 text-gray-400 mx-auto"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                    />
                   </svg>
                   <div>
                     <label htmlFor="file-upload" className="cursor-pointer">
-                      <span className="text-blue-600 hover:text-blue-500 font-medium">Click to upload</span>
+                      <span className="text-blue-600 hover:text-blue-500 font-medium">
+                        Click to upload
+                      </span>
                       <span className="text-gray-600"> or drag and drop</span>
                     </label>
                     <p className="text-sm text-gray-500">PDF files only</p>
@@ -781,13 +1045,15 @@ const getSortIcon = (columnName) => {
 
             {/* Upload Status */}
             {uploadStatus && (
-              <div className={`mt-4 p-3 rounded-lg text-sm font-medium ${
-                uploadStatus.includes('Sukses') 
-                  ? 'bg-green-50 text-green-700 border border-green-200' 
-                  : uploadStatus.includes('Gagal')
-                  ? 'bg-red-50 text-red-700 border border-red-200'
-                  : 'bg-blue-50 text-blue-700 border border-blue-200'
-              }`}>
+              <div
+                className={`mt-4 p-3 rounded-lg text-sm font-medium ${
+                  uploadStatus.includes("Sukses")
+                    ? "bg-green-50 text-green-700 border border-green-200"
+                    : uploadStatus.includes("Gagal")
+                    ? "bg-red-50 text-red-700 border border-red-200"
+                    : "bg-blue-50 text-blue-700 border border-blue-200"
+                }`}
+              >
                 {uploadStatus}
               </div>
             )}
@@ -797,34 +1063,82 @@ const getSortIcon = (columnName) => {
           <div className="bg-white border border-gray-200 rounded-xl p-6">
             <div className="flex items-center mb-6">
               <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
-                <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                <svg
+                  className="w-5 h-5 text-blue-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
+                  />
                 </svg>
               </div>
               <div>
-                <h2 className="text-lg font-semibold text-gray-900">AI Analysis</h2>
-                <p className="text-sm text-gray-600">Process CVs with intelligent screening</p>
+                <h2 className="text-lg font-semibold text-gray-900">
+                  AI Analysis
+                </h2>
+                <p className="text-sm text-gray-600">
+                  Process CVs with intelligent screening
+                </p>
               </div>
             </div>
 
             <div className="space-y-4">
               {/* Prerequisites Check */}
               <div className="bg-gray-50 rounded-lg p-4">
-                <h3 className="font-medium text-gray-900 mb-3">Prerequisites</h3>
+                <h3 className="font-medium text-gray-900 mb-3">
+                  Prerequisites
+                </h3>
                 <div className="space-y-2">
                   <div className="flex items-center">
-                    <svg className={`w-4 h-4 mr-2 ${isConfigSaved ? 'text-green-500' : 'text-gray-400'}`} fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    <svg
+                      className={`w-4 h-4 mr-2 ${
+                        isConfigSaved ? "text-green-500" : "text-gray-400"
+                      }`}
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                        clipRule="evenodd"
+                      />
                     </svg>
-                    <span className={`text-sm ${isConfigSaved ? 'text-green-700' : 'text-gray-600'}`}>
+                    <span
+                      className={`text-sm ${
+                        isConfigSaved ? "text-green-700" : "text-gray-600"
+                      }`}
+                    >
                       Screening configuration saved
                     </span>
                   </div>
                   <div className="flex items-center">
-                    <svg className={`w-4 h-4 mr-2 ${uploadStatus.includes('Sukses') ? 'text-green-500' : 'text-gray-400'}`} fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    <svg
+                      className={`w-4 h-4 mr-2 ${
+                        uploadStatus.includes("Sukses")
+                          ? "text-green-500"
+                          : "text-gray-400"
+                      }`}
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                        clipRule="evenodd"
+                      />
                     </svg>
-                    <span className={`text-sm ${uploadStatus.includes('Sukses') ? 'text-green-700' : 'text-gray-600'}`}>
+                    <span
+                      className={`text-sm ${
+                        uploadStatus.includes("Sukses")
+                          ? "text-green-700"
+                          : "text-gray-600"
+                      }`}
+                    >
                       Job description uploaded
                     </span>
                   </div>
@@ -833,29 +1147,63 @@ const getSortIcon = (columnName) => {
 
               {/* Process Overview */}
               <div className="bg-gray-50 rounded-lg p-4">
-                <h3 className="font-medium text-gray-900 mb-2">Process Overview</h3>
+                <h3 className="font-medium text-gray-900 mb-2">
+                  Process Overview
+                </h3>
                 <ul className="text-sm text-gray-600 space-y-1">
                   <li className="flex items-center">
-                    <svg className="w-4 h-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    <svg
+                      className="w-4 h-4 text-green-500 mr-2"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                        clipRule="evenodd"
+                      />
                     </svg>
                     Scan Gmail for CV attachments
                   </li>
                   <li className="flex items-center">
-                    <svg className="w-4 h-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    <svg
+                      className="w-4 h-4 text-green-500 mr-2"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                        clipRule="evenodd"
+                      />
                     </svg>
                     Extract and analyze text content
                   </li>
                   <li className="flex items-center">
-                    <svg className="w-4 h-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    <svg
+                      className="w-4 h-4 text-green-500 mr-2"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                        clipRule="evenodd"
+                      />
                     </svg>
                     Upload CVs to Google Drive
                   </li>
                   <li className="flex items-center">
-                    <svg className="w-4 h-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    <svg
+                      className="w-4 h-4 text-green-500 mr-2"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                        clipRule="evenodd"
+                      />
                     </svg>
                     Generate compatibility scores
                   </li>
@@ -866,21 +1214,50 @@ const getSortIcon = (columnName) => {
               <div className="space-y-3">
                 <button
                   onClick={handleStartScreening}
-                  disabled={isLoading || !uploadStatus.includes('Sukses') || !isConfigSaved}
+                  disabled={
+                    isLoading ||
+                    !uploadStatus.includes("Sukses") ||
+                    !isConfigSaved
+                  }
                   className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors duration-200 font-medium flex items-center justify-center"
                 >
                   {isLoading ? (
                     <>
-                      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      <svg
+                        className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        ></circle>
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        ></path>
                       </svg>
                       Processing...
                     </>
                   ) : (
                     <>
-                      <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                      <svg
+                        className="w-5 h-5 mr-2"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M13 10V3L4 14h7v7l9-11h-7z"
+                        />
                       </svg>
                       Start AI Analysis
                     </>
@@ -893,8 +1270,18 @@ const getSortIcon = (columnName) => {
                     disabled={isLoading}
                     className="w-full bg-red-600 text-white py-3 px-4 rounded-lg hover:bg-red-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors duration-200 font-medium flex items-center justify-center"
                   >
-                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    <svg
+                      className="w-5 h-5 mr-2"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                      />
                     </svg>
                     Clear All Data
                   </button>
@@ -903,13 +1290,17 @@ const getSortIcon = (columnName) => {
 
               {/* Screening Status */}
               {screeningStatus && (
-                <div className={`p-3 rounded-lg text-sm font-medium ${
-                  screeningStatus.includes('berhasil') || screeningStatus.includes('Sukses')
-                    ? 'bg-green-50 text-green-700 border border-green-200' 
-                    : screeningStatus.includes('Error') || screeningStatus.includes('Gagal')
-                    ? 'bg-red-50 text-red-700 border border-red-200'
-                    : 'bg-blue-50 text-blue-700 border border-blue-200'
-                }`}>
+                <div
+                  className={`p-3 rounded-lg text-sm font-medium ${
+                    screeningStatus.includes("berhasil") ||
+                    screeningStatus.includes("Sukses")
+                      ? "bg-green-50 text-green-700 border border-green-200"
+                      : screeningStatus.includes("Error") ||
+                        screeningStatus.includes("Gagal")
+                      ? "bg-red-50 text-red-700 border border-red-200"
+                      : "bg-blue-50 text-blue-700 border border-blue-200"
+                  }`}
+                >
                   {screeningStatus}
                 </div>
               )}
@@ -1432,13 +1823,25 @@ const getSortIcon = (columnName) => {
                                     href={`mailto:${selectedCandidate.Email}`}
                                     className="text-blue-600 hover:underline flex items-center"
                                   >
-                                    <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                    <svg
+                                      className="w-4 h-4 mr-1"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      viewBox="0 0 24 24"
+                                    >
+                                      <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                                      />
                                     </svg>
                                     {selectedCandidate.Email}
                                   </a>
                                 ) : (
-                                  <span className="text-gray-400">Not available</span>
+                                  <span className="text-gray-400">
+                                    Not available
+                                  </span>
                                 )}
                               </p>
                             </div>
@@ -1454,13 +1857,25 @@ const getSortIcon = (columnName) => {
                                     href={`tel:${selectedCandidate["Nomor Telepon"]}`}
                                     className="text-blue-600 hover:underline flex items-center"
                                   >
-                                    <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                                    <svg
+                                      className="w-4 h-4 mr-1"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      viewBox="0 0 24 24"
+                                    >
+                                      <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
+                                      />
                                     </svg>
                                     {selectedCandidate["Nomor Telepon"]}
                                   </a>
                                 ) : (
-                                  <span className="text-gray-400">Not available</span>
+                                  <span className="text-gray-400">
+                                    Not available
+                                  </span>
                                 )}
                               </p>
                             </div>
@@ -1470,7 +1885,12 @@ const getSortIcon = (columnName) => {
                         {/* Education */}
                         <div className="bg-white border border-gray-100 rounded-lg p-5">
                           <h3 className="text-lg font-medium text-gray-900 mb-3 flex items-center">
-                            <svg className="w-5 h-5 mr-2 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg
+                              className="w-5 h-5 mr-2 text-gray-600"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
                               <path d="M12 14l9-5-9-5-9 5 9 5z"></path>
                               <path d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"></path>
                             </svg>
@@ -1482,152 +1902,229 @@ const getSortIcon = (columnName) => {
                           </p>
                         </div>
 
-                        {/* Analysis Details - Strengths & Weaknesses */}
+                        {/* Strengths & Weaknesses */}
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                          {/* Strengths */}
                           <div className="bg-white border border-gray-100 rounded-lg p-5">
                             <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
-                              <svg className="w-5 h-5 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              <svg
+                                className="w-5 h-5 mr-2 text-green-600"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                                />
                               </svg>
                               <span className="text-green-700">Strengths</span>
                             </h3>
                             <div className="bg-green-50/70 border border-green-100 rounded-md p-4">
                               {selectedCandidate.Kekuatan ? (
                                 Array.isArray(selectedCandidate.Kekuatan) ? (
-                                  <ul className="space-y-2">
-                                    {selectedCandidate.Kekuatan.map((strength, index) => (
-                                      <li key={index} className="text-sm text-gray-800 leading-relaxed flex items-start">
-                                        <span className="text-green-600 font-medium mr-2 flex-shrink-0">•</span>
-                                        <span>{strength.replace(/^\d+\.\s*/, '')}</span>
-                                      </li>
-                                    ))}
-                                  </ul>
+                                  <ol className="list-decimal list-inside space-y-1 text-sm text-gray-800 leading-relaxed">
+                                    {selectedCandidate.Kekuatan.map(
+                                      (strength, index) => (
+                                        <li key={index}>
+                                          {strength.replace(/^\d+\.\s*/, "")}
+                                        </li>
+                                      )
+                                    )}
+                                  </ol>
                                 ) : (
-                                  <div className="text-sm text-gray-800 leading-relaxed whitespace-pre-line">
-                                    {selectedCandidate.Kekuatan}
-                                  </div>
+                                  <ol className="list-decimal list-inside space-y-1 text-sm text-gray-800 leading-relaxed">
+                                    {selectedCandidate.Kekuatan.split(
+                                      /\r?\n|\d+\.\s*/
+                                    )
+                                      .filter((item) => item.trim() !== "")
+                                      .map((strength, index) => (
+                                        <li key={index}>{strength.trim()}</li>
+                                      ))}
+                                  </ol>
                                 )
                               ) : (
-                                <p className="text-gray-400 text-sm">No strengths data available</p>
+                                <p className="text-gray-400 text-sm">
+                                  No strengths data available
+                                </p>
                               )}
                             </div>
                           </div>
-                          
+
+                          {/* Weaknesses */}
                           <div className="bg-white border border-gray-100 rounded-lg p-5">
                             <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
-                              <svg className="w-5 h-5 mr-2 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                              <svg
+                                className="w-5 h-5 mr-2 text-orange-600"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
+                                />
                               </svg>
-                              <span className="text-orange-700">Areas for Improvement</span>
+                              <span className="text-orange-700">
+                                Areas for Improvement
+                              </span>
                             </h3>
                             <div className="bg-orange-50/70 border border-orange-100 rounded-md p-4">
                               {selectedCandidate.Kekurangan ? (
                                 Array.isArray(selectedCandidate.Kekurangan) ? (
-                                  <ul className="space-y-2">
-                                    {selectedCandidate.Kekurangan.map((weakness, index) => (
-                                      <li key={index} className="text-sm text-gray-800 leading-relaxed flex items-start">
-                                        <span className="text-orange-600 font-medium mr-2 flex-shrink-0">•</span>
-                                        <span>{weakness.replace(/^\d+\.\s*/, '')}</span>
-                                      </li>
-                                    ))}
-                                  </ul>
+                                  <ol className="list-decimal list-inside space-y-1 text-sm text-gray-800 leading-relaxed">
+                                    {selectedCandidate.Kekurangan.map(
+                                      (weakness, index) => (
+                                        <li key={index}>
+                                          {weakness.replace(/^\d+\.\s*/, "")}
+                                        </li>
+                                      )
+                                    )}
+                                  </ol>
                                 ) : (
-                                  <div className="text-sm text-gray-800 leading-relaxed whitespace-pre-line">
-                                    {selectedCandidate.Kekurangan}
-                                  </div>
+                                  <ol className="list-decimal list-inside space-y-1 text-sm text-gray-800 leading-relaxed">
+                                    {selectedCandidate.Kekurangan.split(
+                                      /\r?\n|\d+\.\s*/
+                                    )
+                                      .filter((item) => item.trim() !== "")
+                                      .map((weakness, index) => (
+                                        <li key={index}>{weakness.trim()}</li>
+                                      ))}
+                                  </ol>
                                 )
                               ) : (
-                                <p className="text-gray-400 text-sm">No weaknesses data available</p>
+                                <p className="text-gray-400 text-sm">
+                                  No weaknesses data available
+                                </p>
                               )}
                             </div>
                           </div>
                         </div>
 
                         {/* Risk & Reward Factors */}
-<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-  {/* Risk Factors */}
-  <div className="bg-white border border-gray-100 rounded-lg p-5">
-    <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
-      <svg className="w-5 h-5 mr-2 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-      </svg>
-      <span className="text-red-700">Risk Factors</span>
-    </h3>
-    <div className="bg-red-50/70 border border-red-100 rounded-md p-4">
-      {selectedCandidate["Risk Factor"] ? (
-        Array.isArray(selectedCandidate["Risk Factor"]) ? (
-          <ul className="space-y-2">
-            {selectedCandidate["Risk Factor"].map((risk, index) => (
-              <li key={index} className="text-sm text-gray-800 leading-relaxed flex items-start">
-                <span className="text-red-600 font-medium mr-2 flex-shrink-0">•</span>
-                <span>{risk.replace(/^\d+\.\s*/, '')}</span>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <ul className="space-y-2">
-            {selectedCandidate["Risk Factor"]
-              .split(/\r?\n|\d+\.\s*/)
-              .filter(item => item.trim() !== "")
-              .map((risk, index) => (
-                <li key={index} className="text-sm text-gray-800 leading-relaxed flex items-start">
-                  <span className="text-red-600 font-medium mr-2 flex-shrink-0">•</span>
-                  <span>{risk.trim()}</span>
-                </li>
-              ))}
-          </ul>
-        )
-      ) : (
-        <p className="text-gray-400 text-sm">No risk factors data available</p>
-      )}
-    </div>
-  </div>
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+                          {/* Risk Factors */}
+                          <div className="bg-white border border-gray-100 rounded-lg p-5">
+                            <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
+                              <svg
+                                className="w-5 h-5 mr-2 text-red-600"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
+                                />
+                              </svg>
+                              <span className="text-red-700">Risk Factors</span>
+                            </h3>
+                            <div className="bg-red-50/70 border border-red-100 rounded-md p-4">
+                              {selectedCandidate["Risk Factor"] ? (
+                                Array.isArray(
+                                  selectedCandidate["Risk Factor"]
+                                ) ? (
+                                  <ol className="list-decimal list-inside space-y-1 text-sm text-gray-800 leading-relaxed">
+                                    {selectedCandidate["Risk Factor"].map(
+                                      (risk, index) => (
+                                        <li key={index}>
+                                          {risk.replace(/^\d+\.\s*/, "")}
+                                        </li>
+                                      )
+                                    )}
+                                  </ol>
+                                ) : (
+                                  <ol className="list-decimal list-inside space-y-1 text-sm text-gray-800 leading-relaxed">
+                                    {selectedCandidate["Risk Factor"]
+                                      .split(/\r?\n|\d+\.\s*/)
+                                      .filter((item) => item.trim() !== "")
+                                      .map((risk, index) => (
+                                        <li key={index}>{risk.trim()}</li>
+                                      ))}
+                                  </ol>
+                                )
+                              ) : (
+                                <p className="text-gray-400 text-sm">
+                                  No risk factors data available
+                                </p>
+                              )}
+                            </div>
+                          </div>
 
-  {/* Reward Potential */}
-  <div className="bg-white border border-gray-100 rounded-lg p-5">
-    <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
-      <svg className="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-      </svg>
-      <span className="text-blue-700">Reward Potential</span>
-    </h3>
-    <div className="bg-blue-50/70 border border-blue-100 rounded-md p-4">
-      {selectedCandidate["Reward Factor"] ? (
-        Array.isArray(selectedCandidate["Reward Factor"]) ? (
-          <ul className="space-y-2">
-            {selectedCandidate["Reward Factor"].map((reward, index) => (
-              <li key={index} className="text-sm text-gray-800 leading-relaxed flex items-start">
-                <span className="text-blue-600 font-medium mr-2 flex-shrink-0">•</span>
-                <span>{reward.replace(/^\d+\.\s*/, '')}</span>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <ul className="space-y-2">
-            {selectedCandidate["Reward Factor"]
-              .split(/\r?\n|\d+\.\s*/)
-              .filter(item => item.trim() !== "")
-              .map((reward, index) => (
-                <li key={index} className="text-sm text-gray-800 leading-relaxed flex items-start">
-                  <span className="text-blue-600 font-medium mr-2 flex-shrink-0">•</span>
-                  <span>{reward.trim()}</span>
-                </li>
-              ))}
-          </ul>
-        )
-      ) : (
-        <p className="text-gray-400 text-sm">No reward factors data available</p>
-      )}
-    </div>
-  </div>
-</div>
-
+                          {/* Reward Potential */}
+                          <div className="bg-white border border-gray-100 rounded-lg p-5">
+                            <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
+                              <svg
+                                className="w-5 h-5 mr-2 text-blue-600"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M13 10V3L4 14h7v7l9-11h-7z"
+                                />
+                              </svg>
+                              <span className="text-blue-700">
+                                Reward Potential
+                              </span>
+                            </h3>
+                            <div className="bg-blue-50/70 border border-blue-100 rounded-md p-4">
+                              {selectedCandidate["Reward Factor"] ? (
+                                Array.isArray(
+                                  selectedCandidate["Reward Factor"]
+                                ) ? (
+                                  <ol className="list-decimal list-inside space-y-1 text-sm text-gray-800 leading-relaxed">
+                                    {selectedCandidate["Reward Factor"].map(
+                                      (reward, index) => (
+                                        <li key={index}>
+                                          {reward.replace(/^\d+\.\s*/, "")}
+                                        </li>
+                                      )
+                                    )}
+                                  </ol>
+                                ) : (
+                                  <ol className="list-decimal list-inside space-y-1 text-sm text-gray-800 leading-relaxed">
+                                    {selectedCandidate["Reward Factor"]
+                                      .split(/\r?\n|\d+\.\s*/)
+                                      .filter((item) => item.trim() !== "")
+                                      .map((reward, index) => (
+                                        <li key={index}>{reward.trim()}</li>
+                                      ))}
+                                  </ol>
+                                )
+                              ) : (
+                                <p className="text-gray-400 text-sm">
+                                  No reward factors data available
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
 
                         {/* Detailed Analysis */}
                         <div className="bg-white border border-gray-100 rounded-lg p-5">
                           <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
-                            <svg className="w-5 h-5 mr-2 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            <svg
+                              className="w-5 h-5 mr-2 text-gray-600"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                              />
                             </svg>
                             Analysis Summary
                           </h3>
@@ -1643,8 +2140,18 @@ const getSortIcon = (columnName) => {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-gray-100">
                           <div className="bg-gray-50/50 rounded-lg p-4 border border-gray-100">
                             <h4 className="text-sm font-medium text-gray-700 mb-2 flex items-center">
-                              <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                              <svg
+                                className="w-4 h-4 mr-1"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                                />
                               </svg>
                               CV Document
                             </h4>
@@ -1657,20 +2164,42 @@ const getSortIcon = (columnName) => {
                                 rel="noopener noreferrer"
                                 className="inline-flex items-center px-3 py-2 bg-blue-50 text-blue-700 rounded-md text-sm font-medium hover:bg-blue-100 transition-colors duration-200 border border-blue-200"
                               >
-                                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                <svg
+                                  className="w-4 h-4 mr-2"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                                  />
                                 </svg>
                                 View Document
                               </a>
                             ) : (
-                              <p className="text-gray-400 text-sm">Document not available</p>
+                              <p className="text-gray-400 text-sm">
+                                Document not available
+                              </p>
                             )}
                           </div>
-                          
+
                           <div className="bg-gray-50/50 rounded-lg p-4 border border-gray-100">
                             <h4 className="text-sm font-medium text-gray-700 mb-2 flex items-center">
-                              <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              <svg
+                                className="w-4 h-4 mr-1"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                                />
                               </svg>
                               Analysis Date
                             </h4>
@@ -1695,7 +2224,9 @@ const getSortIcon = (columnName) => {
                                 </p>
                               </div>
                             ) : (
-                              <p className="text-gray-400 text-sm">Date not available</p>
+                              <p className="text-gray-400 text-sm">
+                                Date not available
+                              </p>
                             )}
                           </div>
                         </div>
@@ -1744,27 +2275,44 @@ const getSortIcon = (columnName) => {
             <div className="bg-white border border-gray-200 rounded-lg p-4">
               <div className="flex items-center">
                 <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
-                  <svg className="w-4 h-4 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                  <svg
+                    className="w-4 h-4 text-blue-600"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
                     <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-gray-900">{results.length}</p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {results.length}
+                  </p>
                   <p className="text-sm text-gray-600">Total CVs</p>
                 </div>
               </div>
             </div>
-            
+
             <div className="bg-white border border-gray-200 rounded-lg p-4">
               <div className="flex items-center">
                 <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center mr-3">
-                  <svg className="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  <svg
+                    className="w-4 h-4 text-green-600"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                      clipRule="evenodd"
+                    />
                   </svg>
                 </div>
                 <div>
                   <p className="text-2xl font-bold text-gray-900">
-                    {results.filter(r => (r['Overall Fit'] || 0) >= 80).length}
+                    {
+                      results.filter((r) => (r["Overall Fit"] || 0) >= 80)
+                        .length
+                    }
                   </p>
                   <p className="text-sm text-gray-600">High Match</p>
                 </div>
@@ -1774,13 +2322,27 @@ const getSortIcon = (columnName) => {
             <div className="bg-white border border-gray-200 rounded-lg p-4">
               <div className="flex items-center">
                 <div className="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center mr-3">
-                  <svg className="w-4 h-4 text-yellow-600" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                  <svg
+                    className="w-4 h-4 text-yellow-600"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                      clipRule="evenodd"
+                    />
                   </svg>
                 </div>
                 <div>
                   <p className="text-2xl font-bold text-gray-900">
-                    {results.filter(r => (r['Overall Fit'] || 0) >= 60 && (r['Overall Fit'] || 0) < 80).length}
+                    {
+                      results.filter(
+                        (r) =>
+                          (r["Overall Fit"] || 0) >= 60 &&
+                          (r["Overall Fit"] || 0) < 80
+                      ).length
+                    }
                   </p>
                   <p className="text-sm text-gray-600">Medium Match</p>
                 </div>
@@ -1790,13 +2352,29 @@ const getSortIcon = (columnName) => {
             <div className="bg-white border border-gray-200 rounded-lg p-4">
               <div className="flex items-center">
                 <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center mr-3">
-                  <svg className="w-4 h-4 text-gray-600" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
+                  <svg
+                    className="w-4 h-4 text-gray-600"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z"
+                      clipRule="evenodd"
+                    />
                   </svg>
                 </div>
                 <div>
                   <p className="text-2xl font-bold text-gray-900">
-                    {results.length > 0 ? Math.round(results.reduce((sum, r) => sum + (r['Overall Fit'] || 0), 0) / results.length) : 0}%
+                    {results.length > 0
+                      ? Math.round(
+                          results.reduce(
+                            (sum, r) => sum + (r["Overall Fit"] || 0),
+                            0
+                          ) / results.length
+                        )
+                      : 0}
+                    %
                   </p>
                   <p className="text-sm text-gray-600">Avg Score</p>
                 </div>
