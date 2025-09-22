@@ -1544,37 +1544,84 @@ const getSortIcon = (columnName) => {
                         </div>
 
                         {/* Risk & Reward Factors */}
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                          <div className="bg-white border border-gray-100 rounded-lg p-5">
-                            <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
-                              <svg className="w-5 h-5 mr-2 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                              </svg>
-                              <span className="text-red-700">Risk Factors</span>
-                            </h3>
-                            <div className="bg-red-50/70 border border-red-100 rounded-md p-4">
-                              <p className="text-sm text-gray-800 leading-relaxed">
-                                {selectedCandidate["Risk Factor"] ||
-                                  "No risk factors data available"}
-                              </p>
-                            </div>
-                          </div>
-                          
-                          <div className="bg-white border border-gray-100 rounded-lg p-5">
-                            <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
-                              <svg className="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                              </svg>
-                              <span className="text-blue-700">Reward Potential</span>
-                            </h3>
-                            <div className="bg-blue-50/70 border border-blue-100 rounded-md p-4">
-                              <p className="text-sm text-gray-800 leading-relaxed">
-                                {selectedCandidate["Reward Factor"] ||
-                                  "No reward factors data available"}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
+<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+  {/* Risk Factors */}
+  <div className="bg-white border border-gray-100 rounded-lg p-5">
+    <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
+      <svg className="w-5 h-5 mr-2 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+      </svg>
+      <span className="text-red-700">Risk Factors</span>
+    </h3>
+    <div className="bg-red-50/70 border border-red-100 rounded-md p-4">
+      {selectedCandidate["Risk Factor"] ? (
+        Array.isArray(selectedCandidate["Risk Factor"]) ? (
+          <ul className="space-y-2">
+            {selectedCandidate["Risk Factor"].map((risk, index) => (
+              <li key={index} className="text-sm text-gray-800 leading-relaxed flex items-start">
+                <span className="text-red-600 font-medium mr-2 flex-shrink-0">•</span>
+                <span>{risk.replace(/^\d+\.\s*/, '')}</span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <ul className="space-y-2">
+            {selectedCandidate["Risk Factor"]
+              .split(/\r?\n|\d+\.\s*/)
+              .filter(item => item.trim() !== "")
+              .map((risk, index) => (
+                <li key={index} className="text-sm text-gray-800 leading-relaxed flex items-start">
+                  <span className="text-red-600 font-medium mr-2 flex-shrink-0">•</span>
+                  <span>{risk.trim()}</span>
+                </li>
+              ))}
+          </ul>
+        )
+      ) : (
+        <p className="text-gray-400 text-sm">No risk factors data available</p>
+      )}
+    </div>
+  </div>
+
+  {/* Reward Potential */}
+  <div className="bg-white border border-gray-100 rounded-lg p-5">
+    <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
+      <svg className="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+      </svg>
+      <span className="text-blue-700">Reward Potential</span>
+    </h3>
+    <div className="bg-blue-50/70 border border-blue-100 rounded-md p-4">
+      {selectedCandidate["Reward Factor"] ? (
+        Array.isArray(selectedCandidate["Reward Factor"]) ? (
+          <ul className="space-y-2">
+            {selectedCandidate["Reward Factor"].map((reward, index) => (
+              <li key={index} className="text-sm text-gray-800 leading-relaxed flex items-start">
+                <span className="text-blue-600 font-medium mr-2 flex-shrink-0">•</span>
+                <span>{reward.replace(/^\d+\.\s*/, '')}</span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <ul className="space-y-2">
+            {selectedCandidate["Reward Factor"]
+              .split(/\r?\n|\d+\.\s*/)
+              .filter(item => item.trim() !== "")
+              .map((reward, index) => (
+                <li key={index} className="text-sm text-gray-800 leading-relaxed flex items-start">
+                  <span className="text-blue-600 font-medium mr-2 flex-shrink-0">•</span>
+                  <span>{reward.trim()}</span>
+                </li>
+              ))}
+          </ul>
+        )
+      ) : (
+        <p className="text-gray-400 text-sm">No reward factors data available</p>
+      )}
+    </div>
+  </div>
+</div>
+
 
                         {/* Detailed Analysis */}
                         <div className="bg-white border border-gray-100 rounded-lg p-5">
