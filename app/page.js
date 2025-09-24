@@ -194,45 +194,58 @@ export default function Home() {
 
   // New functions for configuration
   const handleSaveConfig = async () => {
-    if (!jobPosition.trim()) {
-      setConfigStatus("Nama posisi pekerjaan tidak boleh kosong");
-      return;
-    }
+  if (!jobPosition.trim()) {
+    setConfigStatus("Nama posisi pekerjaan tidak boleh kosong");
+    // Clear error message after 5 seconds
+    setTimeout(() => {
+      setConfigStatus("");
+    }, 5000);
+    return;
+  }
 
-    const validSubjects = emailSubjects.filter(
-      (subject) => subject.trim() !== ""
+  const validSubjects = emailSubjects.filter(
+    (subject) => subject.trim() !== ""
+  );
+  if (validSubjects.length === 0) {
+    setConfigStatus("Minimal satu subjek email harus diisi");
+    // Clear error message after 5 seconds
+    setTimeout(() => {
+      setConfigStatus("");
+    }, 5000);
+    return;
+  }
+
+  try {
+    setConfigStatus("Menyimpan konfigurasi...");
+    const response = await axios.post(
+      `${API_BASE_URL}/api/set-screening-config`,
+      {
+        job_position: jobPosition.trim(),
+        email_subjects: validSubjects,
+      }
     );
-    if (validSubjects.length === 0) {
-      setConfigStatus("Minimal satu subjek email harus diisi");
-      return;
-    }
 
-    try {
-      setConfigStatus("Menyimpan konfigurasi...");
-      const response = await axios.post(
-        `${API_BASE_URL}/api/set-screening-config`,
-        {
-          job_position: jobPosition.trim(),
-          email_subjects: validSubjects,
-        }
-      );
+    setIsConfigSaved(true);
+    setCurrentSpreadsheetName(response.data.spreadsheet_name);
+    setCurrentSpreadsheetUrl(response.data.spreadsheet_url || "");
+    setConfigStatus(
+      `Konfigurasi berhasil disimpan! Spreadsheet: ${response.data.spreadsheet_name}`
+    );
 
-      setIsConfigSaved(true);
-      setCurrentSpreadsheetName(response.data.spreadsheet_name);
-      setCurrentSpreadsheetUrl(response.data.spreadsheet_url || ""); // Tambah ini
-      setConfigStatus(
-        `Konfigurasi berhasil disimpan! Spreadsheet: ${response.data.spreadsheet_name}`
-      );
-
-      // Clear success message after 5 seconds
-      setTimeout(() => {
-        setConfigStatus("");
-      }, 5000);
-    } catch (error) {
-      const errorMessage = handleApiError(error, "Gagal menyimpan konfigurasi");
-      setConfigStatus(`Error: ${errorMessage}`);
-    }
-  };
+    // Clear success message after 8 seconds (longer for success messages)
+    setTimeout(() => {
+      setConfigStatus("");
+    }, 8000);
+  } catch (error) {
+    const errorMessage = handleApiError(error, "Gagal menyimpan konfigurasi");
+    setConfigStatus(`Error: ${errorMessage}`);
+    
+    // Clear error message after 8 seconds
+    setTimeout(() => {
+      setConfigStatus("");
+    }, 8000);
+  }
+};
 
   const addEmailSubject = () => {
     setEmailSubjects([...emailSubjects, ""]);
@@ -686,110 +699,157 @@ export default function Home() {
 
         {/* Configuration Section */}
         <div className="bg-white border border-gray-200 rounded-xl p-6 mb-8">
-          <div className="flex items-center mb-6">
-            <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center mr-3">
-              <svg
-                className="w-5 h-5 text-purple-600"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-                />
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                />
-              </svg>
-            </div>
-            <div>
-              <h2 className="text-lg font-semibold text-gray-900">
-                Screening Configuration
-              </h2>
-              <p className="text-sm text-gray-600">
-                Setup job position and email criteria
-              </p>
-            </div>
-          </div>
+  <div className="flex items-center mb-6">
+    <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center mr-3">
+      <svg
+        className="w-5 h-5 text-purple-600"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+        />
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+        />
+      </svg>
+    </div>
+    <div>
+      <h2 className="text-lg font-semibold text-gray-900">
+        Screening Configuration
+      </h2>
+      <p className="text-sm text-gray-600">
+        Setup job position and email criteria
+      </p>
+    </div>
+  </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Job Position Form */}
-            <div className="space-y-4">
-              <div>
-                <label
-                  htmlFor="jobPosition"
-                  className="block text-sm font-medium text-gray-700 mb-2"
-                >
-                  Nama Posisi Pekerjaan
-                </label>
-                <input
-                  type="text"
-                  id="jobPosition"
-                  value={jobPosition}
-                  onChange={(e) => setJobPosition(e.target.value)}
-                  placeholder="e.g., UI/UX Designer, Frontend Developer"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Nama ini akan digunakan untuk penamaan spreadsheet
-                </p>
-              </div>
-            </div>
+  {/* Configuration Status Alert - Moved to top */}
+  {configStatus && (
+    <div
+      className={`mb-6 p-4 rounded-lg text-sm font-medium ${
+        configStatus.includes("berhasil") ||
+        configStatus.includes("Sukses") ||
+        configStatus.includes("disimpan")
+          ? "bg-green-50 text-green-800 border border-green-200"
+          : configStatus.includes("Error") ||
+            configStatus.includes("kosong") ||
+            configStatus.includes("Gagal")
+          ? "bg-red-50 text-red-800 border border-red-200"
+          : "bg-blue-50 text-blue-800 border border-blue-200"
+      }`}
+    >
+      <div className="flex items-start">
+        <div className="flex-shrink-0">
+          {configStatus.includes("berhasil") ||
+          configStatus.includes("Sukses") ||
+          configStatus.includes("disimpan") ? (
+            <svg
+              className="w-5 h-5 text-green-600 mt-0.5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+          ) : configStatus.includes("Error") ||
+            configStatus.includes("kosong") ||
+            configStatus.includes("Gagal") ? (
+            <svg
+              className="w-5 h-5 text-red-600 mt-0.5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+          ) : (
+            <svg
+              className="w-5 h-5 text-blue-600 mt-0.5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+          )}
+        </div>
+        <div className="ml-3">{configStatus}</div>
+      </div>
+    </div>
+  )}
 
-            {/* Email Subjects Form */}
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Format Subjek Email yang Diterima
-                </label>
-                <div className="space-y-2">
-                  {emailSubjects.map((subject, index) => (
-                    <div key={index} className="flex items-center space-x-2">
-                      <input
-                        type="text"
-                        value={subject}
-                        onChange={(e) =>
-                          updateEmailSubject(index, e.target.value)
-                        }
-                        placeholder="e.g., cv-ui/ux, resume-frontend"
-                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
-                      />
-                      {emailSubjects.length > 1 && (
-                        <button
-                          onClick={() => removeEmailSubject(index)}
-                          className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors duration-200"
-                        >
-                          <svg
-                            className="w-4 h-4"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                            />
-                          </svg>
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                </div>
+  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    {/* Job Position Form */}
+    <div className="space-y-4">
+      <div>
+        <label
+          htmlFor="jobPosition"
+          className="block text-sm font-medium text-gray-700 mb-2"
+        >
+          Nama Posisi Pekerjaan
+        </label>
+        <input
+          type="text"
+          id="jobPosition"
+          value={jobPosition}
+          onChange={(e) => setJobPosition(e.target.value)}
+          placeholder="e.g., UI/UX Designer, Frontend Developer"
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 bg-white text-gray-900 placeholder-gray-500"
+        />
+        <p className="text-xs text-gray-500 mt-1">
+          Nama ini akan digunakan untuk penamaan spreadsheet
+        </p>
+      </div>
+    </div>
 
+    {/* Email Subjects Form */}
+    <div className="space-y-4">
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Format Subjek Email yang Diterima
+        </label>
+        <div className="space-y-2">
+          {emailSubjects.map((subject, index) => (
+            <div key={index} className="flex items-center space-x-2">
+              <input
+                type="text"
+                value={subject}
+                onChange={(e) =>
+                  updateEmailSubject(index, e.target.value)
+                }
+                placeholder="e.g., cv-ui/ux, resume-frontend"
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 bg-white text-gray-900 placeholder-gray-500"
+              />
+              {emailSubjects.length > 1 && (
                 <button
-                  onClick={addEmailSubject}
-                  className="mt-2 inline-flex items-center px-3 py-2 text-sm text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors duration-200"
+                  onClick={() => removeEmailSubject(index)}
+                  className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors duration-200"
                 >
                   <svg
-                    className="w-4 h-4 mr-1"
+                    className="w-4 h-4"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -798,116 +858,124 @@ export default function Home() {
                       strokeLinecap="round"
                       strokeLinejoin="round"
                       strokeWidth={2}
-                      d="M12 4v16m8-8H4"
+                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
                     />
                   </svg>
-                  Tambah Subjek Email
                 </button>
-
-                <p className="text-xs text-gray-500 mt-1">
-                  Email dengan subjek ini akan di-scan untuk mencari CV
-                </p>
-              </div>
+              )}
             </div>
-          </div>
-
-          {/* Configuration Status and Save Button */}
-          <div className="mt-6 pt-6 border-t border-gray-200">
-            <div className="flex items-center justify-between">
-              <div className="flex-1">
-                {currentSpreadsheetName && (
-                  <p className="text-sm text-gray-600">
-                    <span className="font-medium">Spreadsheet:</span>
-                    {currentSpreadsheetUrl ? (
-                      <a
-                        href={currentSpreadsheetUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-600 hover:text-blue-800 hover:underline ml-1"
-                      >
-                        {currentSpreadsheetName}
-                        <svg
-                          className="w-3 h-3 inline ml-1"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                          />
-                        </svg>
-                      </a>
-                    ) : (
-                      <span className="ml-1">{currentSpreadsheetName}</span>
-                    )}
-                  </p>
-                )}
-                {configStatus && (
-                  <div
-                    className={`mt-2 p-3 rounded-lg text-sm font-medium ${
-                      configStatus.includes("berhasil") ||
-                      configStatus.includes("Sukses")
-                        ? "bg-green-50 text-green-700 border border-green-200"
-                        : configStatus.includes("Error") ||
-                          configStatus.includes("kosong")
-                        ? "bg-red-50 text-red-700 border border-red-200"
-                        : "bg-blue-50 text-blue-700 border border-blue-200"
-                    }`}
-                  >
-                    {configStatus}
-                  </div>
-                )}
-              </div>
-
-              <button
-                onClick={handleSaveConfig}
-                disabled={
-                  !jobPosition.trim() || emailSubjects.every((s) => !s.trim())
-                }
-                className="ml-4 bg-purple-600 text-white py-2 px-6 rounded-lg hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors duration-200 font-medium flex items-center"
-              >
-                {isConfigSaved ? (
-                  <>
-                    <svg
-                      className="w-4 h-4 mr-2"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M5 13l4 4L19 7"
-                      />
-                    </svg>
-                    Update Config
-                  </>
-                ) : (
-                  <>
-                    <svg
-                      className="w-4 h-4 mr-2"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 0V4a2 2 0 00-2-2H9a2 2 0 00-2 2v3m1 0h4"
-                      />
-                    </svg>
-                    Save Config
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
+          ))}
         </div>
+
+        <button
+          onClick={addEmailSubject}
+          className="mt-2 inline-flex items-center px-3 py-2 text-sm text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors duration-200"
+        >
+          <svg
+            className="w-4 h-4 mr-1"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M12 4v16m8-8H4"
+            />
+          </svg>
+          Tambah Subjek Email
+        </button>
+
+        <p className="text-xs text-gray-500 mt-1">
+          Email dengan subjek ini akan di-scan untuk mencari CV
+        </p>
+      </div>
+    </div>
+  </div>
+
+  {/* Bottom Section - Spreadsheet Info and Save Button */}
+  <div className="mt-6 pt-6 border-t border-gray-200">
+    <div className="flex items-center justify-between">
+      <div className="flex-1">
+        {currentSpreadsheetName && (
+          <p className="text-sm text-gray-600">
+            <span className="font-medium">Spreadsheet:</span>
+            {currentSpreadsheetUrl ? (
+              <a
+                href={currentSpreadsheetUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-600 hover:text-blue-800 hover:underline ml-1"
+              >
+                {currentSpreadsheetName}
+                <svg
+                  className="w-3 h-3 inline ml-1"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                  />
+                </svg>
+              </a>
+            ) : (
+              <span className="ml-1">{currentSpreadsheetName}</span>
+            )}
+          </p>
+        )}
+      </div>
+
+      <button
+        onClick={handleSaveConfig}
+        disabled={
+          !jobPosition.trim() || emailSubjects.every((s) => !s.trim())
+        }
+        className="ml-4 bg-purple-600 text-white py-2 px-6 rounded-lg hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors duration-200 font-medium flex items-center"
+      >
+        {isConfigSaved ? (
+          <>
+            <svg
+              className="w-4 h-4 mr-2"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M5 13l4 4L19 7"
+              />
+            </svg>
+            Update Config
+          </>
+        ) : (
+          <>
+            <svg
+              className="w-4 h-4 mr-2"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 0V4a2 2 0 00-2-2H9a2 2 0 00-2 2v3m1 0h4"
+              />
+            </svg>
+            Save Config
+          </>
+        )}
+      </button>
+    </div>
+  </div>
+</div>
 
         {/* Main Process Section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
