@@ -2547,7 +2547,9 @@ export default function Home() {
             </div>
           </div>
         )}
-        <footer className="bg-gradient-to-br from-slate-50 to-gray-100 border-t border-gray-200 mt-auto">
+        
+      </main>
+      <footer className="bg-gradient-to-br from-slate-50 to-gray-100 border-t border-gray-200 mt-auto">
   <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
     <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-center">
       
@@ -2661,7 +2663,6 @@ export default function Home() {
     </div>
   </div>
 </footer>
-      </main>
 
       {/* Custom styles for line clamping */}
       <style jsx>{`
