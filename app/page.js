@@ -759,7 +759,7 @@ export default function Home() {
     <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-sky-100 rounded-full opacity-10 blur-3xl"></div>
   </div>
 
-  <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-24 sm:pt-32 sm:pb-32">
+  <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 sm:pt-20 pb-24 sm:pb-32">
     <div className="text-center space-y-8">
       {/* Badge */}
       <div className="inline-flex items-center px-4 py-1.5 bg-blue-50 border border-blue-200 rounded-full">
