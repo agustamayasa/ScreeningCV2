@@ -564,13 +564,8 @@ export default function Home() {
           <img
             src="/rekruta1.jpg"
             alt="Rekruta Logo"
-            className="w-12 h-12 rounded-xl object-cover"
+            className="w-32 h-16 rounded-xl object-contain"
           />
-        </div>
-        <div>
-          <h1 className="text-2xl font-bold bg-gradient-to-r from-sky-400 to-blue-600 bg-clip-text text-transparent">
-            RekrutAI
-          </h1>
         </div>
       </div>
 
