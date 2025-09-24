@@ -555,66 +555,39 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-white">
       {/* Navbar */}
-      <nav className="bg-white shadow-lg border-b border-gray-100 sticky top-0 z-50 backdrop-blur-sm bg-white/95">
+      <nav className="bg-white border-b border-gray-100 sticky top-0 z-50">
   <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    <div className="flex justify-between items-center h-16">
+    <div className="flex justify-between items-center h-20">
       {/* Logo and Brand Section */}
-      <div className="flex items-center space-x-3 flex-shrink-0">
-        <div className="w-10 h-10 rounded-xl overflow-hidden shadow-md">
+      <div className="flex items-center space-x-4">
+        <div className="flex-shrink-0">
           <img
-            src="logo.jpg"
+            src="/logo.jpg"
             alt="RekrutAI Logo"
-            className="w-full h-full object-cover"
-            onError={(e) => {
-              // Fallback jika gambar tidak ditemukan
-              e.target.style.display = 'none';
-              e.target.nextSibling.style.display = 'flex';
-            }}
+            className="w-12 h-12 rounded-xl object-cover"
           />
-          {/* Fallback logo */}
-          <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-600 rounded-xl flex items-center justify-center shadow-md hidden">
-            <svg
-              className="w-6 h-6 text-white"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-              />
-            </svg>
-          </div>
         </div>
-        <div className="hidden sm:block">
-          <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-400 via-blue-500 to-blue-600 bg-clip-text text-transparent tracking-wide">
-            RekrutAI
-          </h1>
-        </div>
-        {/* Mobile brand text */}
-        <div className="sm:hidden">
-          <h1 className="text-xl font-bold bg-gradient-to-r from-blue-400 via-blue-500 to-blue-600 bg-clip-text text-transparent">
+        <div>
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-sky-400 to-blue-600 bg-clip-text text-transparent">
             RekrutAI
           </h1>
         </div>
       </div>
 
-      {/* User Actions Section */}
-      <div className="flex items-center space-x-2 sm:space-x-4">
+      {/* Desktop Menu */}
+      <div className="hidden md:flex items-center space-x-6">
         {isLoggedIn ? (
-          <div className="flex items-center space-x-2 sm:space-x-4">
-            {/* Connection Status - Hidden on very small screens */}
-            <div className="hidden md:flex items-center space-x-2 bg-green-50 px-3 py-1.5 rounded-full border border-green-200">
-              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-              <span className="text-sm text-green-700 font-medium">Connected</span>
+          <div className="flex items-center space-x-6">
+            {/* Status Indicator */}
+            <div className="flex items-center space-x-2">
+              <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
+              <span className="text-sm font-medium text-gray-600">Online</span>
             </div>
 
             {/* User Avatar */}
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-100 to-blue-200 rounded-full flex items-center justify-center border-2 border-blue-300 shadow-sm">
+            <div className="w-10 h-10 bg-gradient-to-r from-sky-100 to-blue-100 rounded-full flex items-center justify-center ring-2 ring-sky-200">
               <svg
-                className="w-4 h-4 text-blue-600"
+                className="w-5 h-5 text-sky-600"
                 fill="currentColor"
                 viewBox="0 0 20 20"
               >
@@ -630,12 +603,12 @@ export default function Home() {
             <button
               onClick={handleLogout}
               disabled={isLoggingOut}
-              className="inline-flex items-center px-3 py-2 sm:px-4 border border-red-300 text-red-700 bg-white rounded-lg hover:bg-red-50 hover:border-red-400 hover:shadow-md transition-all duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+              className="inline-flex items-center px-5 py-2.5 border border-red-200 text-red-600 bg-red-50 rounded-xl hover:bg-red-100 hover:border-red-300 transition-all duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed text-sm"
             >
               {isLoggingOut ? (
                 <>
                   <svg
-                    className="animate-spin w-4 h-4 sm:mr-2"
+                    className="animate-spin w-4 h-4 mr-2"
                     fill="none"
                     viewBox="0 0 24 24"
                   >
@@ -653,12 +626,12 @@ export default function Home() {
                       d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                     ></path>
                   </svg>
-                  <span className="hidden sm:inline ml-2">Logging out...</span>
+                  Logging out...
                 </>
               ) : (
                 <>
                   <svg
-                    className="w-4 h-4 sm:mr-2"
+                    className="w-4 h-4 mr-2"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -670,7 +643,7 @@ export default function Home() {
                       d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
                     />
                   </svg>
-                  <span className="hidden sm:inline">Logout</span>
+                  Logout
                 </>
               )}
             </button>
@@ -678,21 +651,104 @@ export default function Home() {
         ) : (
           <button
             onClick={handleLogin}
-            className="inline-flex items-center px-3 py-2 sm:px-4 border border-blue-500 text-blue-600 bg-white rounded-lg hover:bg-blue-50 hover:border-blue-600 hover:shadow-md transition-all duration-200 font-medium text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            className="inline-flex items-center px-6 py-2.5 bg-gradient-to-r from-sky-500 to-blue-600 text-white rounded-xl hover:from-sky-600 hover:to-blue-700 transition-all duration-200 font-medium text-sm"
           >
             <svg
-              className="w-4 h-4 sm:mr-2"
+              className="w-4 h-4 mr-2"
+              viewBox="0 0 24 24"
               fill="currentColor"
-              viewBox="0 0 20 20"
             >
-              <path
-                fillRule="evenodd"
-                d="M3 3a1 1 0 011 1v12a1 1 0 11-2 0V4a1 1 0 011-1zm7.707 3.293a1 1 0 010 1.414L9.414 9H17a1 1 0 110 2H9.414l1.293 1.293a1 1 0 01-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 011.414 0z"
-                clipRule="evenodd"
-              />
+              <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+              <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+              <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+              <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
             </svg>
-            <span className="hidden sm:inline">Login with Google</span>
-            <span className="sm:hidden">Login</span>
+            Login with Google
+          </button>
+        )}
+      </div>
+
+      {/* Mobile Menu Button */}
+      <div className="md:hidden">
+        {isLoggedIn ? (
+          <div className="flex items-center space-x-3">
+            {/* Mobile Status */}
+            <div className="flex items-center space-x-2">
+              <div className="w-2 h-2 bg-emerald-400 rounded-full"></div>
+              <div className="w-8 h-8 bg-gradient-to-r from-sky-100 to-blue-100 rounded-full flex items-center justify-center">
+                <svg
+                  className="w-4 h-4 text-sky-600"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </div>
+            </div>
+            
+            {/* Mobile Logout Button */}
+            <button
+              onClick={handleLogout}
+              disabled={isLoggingOut}
+              className="inline-flex items-center px-3 py-2 border border-red-200 text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isLoggingOut ? (
+                <svg
+                  className="animate-spin w-4 h-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
+                </svg>
+              ) : (
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                  />
+                </svg>
+              )}
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={handleLogin}
+            className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-sky-500 to-blue-600 text-white rounded-lg hover:from-sky-600 hover:to-blue-700 transition-all duration-200 font-medium text-sm"
+          >
+            <svg
+              className="w-4 h-4 mr-2"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+            >
+              <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+              <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+              <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+              <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+            </svg>
+            <span className="hidden sm:inline">Login</span>
           </button>
         )}
       </div>
