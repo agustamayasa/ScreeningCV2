@@ -194,58 +194,58 @@ export default function Home() {
 
   // New functions for configuration
   const handleSaveConfig = async () => {
-  if (!jobPosition.trim()) {
-    setConfigStatus("Nama posisi pekerjaan tidak boleh kosong");
-    // Clear error message after 5 seconds
-    setTimeout(() => {
-      setConfigStatus("");
-    }, 5000);
-    return;
-  }
+    if (!jobPosition.trim()) {
+      setConfigStatus("Nama posisi pekerjaan tidak boleh kosong");
+      // Clear error message after 5 seconds
+      setTimeout(() => {
+        setConfigStatus("");
+      }, 5000);
+      return;
+    }
 
-  const validSubjects = emailSubjects.filter(
-    (subject) => subject.trim() !== ""
-  );
-  if (validSubjects.length === 0) {
-    setConfigStatus("Minimal satu subjek email harus diisi");
-    // Clear error message after 5 seconds
-    setTimeout(() => {
-      setConfigStatus("");
-    }, 5000);
-    return;
-  }
-
-  try {
-    setConfigStatus("Menyimpan konfigurasi...");
-    const response = await axios.post(
-      `${API_BASE_URL}/api/set-screening-config`,
-      {
-        job_position: jobPosition.trim(),
-        email_subjects: validSubjects,
-      }
+    const validSubjects = emailSubjects.filter(
+      (subject) => subject.trim() !== ""
     );
+    if (validSubjects.length === 0) {
+      setConfigStatus("Minimal satu subjek email harus diisi");
+      // Clear error message after 5 seconds
+      setTimeout(() => {
+        setConfigStatus("");
+      }, 5000);
+      return;
+    }
 
-    setIsConfigSaved(true);
-    setCurrentSpreadsheetName(response.data.spreadsheet_name);
-    setCurrentSpreadsheetUrl(response.data.spreadsheet_url || "");
-    setConfigStatus(
-      `Konfigurasi berhasil disimpan! Spreadsheet: ${response.data.spreadsheet_name}`
-    );
+    try {
+      setConfigStatus("Menyimpan konfigurasi...");
+      const response = await axios.post(
+        `${API_BASE_URL}/api/set-screening-config`,
+        {
+          job_position: jobPosition.trim(),
+          email_subjects: validSubjects,
+        }
+      );
 
-    // Clear success message after 8 seconds (longer for success messages)
-    setTimeout(() => {
-      setConfigStatus("");
-    }, 8000);
-  } catch (error) {
-    const errorMessage = handleApiError(error, "Gagal menyimpan konfigurasi");
-    setConfigStatus(`Error: ${errorMessage}`);
-    
-    // Clear error message after 8 seconds
-    setTimeout(() => {
-      setConfigStatus("");
-    }, 8000);
-  }
-};
+      setIsConfigSaved(true);
+      setCurrentSpreadsheetName(response.data.spreadsheet_name);
+      setCurrentSpreadsheetUrl(response.data.spreadsheet_url || "");
+      setConfigStatus(
+        `Konfigurasi berhasil disimpan! Spreadsheet: ${response.data.spreadsheet_name}`
+      );
+
+      // Clear success message after 8 seconds (longer for success messages)
+      setTimeout(() => {
+        setConfigStatus("");
+      }, 8000);
+    } catch (error) {
+      const errorMessage = handleApiError(error, "Gagal menyimpan konfigurasi");
+      setConfigStatus(`Error: ${errorMessage}`);
+
+      // Clear error message after 8 seconds
+      setTimeout(() => {
+        setConfigStatus("");
+      }, 8000);
+    }
+  };
 
   const addEmailSubject = () => {
     setEmailSubjects([...emailSubjects, ""]);
@@ -518,7 +518,6 @@ export default function Home() {
       );
     }
   };
-  
 
   // Show loading state while checking authentication
   if (isCheckingAuth) {
@@ -556,95 +555,97 @@ export default function Home() {
     <div className="min-h-screen bg-white">
       {/* Navbar */}
       <nav className="bg-white border-b border-gray-100 sticky top-0 z-50">
-  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    <div className="flex justify-between items-center h-20">
-      {/* Logo and Brand Section */}
-      <div className="flex items-center space-x-4">
-        <div className="flex-shrink-0">
-          <img
-            src="/rekruta1.jpg"
-            alt="Rekruta Logo"
-            className="w-32 h-16 rounded-xl object-contain"
-          />
-        </div>
-      </div>
-
-      {/* Desktop Menu */}
-      <div className="hidden md:flex items-center space-x-6">
-        {isLoggedIn ? (
-          <div className="flex items-center space-x-6">
-            {/* Status Indicator */}
-            <div className="flex items-center space-x-2">
-              <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
-              <span className="text-sm font-medium text-gray-600">Online</span>
-            </div>
-
-            {/* User Avatar */}
-            <div className="w-10 h-10 bg-gradient-to-r from-sky-100 to-blue-100 rounded-full flex items-center justify-center ring-2 ring-sky-200">
-              <svg
-                className="w-5 h-5 text-sky-600"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
-                  clipRule="evenodd"
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-20">
+            {/* Logo and Brand Section */}
+            <div className="flex items-center space-x-4">
+              <div className="flex-shrink-0">
+                <img
+                  src="/rekruta1.jpg"
+                  alt="Rekruta Logo"
+                  className="w-32 h-16 rounded-xl object-contain"
                 />
-              </svg>
+              </div>
             </div>
 
-            {/* Logout Button */}
-            <button
-              onClick={handleLogout}
-              disabled={isLoggingOut}
-              className="inline-flex items-center px-5 py-2.5 border border-red-200 text-red-600 bg-red-50 rounded-xl hover:bg-red-100 hover:border-red-300 transition-all duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed text-sm"
-            >
-              {isLoggingOut ? (
-                <>
-                  <svg
-                    className="animate-spin w-4 h-4 mr-2"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    ></circle>
-                    <path
-                      className="opacity-75"
+            {/* Desktop Menu */}
+            <div className="hidden md:flex items-center space-x-6">
+              {isLoggedIn ? (
+                <div className="flex items-center space-x-6">
+                  {/* Status Indicator */}
+                  <div className="flex items-center space-x-2">
+                    <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
+                    <span className="text-sm font-medium text-gray-600">
+                      Online
+                    </span>
+                  </div>
+
+                  {/* User Avatar */}
+                  <div className="w-10 h-10 bg-gradient-to-r from-sky-100 to-blue-100 rounded-full flex items-center justify-center ring-2 ring-sky-200">
+                    <svg
+                      className="w-5 h-5 text-sky-600"
                       fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    ></path>
-                  </svg>
-                  Logging out...
-                </>
-              ) : (
-                <>
-                  <svg
-                    className="w-4 h-4 mr-2"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </div>
+
+                  {/* Logout Button */}
+                  <button
+                    onClick={handleLogout}
+                    disabled={isLoggingOut}
+                    className="inline-flex items-center px-5 py-2.5 border border-red-200 text-red-600 bg-red-50 rounded-xl hover:bg-red-100 hover:border-red-300 transition-all duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed text-sm"
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-                    />
-                  </svg>
-                  Logout
-                </>
-              )}
-            </button>
-          </div>
-        ) : (
-          <button
+                    {isLoggingOut ? (
+                      <>
+                        <svg
+                          className="animate-spin w-4 h-4 mr-2"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          ></circle>
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                          ></path>
+                        </svg>
+                        Logging out...
+                      </>
+                    ) : (
+                      <>
+                        <svg
+                          className="w-4 h-4 mr-2"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                          />
+                        </svg>
+                        Logout
+                      </>
+                    )}
+                  </button>
+                </div>
+              ) : (
+                <button
                   onClick={handleLogin}
                   className="inline-flex items-center px-4 py-2 border border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors duration-200 font-medium"
                 >
@@ -653,104 +654,103 @@ export default function Home() {
                     fill="currentColor"
                     viewBox="0 0 20 20"
                   >
-                    <path
-                      fillRule="evenodd"
-                      d="M3 3a1 1 0 011 1v12a1 1 0 11-2 0V4a1 1 0 011-1zm7.707 3.293a1 1 0 010 1.414L9.414 9H17a1 1 0 110 2H9.414l1.293 1.293a1 1 0 01-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 011.414 0z"
-                      clipRule="evenodd"
-                    />
+                    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
                   </svg>
                   Login with Google
                 </button>
-        )}
-      </div>
-
-      {/* Mobile Menu Button */}
-      <div className="md:hidden">
-        {isLoggedIn ? (
-          <div className="flex items-center space-x-3">
-            {/* Mobile Status */}
-            <div className="flex items-center space-x-2">
-              <div className="w-2 h-2 bg-emerald-400 rounded-full"></div>
-              <div className="w-8 h-8 bg-gradient-to-r from-sky-100 to-blue-100 rounded-full flex items-center justify-center">
-                <svg
-                  className="w-4 h-4 text-sky-600"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              </div>
-            </div>
-            
-            {/* Mobile Logout Button */}
-            <button
-              onClick={handleLogout}
-              disabled={isLoggingOut}
-              className="inline-flex items-center px-3 py-2 border border-red-200 text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isLoggingOut ? (
-                <svg
-                  className="animate-spin w-4 h-4"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  ></circle>
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  ></path>
-                </svg>
-              ) : (
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-                  />
-                </svg>
               )}
-            </button>
+            </div>
+
+            {/* Mobile Menu Button */}
+            <div className="md:hidden">
+              {isLoggedIn ? (
+                <div className="flex items-center space-x-3">
+                  {/* Mobile Status */}
+                  <div className="flex items-center space-x-2">
+                    <div className="w-2 h-2 bg-emerald-400 rounded-full"></div>
+                    <div className="w-8 h-8 bg-gradient-to-r from-sky-100 to-blue-100 rounded-full flex items-center justify-center">
+                      <svg
+                        className="w-4 h-4 text-sky-600"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    </div>
+                  </div>
+
+                  {/* Mobile Logout Button */}
+                  <button
+                    onClick={handleLogout}
+                    disabled={isLoggingOut}
+                    className="inline-flex items-center px-3 py-2 border border-red-200 text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isLoggingOut ? (
+                      <svg
+                        className="animate-spin w-4 h-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        ></circle>
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        ></path>
+                      </svg>
+                    ) : (
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                        />
+                      </svg>
+                    )}
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={handleLogin}
+                  className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-sky-500 to-blue-600 text-white rounded-lg hover:from-sky-600 hover:to-blue-700 transition-all duration-200 font-medium text-sm"
+                >
+                  <svg
+                    className="w-4 h-4 mr-2"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                  >
+                    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+                  </svg>
+                  <span className="hidden sm:inline">Login</span>
+                </button>
+              )}
+            </div>
           </div>
-        ) : (
-          <button
-            onClick={handleLogin}
-            className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-sky-500 to-blue-600 text-white rounded-lg hover:from-sky-600 hover:to-blue-700 transition-all duration-200 font-medium text-sm"
-          >
-            <svg
-              className="w-4 h-4 mr-2"
-              viewBox="0 0 24 24"
-              fill="currentColor"
-            >
-              <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-              <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-              <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-              <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-            </svg>
-            <span className="hidden sm:inline">Login</span>
-          </button>
-        )}
-      </div>
-    </div>
-  </div>
-</nav>
+        </div>
+      </nav>
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -776,157 +776,180 @@ export default function Home() {
 
         {/* Configuration Section */}
         <div className="bg-white border border-gray-200 rounded-xl p-6 mb-8">
-  <div className="flex items-center mb-6">
-    <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center mr-3">
-      <svg
-        className="w-5 h-5 text-purple-600"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-        />
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-        />
-      </svg>
-    </div>
-    <div>
-      <h2 className="text-lg font-semibold text-gray-900">
-        Screening Configuration
-      </h2>
-      <p className="text-sm text-gray-600">
-        Setup job position and email criteria
-      </p>
-    </div>
-  </div>
+          <div className="flex items-center mb-6">
+            <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center mr-3">
+              <svg
+                className="w-5 h-5 text-purple-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+                />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                />
+              </svg>
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900">
+                Screening Configuration
+              </h2>
+              <p className="text-sm text-gray-600">
+                Setup job position and email criteria
+              </p>
+            </div>
+          </div>
 
-  {/* Configuration Status Alert - Moved to top */}
-  {configStatus && (
-    <div
-      className={`mb-6 p-4 rounded-lg text-sm font-medium ${
-        configStatus.includes("berhasil") ||
-        configStatus.includes("Sukses") ||
-        configStatus.includes("disimpan")
-          ? "bg-green-50 text-green-800 border border-green-200"
-          : configStatus.includes("Error") ||
-            configStatus.includes("kosong") ||
-            configStatus.includes("Gagal")
-          ? "bg-red-50 text-red-800 border border-red-200"
-          : "bg-blue-50 text-blue-800 border border-blue-200"
-      }`}
-    >
-      <div className="flex items-start">
-        <div className="flex-shrink-0">
-          {configStatus.includes("berhasil") ||
-          configStatus.includes("Sukses") ||
-          configStatus.includes("disimpan") ? (
-            <svg
-              className="w-5 h-5 text-green-600 mt-0.5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
+          {/* Configuration Status Alert - Moved to top */}
+          {configStatus && (
+            <div
+              className={`mb-6 p-4 rounded-lg text-sm font-medium ${
+                configStatus.includes("berhasil") ||
+                configStatus.includes("Sukses") ||
+                configStatus.includes("disimpan")
+                  ? "bg-green-50 text-green-800 border border-green-200"
+                  : configStatus.includes("Error") ||
+                    configStatus.includes("kosong") ||
+                    configStatus.includes("Gagal")
+                  ? "bg-red-50 text-red-800 border border-red-200"
+                  : "bg-blue-50 text-blue-800 border border-blue-200"
+              }`}
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
-          ) : configStatus.includes("Error") ||
-            configStatus.includes("kosong") ||
-            configStatus.includes("Gagal") ? (
-            <svg
-              className="w-5 h-5 text-red-600 mt-0.5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
-          ) : (
-            <svg
-              className="w-5 h-5 text-blue-600 mt-0.5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
+              <div className="flex items-start">
+                <div className="flex-shrink-0">
+                  {configStatus.includes("berhasil") ||
+                  configStatus.includes("Sukses") ||
+                  configStatus.includes("disimpan") ? (
+                    <svg
+                      className="w-5 h-5 text-green-600 mt-0.5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                      />
+                    </svg>
+                  ) : configStatus.includes("Error") ||
+                    configStatus.includes("kosong") ||
+                    configStatus.includes("Gagal") ? (
+                    <svg
+                      className="w-5 h-5 text-red-600 mt-0.5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                      />
+                    </svg>
+                  ) : (
+                    <svg
+                      className="w-5 h-5 text-blue-600 mt-0.5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                      />
+                    </svg>
+                  )}
+                </div>
+                <div className="ml-3">{configStatus}</div>
+              </div>
+            </div>
           )}
-        </div>
-        <div className="ml-3">{configStatus}</div>
-      </div>
-    </div>
-  )}
 
-  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-    {/* Job Position Form */}
-    <div className="space-y-4">
-      <div>
-        <label
-          htmlFor="jobPosition"
-          className="block text-sm font-medium text-gray-700 mb-2"
-        >
-          Nama Posisi Pekerjaan
-        </label>
-        <input
-          type="text"
-          id="jobPosition"
-          value={jobPosition}
-          onChange={(e) => setJobPosition(e.target.value)}
-          placeholder="e.g., UI/UX Designer, Frontend Developer"
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 bg-white text-gray-900 placeholder-gray-500"
-        />
-        <p className="text-xs text-gray-500 mt-1">
-          Nama ini akan digunakan untuk penamaan spreadsheet
-        </p>
-      </div>
-    </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Job Position Form */}
+            <div className="space-y-4">
+              <div>
+                <label
+                  htmlFor="jobPosition"
+                  className="block text-sm font-medium text-gray-700 mb-2"
+                >
+                  Nama Posisi Pekerjaan
+                </label>
+                <input
+                  type="text"
+                  id="jobPosition"
+                  value={jobPosition}
+                  onChange={(e) => setJobPosition(e.target.value)}
+                  placeholder="e.g., UI/UX Designer, Frontend Developer"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 bg-white text-gray-900 placeholder-gray-500"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Nama ini akan digunakan untuk penamaan spreadsheet
+                </p>
+              </div>
+            </div>
 
-    {/* Email Subjects Form */}
-    <div className="space-y-4">
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Format Subjek Email yang Diterima
-        </label>
-        <div className="space-y-2">
-          {emailSubjects.map((subject, index) => (
-            <div key={index} className="flex items-center space-x-2">
-              <input
-                type="text"
-                value={subject}
-                onChange={(e) =>
-                  updateEmailSubject(index, e.target.value)
-                }
-                placeholder="e.g., cv-ui/ux, resume-frontend"
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 bg-white text-gray-900 placeholder-gray-500"
-              />
-              {emailSubjects.length > 1 && (
+            {/* Email Subjects Form */}
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Format Subjek Email yang Diterima
+                </label>
+                <div className="space-y-2">
+                  {emailSubjects.map((subject, index) => (
+                    <div key={index} className="flex items-center space-x-2">
+                      <input
+                        type="text"
+                        value={subject}
+                        onChange={(e) =>
+                          updateEmailSubject(index, e.target.value)
+                        }
+                        placeholder="e.g., cv-ui/ux, resume-frontend"
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 bg-white text-gray-900 placeholder-gray-500"
+                      />
+                      {emailSubjects.length > 1 && (
+                        <button
+                          onClick={() => removeEmailSubject(index)}
+                          className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors duration-200"
+                        >
+                          <svg
+                            className="w-4 h-4"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                            />
+                          </svg>
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
                 <button
-                  onClick={() => removeEmailSubject(index)}
-                  className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors duration-200"
+                  onClick={addEmailSubject}
+                  className="mt-2 inline-flex items-center px-3 py-2 text-sm text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors duration-200"
                 >
                   <svg
-                    className="w-4 h-4"
+                    className="w-4 h-4 mr-1"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -935,124 +958,101 @@ export default function Home() {
                       strokeLinecap="round"
                       strokeLinejoin="round"
                       strokeWidth={2}
-                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                      d="M12 4v16m8-8H4"
                     />
                   </svg>
+                  Tambah Subjek Email
                 </button>
-              )}
+
+                <p className="text-xs text-gray-500 mt-1">
+                  Email dengan subjek ini akan di-scan untuk mencari CV
+                </p>
+              </div>
             </div>
-          ))}
-        </div>
+          </div>
 
-        <button
-          onClick={addEmailSubject}
-          className="mt-2 inline-flex items-center px-3 py-2 text-sm text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors duration-200"
-        >
-          <svg
-            className="w-4 h-4 mr-1"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M12 4v16m8-8H4"
-            />
-          </svg>
-          Tambah Subjek Email
-        </button>
+          {/* Bottom Section - Spreadsheet Info and Save Button */}
+          <div className="mt-6 pt-6 border-t border-gray-200">
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                {currentSpreadsheetName && (
+                  <p className="text-sm text-gray-600">
+                    <span className="font-medium">Spreadsheet:</span>
+                    {currentSpreadsheetUrl ? (
+                      <a
+                        href={currentSpreadsheetUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:text-blue-800 hover:underline ml-1"
+                      >
+                        {currentSpreadsheetName}
+                        <svg
+                          className="w-3 h-3 inline ml-1"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                          />
+                        </svg>
+                      </a>
+                    ) : (
+                      <span className="ml-1">{currentSpreadsheetName}</span>
+                    )}
+                  </p>
+                )}
+              </div>
 
-        <p className="text-xs text-gray-500 mt-1">
-          Email dengan subjek ini akan di-scan untuk mencari CV
-        </p>
-      </div>
-    </div>
-  </div>
-
-  {/* Bottom Section - Spreadsheet Info and Save Button */}
-  <div className="mt-6 pt-6 border-t border-gray-200">
-    <div className="flex items-center justify-between">
-      <div className="flex-1">
-        {currentSpreadsheetName && (
-          <p className="text-sm text-gray-600">
-            <span className="font-medium">Spreadsheet:</span>
-            {currentSpreadsheetUrl ? (
-              <a
-                href={currentSpreadsheetUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-600 hover:text-blue-800 hover:underline ml-1"
+              <button
+                onClick={handleSaveConfig}
+                disabled={
+                  !jobPosition.trim() || emailSubjects.every((s) => !s.trim())
+                }
+                className="ml-4 bg-purple-600 text-white py-2 px-6 rounded-lg hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors duration-200 font-medium flex items-center"
               >
-                {currentSpreadsheetName}
-                <svg
-                  className="w-3 h-3 inline ml-1"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                  />
-                </svg>
-              </a>
-            ) : (
-              <span className="ml-1">{currentSpreadsheetName}</span>
-            )}
-          </p>
-        )}
-      </div>
-
-      <button
-        onClick={handleSaveConfig}
-        disabled={
-          !jobPosition.trim() || emailSubjects.every((s) => !s.trim())
-        }
-        className="ml-4 bg-purple-600 text-white py-2 px-6 rounded-lg hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors duration-200 font-medium flex items-center"
-      >
-        {isConfigSaved ? (
-          <>
-            <svg
-              className="w-4 h-4 mr-2"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M5 13l4 4L19 7"
-              />
-            </svg>
-            Update Config
-          </>
-        ) : (
-          <>
-            <svg
-              className="w-4 h-4 mr-2"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 0V4a2 2 0 00-2-2H9a2 2 0 00-2 2v3m1 0h4"
-              />
-            </svg>
-            Save Config
-          </>
-        )}
-      </button>
-    </div>
-  </div>
-</div>
+                {isConfigSaved ? (
+                  <>
+                    <svg
+                      className="w-4 h-4 mr-2"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M5 13l4 4L19 7"
+                      />
+                    </svg>
+                    Update Config
+                  </>
+                ) : (
+                  <>
+                    <svg
+                      className="w-4 h-4 mr-2"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 0V4a2 2 0 00-2-2H9a2 2 0 00-2 2v3m1 0h4"
+                      />
+                    </svg>
+                    Save Config
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
 
         {/* Main Process Section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
@@ -2543,122 +2543,153 @@ export default function Home() {
             </div>
           </div>
         )}
-        
       </main>
       <footer className="bg-gradient-to-br from-slate-50 to-gray-100 border-t border-gray-200 mt-auto">
-  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-center">
-      
-      {/* Brand Section */}
-      <div className="text-center md:text-left">
-        <div className="flex items-center justify-center md:justify-start space-x-3 mb-4">
-          <img
-            src="logo.jpg"
-            alt="RekrutAI Logo"
-            className="w-10 h-10 rounded-lg object-cover"
-          />
-          <h3 className="text-xl font-bold bg-gradient-to-r from-sky-400 to-blue-600 bg-clip-text text-transparent">
-            RekrutAI
-          </h3>
-        </div>
-        <p className="text-gray-600 text-sm leading-relaxed max-w-md mx-auto md:mx-0">
-          Transforming recruitment with intelligent CV screening and AI-powered candidate matching.
-        </p>
-      </div>
-
-      {/* Contact Section */}
-      <div className="text-center">
-        <h4 className="text-lg font-semibold text-gray-800 mb-6">Get in Touch</h4>
-        <div className="space-y-4">
-          
-          {/* Phone */}
-          <div className="flex items-center justify-center space-x-3 group">
-            <div className="w-10 h-10 bg-gradient-to-r from-emerald-100 to-green-100 rounded-full flex items-center justify-center group-hover:from-emerald-200 group-hover:to-green-200 transition-all duration-300">
-              <svg className="w-5 h-5 text-emerald-600" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M6.62,10.79C8.06,13.62 10.38,15.94 13.21,17.38L15.41,15.18C15.69,14.9 16.08,14.82 16.43,14.93C17.55,15.3 18.75,15.5 20,15.5A1,1 0 0,1 21,16.5V20A1,1 0 0,1 20,21A17,17 0 0,1 3,4A1,1 0 0,1 4,3H7.5A1,1 0 0,1 8.5,4C8.5,5.25 8.7,6.45 9.07,7.57C9.18,7.92 9.1,8.31 8.82,8.59L6.62,10.79Z"/>
-              </svg>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-center">
+            {/* Brand Section */}
+            <div className="text-center md:text-left">
+              <div className="flex items-center justify-center md:justify-start space-x-3 mb-4">
+                <img
+                  src="logo.jpg"
+                  alt="RekrutAI Logo"
+                  className="w-10 h-10 rounded-lg object-cover"
+                />
+                <h3 className="text-xl font-bold bg-gradient-to-r from-sky-400 to-blue-600 bg-clip-text text-transparent">
+                  RekrutAI
+                </h3>
+              </div>
+              <p className="text-gray-600 text-sm leading-relaxed max-w-md mx-auto md:mx-0">
+                Transforming recruitment with intelligent CV screening and
+                AI-powered candidate matching.
+              </p>
             </div>
-            <div className="text-left">
-              <p className="text-xs text-gray-500 uppercase tracking-wide">Phone</p>
-              <a href="tel:08983178032" className="text-gray-800 hover:text-emerald-600 transition-colors duration-200 font-medium">
-                08983178032
-              </a>
+
+            {/* Contact Section */}
+            <div className="text-center">
+              <h4 className="text-lg font-semibold text-gray-800 mb-6">
+                Get in Touch
+              </h4>
+              <div className="space-y-4">
+                {/* Phone */}
+                <div className="flex items-center justify-center space-x-3 group">
+                  <div className="w-10 h-10 bg-gradient-to-r from-emerald-100 to-green-100 rounded-full flex items-center justify-center group-hover:from-emerald-200 group-hover:to-green-200 transition-all duration-300">
+                    <svg
+                      className="w-5 h-5 text-emerald-600"
+                      fill="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path d="M6.62,10.79C8.06,13.62 10.38,15.94 13.21,17.38L15.41,15.18C15.69,14.9 16.08,14.82 16.43,14.93C17.55,15.3 18.75,15.5 20,15.5A1,1 0 0,1 21,16.5V20A1,1 0 0,1 20,21A17,17 0 0,1 3,4A1,1 0 0,1 4,3H7.5A1,1 0 0,1 8.5,4C8.5,5.25 8.7,6.45 9.07,7.57C9.18,7.92 9.1,8.31 8.82,8.59L6.62,10.79Z" />
+                    </svg>
+                  </div>
+                  <div className="text-left">
+                    <p className="text-xs text-gray-500 uppercase tracking-wide">
+                      Phone
+                    </p>
+                    <a
+                      href="tel:08983178032"
+                      className="text-gray-800 hover:text-emerald-600 transition-colors duration-200 font-medium"
+                    >
+                      08983178032
+                    </a>
+                  </div>
+                </div>
+
+                {/* Email */}
+                <div className="flex items-center justify-center space-x-3 group">
+                  <div className="w-10 h-10 bg-gradient-to-r from-blue-100 to-sky-100 rounded-full flex items-center justify-center group-hover:from-blue-200 group-hover:to-sky-200 transition-all duration-300">
+                    <svg
+                      className="w-5 h-5 text-blue-600"
+                      fill="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path d="M20,8L12,13L4,8V6L12,11L20,6M20,4H4C2.89,4 2,4.89 2,6V18A2,2 0 0,0 4,20H20A2,2 0 0,0 22,18V6C22,4.89 21.1,4 20,4Z" />
+                    </svg>
+                  </div>
+                  <div className="text-left">
+                    <p className="text-xs text-gray-500 uppercase tracking-wide">
+                      Email
+                    </p>
+                    <a
+                      href="mailto:agustamayasa21@gmail.com"
+                      className="text-gray-800 hover:text-blue-600 transition-colors duration-200 font-medium"
+                    >
+                      agustamayasa21@gmail.com
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Social Links Section */}
+            <div className="text-center md:text-right">
+              <h4 className="text-lg font-semibold text-gray-800 mb-6">
+                Connect
+              </h4>
+              <div className="flex justify-center md:justify-end space-x-4">
+                {/* Instagram */}
+                <a
+                  href="https://www.instagram.com/agus_tamayasa"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group w-12 h-12 bg-gradient-to-r from-pink-100 to-purple-100 rounded-xl flex items-center justify-center hover:from-pink-200 hover:to-purple-200 hover:scale-105 transform transition-all duration-300"
+                  aria-label="Instagram Profile"
+                >
+                  <svg
+                    className="w-6 h-6 text-pink-600 group-hover:text-purple-600 transition-colors duration-300"
+                    fill="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path d="M12,2.163c3.204,0,3.584,0.012,4.85,0.07c3.252,0.148,4.771,1.691,4.919,4.919c0.058,1.265,0.069,1.645,0.069,4.849c0,3.205-0.012,3.584-0.069,4.849c-0.149,3.225-1.664,4.771-4.919,4.919c-1.266,0.058-1.644,0.07-4.85,0.07s-3.584-0.012-4.849-0.07c-3.26-0.149-4.771-1.699-4.919-4.92c-0.058-1.265-0.07-1.644-0.07-4.849c0-3.204,0.013-3.583,0.07-4.849c0.149-3.227,1.664-4.771,4.919-4.919c1.266-0.057,1.645-0.069,4.849-0.069zm0-2.163c-3.259,0-3.667,0.014-4.947,0.072c-4.358,0.2-6.78,2.618-6.98,6.98c-0.059,1.281-0.073,1.689-0.073,4.948c0,3.259,0.014,3.668,0.072,4.948c0.2,4.358,2.618,6.78,6.98,6.98c1.281,0.058,1.689,0.072,4.948,0.072c3.259,0,3.668-0.014,4.948-0.072c4.354-0.2,6.782-2.618,6.979-6.98c0.059-1.28,0.073-1.689,0.073-4.948c0-3.259-0.014-3.667-0.072-4.947c-0.196-4.354-2.617-6.78-6.979-6.98c-1.281-0.059-1.69-0.073-4.949-0.073zm0,5.838c-3.403,0-6.162,2.759-6.162,6.162c0,3.403,2.759,6.163,6.162,6.163s6.162-2.759,6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0,10.162c-2.209,0-4-1.79-4-4c0-2.209,1.791-4,4-4s4,1.791,4,4c0,2.21-1.791,4-4,4zm6.406-11.845c-0.796,0-1.441,0.645-1.441,1.44s0.645,1.44,1.441,1.44c0.795,0,1.439-0.645,1.439-1.44s-0.644-1.44-1.439-1.44z" />
+                  </svg>
+                </a>
+
+                {/* GitHub */}
+                <a
+                  href="https://github.com/agustamayasa"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group w-12 h-12 bg-gradient-to-r from-gray-100 to-slate-100 rounded-xl flex items-center justify-center hover:from-gray-200 hover:to-slate-200 hover:scale-105 transform transition-all duration-300"
+                  aria-label="GitHub Profile"
+                >
+                  <svg
+                    className="w-6 h-6 text-gray-700 group-hover:text-gray-900 transition-colors duration-300"
+                    fill="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path d="M12,2A10,10 0 0,0 2,12C2,16.42 4.87,20.17 8.84,21.5C9.34,21.58 9.5,21.27 9.5,21C9.5,20.77 9.5,20.14 9.5,19.31C6.73,19.91 6.14,17.97 6.14,17.97C5.68,16.81 5.03,16.5 5.03,16.5C4.12,15.88 5.1,15.9 5.1,15.9C6.1,15.97 6.63,16.93 6.63,16.93C7.5,18.45 8.97,18 9.54,17.76C9.63,17.11 9.89,16.67 10.17,16.42C7.95,16.17 5.62,15.31 5.62,11.5C5.62,10.39 6,9.5 6.65,8.79C6.55,8.54 6.2,7.5 6.75,6.15C6.75,6.15 7.59,5.88 9.5,7.17C10.29,6.95 11.15,6.84 12,6.84C12.85,6.84 13.71,6.95 14.5,7.17C16.41,5.88 17.25,6.15 17.25,6.15C17.8,7.5 17.45,8.54 17.35,8.79C18,9.5 18.38,10.39 18.38,11.5C18.38,15.32 16.04,16.16 13.81,16.41C14.17,16.72 14.5,17.33 14.5,18.26C14.5,19.6 14.5,20.68 14.5,21C14.5,21.27 14.66,21.59 15.17,21.5C19.14,20.16 22,16.42 22,12A10,10 0 0,0 12,2Z" />
+                  </svg>
+                </a>
+              </div>
             </div>
           </div>
 
-          {/* Email */}
-          <div className="flex items-center justify-center space-x-3 group">
-            <div className="w-10 h-10 bg-gradient-to-r from-blue-100 to-sky-100 rounded-full flex items-center justify-center group-hover:from-blue-200 group-hover:to-sky-200 transition-all duration-300">
-              <svg className="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M20,8L12,13L4,8V6L12,11L20,6M20,4H4C2.89,4 2,4.89 2,6V18A2,2 0 0,0 4,20H20A2,2 0 0,0 22,18V6C22,4.89 21.1,4 20,4Z"/>
-              </svg>
-            </div>
-            <div className="text-left">
-              <p className="text-xs text-gray-500 uppercase tracking-wide">Email</p>
-              <a href="mailto:agustamayasa21@gmail.com" className="text-gray-800 hover:text-blue-600 transition-colors duration-200 font-medium">
-                agustamayasa21@gmail.com
-              </a>
+          {/* Divider */}
+          <div className="border-t border-gray-300 mt-8 pt-8">
+            {/* Copyright */}
+            <div className="text-center">
+              <p className="text-gray-600 text-sm flex items-center justify-center space-x-2">
+                <svg
+                  className="w-4 h-4 text-gray-500"
+                  fill="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17M11,9H13V7H11V9Z" />
+                </svg>
+                <span>
+                  © 2025 Copyright By{" "}
+                  <span className="font-semibold text-gray-800">
+                    Agus Tamayasa
+                  </span>
+                </span>
+              </p>
+              <p className="text-xs text-gray-500 mt-2">
+                Built with passion for innovative recruitment solutions
+              </p>
             </div>
           </div>
-
         </div>
-      </div>
-
-      {/* Social Links Section */}
-      <div className="text-center md:text-right">
-        <h4 className="text-lg font-semibold text-gray-800 mb-6">Connect</h4>
-        <div className="flex justify-center md:justify-end space-x-4">
-          
-          {/* Instagram */}
-          <a
-            href="https://www.instagram.com/agus_tamayasa"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="group w-12 h-12 bg-gradient-to-r from-pink-100 to-purple-100 rounded-xl flex items-center justify-center hover:from-pink-200 hover:to-purple-200 hover:scale-105 transform transition-all duration-300"
-            aria-label="Instagram Profile"
-          >
-            <svg className="w-6 h-6 text-pink-600 group-hover:text-purple-600 transition-colors duration-300" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M12,2.163c3.204,0,3.584,0.012,4.85,0.07c3.252,0.148,4.771,1.691,4.919,4.919c0.058,1.265,0.069,1.645,0.069,4.849c0,3.205-0.012,3.584-0.069,4.849c-0.149,3.225-1.664,4.771-4.919,4.919c-1.266,0.058-1.644,0.07-4.85,0.07s-3.584-0.012-4.849-0.07c-3.26-0.149-4.771-1.699-4.919-4.92c-0.058-1.265-0.07-1.644-0.07-4.849c0-3.204,0.013-3.583,0.07-4.849c0.149-3.227,1.664-4.771,4.919-4.919c1.266-0.057,1.645-0.069,4.849-0.069zm0-2.163c-3.259,0-3.667,0.014-4.947,0.072c-4.358,0.2-6.78,2.618-6.98,6.98c-0.059,1.281-0.073,1.689-0.073,4.948c0,3.259,0.014,3.668,0.072,4.948c0.2,4.358,2.618,6.78,6.98,6.98c1.281,0.058,1.689,0.072,4.948,0.072c3.259,0,3.668-0.014,4.948-0.072c4.354-0.2,6.782-2.618,6.979-6.98c0.059-1.28,0.073-1.689,0.073-4.948c0-3.259-0.014-3.667-0.072-4.947c-0.196-4.354-2.617-6.78-6.979-6.98c-1.281-0.059-1.69-0.073-4.949-0.073zm0,5.838c-3.403,0-6.162,2.759-6.162,6.162c0,3.403,2.759,6.163,6.162,6.163s6.162-2.759,6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0,10.162c-2.209,0-4-1.79-4-4c0-2.209,1.791-4,4-4s4,1.791,4,4c0,2.21-1.791,4-4,4zm6.406-11.845c-0.796,0-1.441,0.645-1.441,1.44s0.645,1.44,1.441,1.44c0.795,0,1.439-0.645,1.439-1.44s-0.644-1.44-1.439-1.44z"/>
-            </svg>
-          </a>
-
-          {/* GitHub */}
-          <a
-            href="https://github.com/agustamayasa"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="group w-12 h-12 bg-gradient-to-r from-gray-100 to-slate-100 rounded-xl flex items-center justify-center hover:from-gray-200 hover:to-slate-200 hover:scale-105 transform transition-all duration-300"
-            aria-label="GitHub Profile"
-          >
-            <svg className="w-6 h-6 text-gray-700 group-hover:text-gray-900 transition-colors duration-300" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M12,2A10,10 0 0,0 2,12C2,16.42 4.87,20.17 8.84,21.5C9.34,21.58 9.5,21.27 9.5,21C9.5,20.77 9.5,20.14 9.5,19.31C6.73,19.91 6.14,17.97 6.14,17.97C5.68,16.81 5.03,16.5 5.03,16.5C4.12,15.88 5.1,15.9 5.1,15.9C6.1,15.97 6.63,16.93 6.63,16.93C7.5,18.45 8.97,18 9.54,17.76C9.63,17.11 9.89,16.67 10.17,16.42C7.95,16.17 5.62,15.31 5.62,11.5C5.62,10.39 6,9.5 6.65,8.79C6.55,8.54 6.2,7.5 6.75,6.15C6.75,6.15 7.59,5.88 9.5,7.17C10.29,6.95 11.15,6.84 12,6.84C12.85,6.84 13.71,6.95 14.5,7.17C16.41,5.88 17.25,6.15 17.25,6.15C17.8,7.5 17.45,8.54 17.35,8.79C18,9.5 18.38,10.39 18.38,11.5C18.38,15.32 16.04,16.16 13.81,16.41C14.17,16.72 14.5,17.33 14.5,18.26C14.5,19.6 14.5,20.68 14.5,21C14.5,21.27 14.66,21.59 15.17,21.5C19.14,20.16 22,16.42 22,12A10,10 0 0,0 12,2Z"/>
-            </svg>
-          </a>
-
-        </div>
-      </div>
-
-    </div>
-
-    {/* Divider */}
-    <div className="border-t border-gray-300 mt-8 pt-8">
-      
-      {/* Copyright */}
-      <div className="text-center">
-        <p className="text-gray-600 text-sm flex items-center justify-center space-x-2">
-          <svg className="w-4 h-4 text-gray-500" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17M11,9H13V7H11V9Z"/>
-          </svg>
-          <span>© 2025 Copyright By <span className="font-semibold text-gray-800">Agus Tamayasa</span></span>
-        </p>
-        <p className="text-xs text-gray-500 mt-2">
-          Built with passion for innovative recruitment solutions
-        </p>
-      </div>
-
-    </div>
-  </div>
-</footer>
+      </footer>
 
       {/* Custom styles for line clamping */}
       <style jsx>{`
