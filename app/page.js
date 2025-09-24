@@ -555,24 +555,24 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-white">
       {/* Navbar */}
-      <nav className="bg-white shadow-lg border-b border-gray-200 sticky top-0 z-50">
+      <nav className="bg-white shadow-lg border-b border-gray-100 sticky top-0 z-50 backdrop-blur-sm bg-white/95">
   <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
     <div className="flex justify-between items-center h-16">
       {/* Logo and Brand Section */}
       <div className="flex items-center space-x-3 flex-shrink-0">
-        <div className="w-10 h-10 rounded-lg overflow-hidden shadow-md">
+        <div className="w-10 h-10 rounded-xl overflow-hidden shadow-md">
           <img
-            src="./logo.jpg"
+            src="logo.jpg"
             alt="RekrutAI Logo"
             className="w-full h-full object-cover"
             onError={(e) => {
-              // Fallback to default icon if image fails to load
+              // Fallback jika gambar tidak ditemukan
               e.target.style.display = 'none';
-              e.target.nextElementSibling.style.display = 'flex';
+              e.target.nextSibling.style.display = 'flex';
             }}
           />
-          {/* Fallback icon - hidden by default */}
-          <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center" style={{display: 'none'}}>
+          {/* Fallback logo */}
+          <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-600 rounded-xl flex items-center justify-center shadow-md hidden">
             <svg
               className="w-6 h-6 text-white"
               fill="none"
@@ -589,30 +589,30 @@ export default function Home() {
           </div>
         </div>
         <div className="hidden sm:block">
-          <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent tracking-tight">
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-400 via-blue-500 to-blue-600 bg-clip-text text-transparent tracking-wide">
             RekrutAI
           </h1>
         </div>
-        {/* Mobile title - smaller and simplified */}
+        {/* Mobile brand text */}
         <div className="sm:hidden">
-          <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+          <h1 className="text-xl font-bold bg-gradient-to-r from-blue-400 via-blue-500 to-blue-600 bg-clip-text text-transparent">
             RekrutAI
           </h1>
         </div>
       </div>
 
-      {/* Right Section - Responsive */}
-      <div className="flex items-center">
+      {/* User Actions Section */}
+      <div className="flex items-center space-x-2 sm:space-x-4">
         {isLoggedIn ? (
           <div className="flex items-center space-x-2 sm:space-x-4">
-            {/* Connection Status - Hidden on mobile */}
-            <div className="hidden md:flex items-center space-x-2">
+            {/* Connection Status - Hidden on very small screens */}
+            <div className="hidden md:flex items-center space-x-2 bg-green-50 px-3 py-1.5 rounded-full border border-green-200">
               <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-              <span className="text-sm text-gray-600 font-medium">Connected</span>
+              <span className="text-sm text-green-700 font-medium">Connected</span>
             </div>
 
-            {/* User Avatar - Always visible but smaller on mobile */}
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-100 to-purple-100 rounded-full flex items-center justify-center ring-2 ring-blue-200">
+            {/* User Avatar */}
+            <div className="w-8 h-8 bg-gradient-to-br from-blue-100 to-blue-200 rounded-full flex items-center justify-center border-2 border-blue-300 shadow-sm">
               <svg
                 className="w-4 h-4 text-blue-600"
                 fill="currentColor"
@@ -626,16 +626,16 @@ export default function Home() {
               </svg>
             </div>
 
-            {/* Logout Button - Responsive */}
+            {/* Logout Button */}
             <button
               onClick={handleLogout}
               disabled={isLoggingOut}
-              className="inline-flex items-center px-3 py-2 sm:px-4 border border-red-300 text-red-700 bg-white rounded-lg hover:bg-red-50 hover:border-red-400 hover:shadow-md transition-all duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+              className="inline-flex items-center px-3 py-2 sm:px-4 border border-red-300 text-red-700 bg-white rounded-lg hover:bg-red-50 hover:border-red-400 hover:shadow-md transition-all duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
             >
               {isLoggingOut ? (
                 <>
                   <svg
-                    className="animate-spin w-4 h-4 mr-1 sm:mr-2"
+                    className="animate-spin w-4 h-4 sm:mr-2"
                     fill="none"
                     viewBox="0 0 24 24"
                   >
@@ -653,13 +653,12 @@ export default function Home() {
                       d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                     ></path>
                   </svg>
-                  <span className="hidden sm:inline">Logging out...</span>
-                  <span className="sm:hidden">...</span>
+                  <span className="hidden sm:inline ml-2">Logging out...</span>
                 </>
               ) : (
                 <>
                   <svg
-                    className="w-4 h-4 mr-1 sm:mr-2"
+                    className="w-4 h-4 sm:mr-2"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -672,7 +671,6 @@ export default function Home() {
                     />
                   </svg>
                   <span className="hidden sm:inline">Logout</span>
-                  <span className="sm:hidden">Out</span>
                 </>
               )}
             </button>
@@ -680,10 +678,10 @@ export default function Home() {
         ) : (
           <button
             onClick={handleLogin}
-            className="inline-flex items-center px-3 py-2 sm:px-4 border border-blue-600 text-blue-600 bg-white rounded-lg hover:bg-blue-50 hover:shadow-md transition-all duration-200 font-medium text-sm"
+            className="inline-flex items-center px-3 py-2 sm:px-4 border border-blue-500 text-blue-600 bg-white rounded-lg hover:bg-blue-50 hover:border-blue-600 hover:shadow-md transition-all duration-200 font-medium text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
           >
             <svg
-              className="w-4 h-4 mr-1 sm:mr-2"
+              className="w-4 h-4 sm:mr-2"
               fill="currentColor"
               viewBox="0 0 20 20"
             >
