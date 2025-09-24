@@ -751,7 +751,7 @@ export default function Home() {
           </div>
         </div>
       </nav>
-      <section className="relative bg-gradient-to-b from-white via-blue-50/30 to-white overflow-hidden">
+      <section className="relative bg-gradient-to-b from-white via-blue-50/30 to-white overflow-hidden border-b border-gray-100">
   {/* Background Pattern */}
   <div className="absolute inset-0 overflow-hidden">
     <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-100 rounded-full opacity-20 blur-3xl"></div>
@@ -759,16 +759,8 @@ export default function Home() {
     <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-sky-100 rounded-full opacity-10 blur-3xl"></div>
   </div>
 
-  <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 sm:pt-20 pb-24 sm:pb-32">
+  <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-16 sm:pt-16 sm:pb-20">
     <div className="text-center space-y-8">
-      {/* Badge */}
-      <div className="inline-flex items-center px-4 py-1.5 bg-blue-50 border border-blue-200 rounded-full">
-        <div className="flex items-center space-x-2">
-          <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse"></div>
-          <span className="text-xs font-medium text-blue-700">AI-Powered CV Screening</span>
-        </div>
-      </div>
-
       {/* Main Heading */}
       <div className="space-y-4">
         <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 tracking-tight">
@@ -811,10 +803,13 @@ export default function Home() {
       <div className="pt-6">
         <button
           onClick={() => {
-            document.querySelector('.bg-white.border.border-gray-200.rounded-xl.p-6').scrollIntoView({ 
-              behavior: 'smooth',
-              block: 'start'
-            });
+            const mainElement = document.querySelector('main.max-w-7xl');
+            if (mainElement) {
+              mainElement.scrollIntoView({ 
+                behavior: 'smooth',
+                block: 'start'
+              });
+            }
           }}
           className="group relative inline-flex items-center px-8 py-4 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
         >
@@ -858,19 +853,38 @@ export default function Home() {
         </p>
       </div>
 
-      {/* Stats Section */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 pt-12 max-w-3xl mx-auto">
-        <div className="text-center">
-          <div className="text-3xl font-bold text-blue-600">90%</div>
-          <div className="text-sm text-gray-600 mt-1">Time Saved</div>
+      {/* Enhanced Stats Section */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-12 max-w-4xl mx-auto">
+        <div className="group bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md hover:border-blue-200 transition-all duration-300 hover:-translate-y-1">
+          <div className="text-center">
+            <div className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent mb-2">90%</div>
+            <div className="text-sm font-medium text-gray-600 mb-1">Time Saved</div>
+            <div className="text-xs text-gray-400">Compared to manual screening</div>
+          </div>
         </div>
-        <div className="text-center">
-          <div className="text-3xl font-bold text-purple-600">1000+</div>
-          <div className="text-sm text-gray-600 mt-1">CVs Processed</div>
+        <div className="group bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md hover:border-purple-200 transition-all duration-300 hover:-translate-y-1">
+          <div className="text-center">
+            <div className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-purple-700 bg-clip-text text-transparent mb-2">1000+</div>
+            <div className="text-sm font-medium text-gray-600 mb-1">CVs Processed</div>
+            <div className="text-xs text-gray-400">Monthly processing volume</div>
+          </div>
         </div>
-        <div className="text-center">
-          <div className="text-3xl font-bold text-green-600">99%</div>
-          <div className="text-sm text-gray-600 mt-1">Accuracy Rate</div>
+        <div className="group bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md hover:border-green-200 transition-all duration-300 hover:-translate-y-1">
+          <div className="text-center">
+            <div className="text-4xl font-bold bg-gradient-to-r from-green-600 to-green-700 bg-clip-text text-transparent mb-2">99%</div>
+            <div className="text-sm font-medium text-gray-600 mb-1">Accuracy Rate</div>
+            <div className="text-xs text-gray-400">AI-powered precision</div>
+          </div>
+        </div>
+      </div>
+
+      {/* AI-Powered Badge - Moved to bottom */}
+      <div className="pt-8">
+        <div className="inline-flex items-center px-4 py-1.5 bg-blue-50 border border-blue-200 rounded-full">
+          <div className="flex items-center space-x-2">
+            <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse"></div>
+            <span className="text-xs font-medium text-blue-700">AI-Powered CV Screening</span>
+          </div>
         </div>
       </div>
     </div>
@@ -937,14 +951,14 @@ export default function Home() {
           {configStatus && (
             <div
               className={`mb-6 p-4 rounded-lg text-sm font-medium ${configStatus.includes("berhasil") ||
-                  configStatus.includes("Sukses") ||
-                  configStatus.includes("disimpan")
-                  ? "bg-green-50 text-green-800 border border-green-200"
-                  : configStatus.includes("Error") ||
-                    configStatus.includes("kosong") ||
-                    configStatus.includes("Gagal")
-                    ? "bg-red-50 text-red-800 border border-red-200"
-                    : "bg-blue-50 text-blue-800 border border-blue-200"
+                configStatus.includes("Sukses") ||
+                configStatus.includes("disimpan")
+                ? "bg-green-50 text-green-800 border border-green-200"
+                : configStatus.includes("Error") ||
+                  configStatus.includes("kosong") ||
+                  configStatus.includes("Gagal")
+                  ? "bg-red-50 text-red-800 border border-red-200"
+                  : "bg-blue-50 text-blue-800 border border-blue-200"
                 }`}
             >
               <div className="flex items-start">
@@ -1233,10 +1247,10 @@ export default function Home() {
             {/* File Upload Area */}
             <div
               className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors duration-200 ${isDragOver
-                  ? "border-blue-400 bg-blue-50"
-                  : selectedFile
-                    ? "border-green-300 bg-green-50"
-                    : "border-gray-300 hover:border-gray-400"
+                ? "border-blue-400 bg-blue-50"
+                : selectedFile
+                  ? "border-green-300 bg-green-50"
+                  : "border-gray-300 hover:border-gray-400"
                 }`}
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
@@ -1315,10 +1329,10 @@ export default function Home() {
             {uploadStatus && (
               <div
                 className={`mt-4 p-3 rounded-lg text-sm font-medium ${uploadStatus.includes("Sukses")
-                    ? "bg-green-50 text-green-700 border border-green-200"
-                    : uploadStatus.includes("Gagal")
-                      ? "bg-red-50 text-red-700 border border-red-200"
-                      : "bg-blue-50 text-blue-700 border border-blue-200"
+                  ? "bg-green-50 text-green-700 border border-green-200"
+                  : uploadStatus.includes("Gagal")
+                    ? "bg-red-50 text-red-700 border border-red-200"
+                    : "bg-blue-50 text-blue-700 border border-blue-200"
                   }`}
               >
                 {uploadStatus}
@@ -1384,8 +1398,8 @@ export default function Home() {
                   <div className="flex items-center">
                     <svg
                       className={`w-4 h-4 mr-2 ${uploadStatus.includes("Sukses")
-                          ? "text-green-500"
-                          : "text-gray-400"
+                        ? "text-green-500"
+                        : "text-gray-400"
                         }`}
                       fill="currentColor"
                       viewBox="0 0 20 20"
@@ -1398,8 +1412,8 @@ export default function Home() {
                     </svg>
                     <span
                       className={`text-sm ${uploadStatus.includes("Sukses")
-                          ? "text-green-700"
-                          : "text-gray-600"
+                        ? "text-green-700"
+                        : "text-gray-600"
                         }`}
                     >
                       Job description uploaded
@@ -1555,12 +1569,12 @@ export default function Home() {
               {screeningStatus && (
                 <div
                   className={`p-3 rounded-lg text-sm font-medium ${screeningStatus.includes("berhasil") ||
-                      screeningStatus.includes("Sukses")
-                      ? "bg-green-50 text-green-700 border border-green-200"
-                      : screeningStatus.includes("Error") ||
-                        screeningStatus.includes("Gagal")
-                        ? "bg-red-50 text-red-700 border border-red-200"
-                        : "bg-blue-50 text-blue-700 border border-blue-200"
+                    screeningStatus.includes("Sukses")
+                    ? "bg-green-50 text-green-700 border border-green-200"
+                    : screeningStatus.includes("Error") ||
+                      screeningStatus.includes("Gagal")
+                      ? "bg-red-50 text-red-700 border border-red-200"
+                      : "bg-blue-50 text-blue-700 border border-blue-200"
                     }`}
                 >
                   {screeningStatus}
