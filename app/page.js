@@ -63,8 +63,33 @@ useEffect(() => {
   }
 };
 
-  // Navbar Component
-  const Navbar = () => {
+// Navbar Component
+const Navbar = () => {
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [activeSection, setActiveSection] = useState('home');
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 50);
+      
+      // Track active section
+      const sections = ['home', 'features', 'about', 'contact'];
+      const scrollPosition = window.scrollY + 100;
+      
+      for (let i = sections.length - 1; i >= 0; i--) {
+        const element = document.getElementById(sections[i]);
+        if (element && element.offsetTop <= scrollPosition) {
+          setActiveSection(sections[i]);
+          break;
+        }
+      }
+    };
+    
+    window.addEventListener('scroll', handleScroll);
+    handleScroll(); // Jalankan sekali saat mount
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   const menuItems = [
     { name: 'Home', id: 'home' },
     { name: 'Features', id: 'features' },
@@ -73,22 +98,27 @@ useEffect(() => {
   ];
 
   return (
-    <nav className="bg-white shadow-lg border-b border-gray-200 sticky top-0 z-50">
+    <nav className={`fixed top-0 w-full z-50 transition-all duration-300 ${
+      isScrolled 
+        ? 'bg-white/80 backdrop-blur-lg border-b border-slate-200/50 shadow-sm' 
+        : 'bg-transparent'
+    }`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
+        <div className="flex justify-between items-center h-20">
           {/* Logo */}
           <div className="flex items-center">
-            <div className="w-10 h-10 rounded-lg overflow-hidden shadow-md">
+            <div className="w-12 h-12 rounded-lg overflow-hidden shadow-md flex-shrink-0 relative">
               <img
-                src="./rekruta1.jpg"
+                src="./logo.jpg"
                 alt="RekrutAI Logo"
-                className="w-full h-full object-cover"
+                className="w-full h-full object-contain bg-white"
                 onError={(e) => {
                   e.target.style.display = 'none';
                   e.target.nextElementSibling.style.display = 'flex';
                 }}
               />
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center" style={{display: 'none'}}>
+              {/* Fallback icon */}
+              <div className="absolute inset-0 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center" style={{display: 'none'}}>
                 <svg
                   className="w-6 h-6 text-white"
                   fill="none"
@@ -104,6 +134,9 @@ useEffect(() => {
                 </svg>
               </div>
             </div>
+            <span className="ml-3 text-xl font-bold bg-gradient-to-r from-blue-600 to-violet-600 bg-clip-text text-transparent">
+              RekrutAI
+            </span>
           </div>
 
           {/* Desktop Menu */}
