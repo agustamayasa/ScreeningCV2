@@ -1,2843 +1,404 @@
-"use client";
-
-import { useState, useEffect } from "react";
-import axios from "axios";
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
-
-export default function Home() {
-  const [selectedFile, setSelectedFile] = useState(null);
-  const [uploadStatus, setUploadStatus] = useState("");
-  const [screeningStatus, setScreeningStatus] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [results, setResults] = useState([]);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [error, setError] = useState("");
-  const [isDragOver, setIsDragOver] = useState(false);
-  const [selectedCandidate, setSelectedCandidate] = useState(null);
-  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
-
-  // New state for configuration forms
-  const [jobPosition, setJobPosition] = useState("");
-  const [emailSubjects, setEmailSubjects] = useState([""]);
-  const [configStatus, setConfigStatus] = useState("");
-  const [isConfigSaved, setIsConfigSaved] = useState(false);
-  const [currentSpreadsheetName, setCurrentSpreadsheetName] = useState("");
-
-  const [currentSpreadsheetUrl, setCurrentSpreadsheetUrl] = useState("");
-  // Tambahkan state ini di bagian atas dengan state lainnya
-  const [searchTerm, setSearchTerm] = useState("");
-  const [sortConfig, setSortConfig] = useState({
-    key: "Overall Fit",
-    direction: "desc",
-  });
-
-  // Fungsi untuk menangani error dengan lebih baik
-  const handleApiError = (error, defaultMessage) => {
-    console.error(defaultMessage, error);
-
-    if (error.response) {
-      const status = error.response.status;
-      const detail = error.response.data?.detail || error.message;
-
-      switch (status) {
-        case 401:
-          setIsLoggedIn(false);
-          return "Sesi expired, silakan login kembali.";
-        case 404:
-          return "Resource tidak ditemukan. Mungkin spreadsheet belum dibuat.";
-        case 500:
-          return `Server error: ${detail}`;
-        default:
-          return `Error ${status}: ${detail}`;
-      }
-    } else if (error.request) {
-      return "Tidak dapat terhubung ke server. Pastikan server berjalan.";
-    } else {
-      return error.message || defaultMessage;
-    }
-  };
-
-  const checkAuthStatus = async () => {
-    try {
-      setIsCheckingAuth(true);
-      const response = await axios.get(`${API_BASE_URL}/api/auth-status`);
-      setIsLoggedIn(response.data.authenticated);
-
-      if (response.data.authenticated) {
-        await fetchScreeningConfig();
-        await fetchResults();
-      }
-    } catch (error) {
-      setIsLoggedIn(false);
-      const errorMessage = handleApiError(
-        error,
-        "Gagal mengambil status autentikasi"
-      );
-      setError(errorMessage);
-    } finally {
-      setIsCheckingAuth(false);
-    }
-  };
-
-  const fetchScreeningConfig = async () => {
-    try {
-      const response = await axios.get(
-        `${API_BASE_URL}/api/get-screening-config`
-      );
-      const config = response.data;
-
-      setJobPosition(config.job_position || "");
-      setEmailSubjects(
-        config.email_subjects.length > 0 ? config.email_subjects : [""]
-      );
-      setCurrentSpreadsheetName(config.spreadsheet_name || "");
-      setCurrentSpreadsheetUrl(config.spreadsheet_url || ""); // Tambah ini
-      setIsConfigSaved(config.job_position && config.email_subjects.length > 0);
-
-      if (config.has_job_description) {
-        setUploadStatus("Sukses: Deskripsi pekerjaan sudah tersedia");
-      }
-    } catch (error) {
-      console.error("Error fetching config:", error);
-    }
-  };
-
-  const fetchResults = async () => {
-    if (!isLoggedIn) return;
-
-    try {
-      setError("");
-      const response = await axios.get(`${API_BASE_URL}/api/get-results`);
-      setResults(response.data.results || []);
-      setCurrentSpreadsheetName(response.data.spreadsheet_name || "");
-    } catch (error) {
-      const errorMessage = handleApiError(error, "Gagal mengambil hasil");
-
-      if (error.response?.status === 401) {
-        setIsLoggedIn(false);
-        setResults([]);
-      } else {
-        setError(errorMessage);
-      }
-    }
-  };
-
-  const testServerConnection = async () => {
-    try {
-      await axios.get(`${API_BASE_URL}/api/health`);
-      console.log("Server connection: OK");
-    } catch (error) {
-      console.error("Server connection failed:", error);
-      setError(
-        "Tidak dapat terhubung ke server. Pastikan FastAPI berjalan di http://localhost:8000"
-      );
-    }
-  };
-
-  const handleLogout = async () => {
-    try {
-      setIsLoggingOut(true);
-
-      // Call backend logout endpoint
-      await axios.post(`${API_BASE_URL}/api/logout`);
-
-      // Clear client-side state
-      setIsLoggedIn(false);
-      setResults([]);
-      setUploadStatus("");
-      setScreeningStatus("");
-      setSelectedFile(null);
-      setError("");
-      setSelectedCandidate(null);
-      setJobPosition("");
-      setEmailSubjects([""]);
-      setConfigStatus("");
-      setIsConfigSaved(false);
-      setCurrentSpreadsheetName("");
-      setCurrentSpreadsheetUrl("");
-      // Tambahkan ini di dalam handleLogout bersama reset state lainnya:
-      setSearchTerm("");
-      setSortConfig({ key: "Overall Fit", direction: "desc" });
-
-      // Show success message briefly
-      setScreeningStatus("Logout berhasil!");
-      setTimeout(() => {
-        setScreeningStatus("");
-      }, 3000);
-    } catch (error) {
-      console.error("Logout error:", error);
-      // Force logout even if there's an error
-      setIsLoggedIn(false);
-      setResults([]);
-      setUploadStatus("");
-      setScreeningStatus("");
-      setSelectedFile(null);
-      setError("");
-      setSelectedCandidate(null);
-      setJobPosition("");
-      setEmailSubjects([""]);
-      setConfigStatus("");
-      setIsConfigSaved(false);
-      setCurrentSpreadsheetName("");
-
-      // Show that logout completed
-      setScreeningStatus("Logout selesai!");
-      setTimeout(() => {
-        setScreeningStatus("");
-      }, 3000);
-    } finally {
-      setIsLoggingOut(false);
-    }
-  };
-
-  // New functions for configuration
-  const handleSaveConfig = async () => {
-    if (!jobPosition.trim()) {
-      setConfigStatus("Nama posisi pekerjaan tidak boleh kosong");
-      // Clear error message after 5 seconds
-      setTimeout(() => {
-        setConfigStatus("");
-      }, 5000);
-      return;
-    }
-
-    const validSubjects = emailSubjects.filter(
-      (subject) => subject.trim() !== ""
-    );
-    if (validSubjects.length === 0) {
-      setConfigStatus("Minimal satu subjek email harus diisi");
-      // Clear error message after 5 seconds
-      setTimeout(() => {
-        setConfigStatus("");
-      }, 5000);
-      return;
-    }
-
-    try {
-      setConfigStatus("Menyimpan konfigurasi...");
-      const response = await axios.post(
-        `${API_BASE_URL}/api/set-screening-config`,
-        {
-          job_position: jobPosition.trim(),
-          email_subjects: validSubjects,
-        }
-      );
-
-      setIsConfigSaved(true);
-      setCurrentSpreadsheetName(response.data.spreadsheet_name);
-      setCurrentSpreadsheetUrl(response.data.spreadsheet_url || "");
-      setConfigStatus(
-        `Konfigurasi berhasil disimpan! Spreadsheet: ${response.data.spreadsheet_name}`
-      );
-
-      // Clear success message after 8 seconds (longer for success messages)
-      setTimeout(() => {
-        setConfigStatus("");
-      }, 8000);
-    } catch (error) {
-      const errorMessage = handleApiError(error, "Gagal menyimpan konfigurasi");
-      setConfigStatus(`Error: ${errorMessage}`);
-
-      // Clear error message after 8 seconds
-      setTimeout(() => {
-        setConfigStatus("");
-      }, 8000);
-    }
-  };
-
-  const addEmailSubject = () => {
-    setEmailSubjects([...emailSubjects, ""]);
-  };
-
-  const removeEmailSubject = (index) => {
-    if (emailSubjects.length > 1) {
-      const newSubjects = emailSubjects.filter((_, i) => i !== index);
-      setEmailSubjects(newSubjects);
-    }
-  };
-
-  const updateEmailSubject = (index, value) => {
-    const newSubjects = [...emailSubjects];
-    newSubjects[index] = value;
-    setEmailSubjects(newSubjects);
-  };
+const HomePage = () => {
+  const [isScrolled, setIsScrolled] = useState(false);
 
   useEffect(() => {
-    testServerConnection();
-    checkAuthStatus();
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 10);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const handleFileChange = (event) => {
-    const file = event.target.files[0];
-    setSelectedFile(file);
-    setUploadStatus("");
-    setError("");
-
-    if (file && !file.name.toLowerCase().endsWith(".pdf")) {
-      setError("File harus berformat PDF");
-      setSelectedFile(null);
-    }
+  const scrollToSection = (id) => {
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const handleDragOver = (e) => {
-    e.preventDefault();
-    setIsDragOver(true);
-  };
+  // Navbar Component
+  const Navbar = () => (
+    <nav className={`fixed top-0 w-full z-50 transition-all duration-300 ${
+      isScrolled ? 'bg-white/80 backdrop-blur-lg shadow-lg' : 'bg-transparent'
+    }`}>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center h-20">
+          {/* Logo */}
+          <div className="flex items-center">
+            <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-violet-600 rounded-xl flex items-center justify-center">
+              <span className="text-white font-bold text-xl">R</span>
+            </div>
+            <span className="ml-3 text-2xl font-bold bg-gradient-to-r from-blue-600 to-violet-600 bg-clip-text text-transparent">
+              Rekruta
+            </span>
+          </div>
 
-  const handleDragLeave = (e) => {
-    e.preventDefault();
-    setIsDragOver(false);
-  };
+          {/* Desktop Menu */}
+          <div className="hidden md:flex items-center space-x-8">
+            <button 
+              onClick={() => scrollToSection('hero')}
+              className="text-slate-600 hover:text-blue-600 transition-colors font-medium"
+            >
+              Home
+            </button>
+            <button 
+              onClick={() => scrollToSection('features')}
+              className="text-slate-600 hover:text-blue-600 transition-colors font-medium"
+            >
+              Features
+            </button>
+            <button 
+              onClick={() => scrollToSection('about')}
+              className="text-slate-600 hover:text-blue-600 transition-colors font-medium"
+            >
+              About
+            </button>
+            <button 
+              onClick={() => scrollToSection('contact')}
+              className="text-slate-600 hover:text-blue-600 transition-colors font-medium"
+            >
+              Contact
+            </button>
+            <Link href="/screening">
+              <button className="bg-blue-600 text-white px-6 py-3 rounded-xl hover:bg-blue-700 transition-all duration-300 font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
+                Mulai Screening
+              </button>
+            </Link>
+          </div>
 
-  const handleDrop = (e) => {
-    e.preventDefault();
-    setIsDragOver(false);
-    const file = e.dataTransfer.files[0];
-    if (file && file.name.toLowerCase().endsWith(".pdf")) {
-      setSelectedFile(file);
-      setUploadStatus("");
-      setError("");
-    } else {
-      setError("File harus berformat PDF");
-    }
-  };
-
-  const handleUpload = async () => {
-    if (!selectedFile) {
-      setError("Pilih file PDF terlebih dahulu");
-      return;
-    }
-
-    if (!isConfigSaved) {
-      setError("Simpan konfigurasi screening terlebih dahulu");
-      return;
-    }
-
-    const formData = new FormData();
-    formData.append("file", selectedFile);
-    setUploadStatus("Mengupload...");
-    setError("");
-
-    try {
-      const response = await axios.post(
-        `${API_BASE_URL}/api/upload-job-description`,
-        formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-          timeout: 30000,
-        }
-      );
-
-      setUploadStatus(`Sukses: ${response.data.message}`);
-    } catch (error) {
-      const errorMessage = handleApiError(error, "Gagal mengupload file");
-      setUploadStatus(`Gagal: ${errorMessage}`);
-    }
-  };
-
-  const handleStartScreening = async () => {
-    if (!uploadStatus.includes("Sukses")) {
-      setError("Upload deskripsi pekerjaan terlebih dahulu");
-      return;
-    }
-
-    if (!isConfigSaved) {
-      setError("Simpan konfigurasi screening terlebih dahulu");
-      return;
-    }
-
-    setIsLoading(true);
-    setScreeningStatus("Memulai proses screening...");
-    setError("");
-
-    try {
-      const response = await axios.post(
-        `${API_BASE_URL}/api/start-screening`,
-        {},
-        {
-          timeout: 300000,
-        }
-      );
-
-      setScreeningStatus(`${response.data.message}`);
-
-      setTimeout(async () => {
-        await fetchResults();
-        setScreeningStatus((prev) => prev + " Data berhasil diperbarui!");
-      }, 2000);
-    } catch (error) {
-      const errorMessage = handleApiError(error, "Gagal melakukan screening");
-
-      if (error.response?.status === 401) {
-        setScreeningStatus("Sesi expired, mengarahkan ke login...");
-        setTimeout(() => {
-          window.location.href = `${API_BASE_URL}/api/login`;
-        }, 2000);
-      } else {
-        setScreeningStatus(`${errorMessage}`);
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleLogin = () => {
-    window.location.href = `${API_BASE_URL}/api/login`;
-  };
-
-  const handleClearResults = async () => {
-    if (
-      !confirm("Apakah Anda yakin ingin menghapus semua data hasil screening?")
-    ) {
-      return;
-    }
-
-    try {
-      const response = await axios.delete(`${API_BASE_URL}/api/clear-results`);
-      setScreeningStatus(`${response.data.message}`);
-      setResults([]);
-    } catch (error) {
-      const errorMessage = handleApiError(error, "Gagal menghapus data");
-      setError(errorMessage);
-    }
-  };
-
-  const getScoreColor = (score) => {
-    if (score >= 80) return "text-green-600 bg-green-50";
-    if (score >= 60) return "text-yellow-600 bg-yellow-50";
-    return "text-red-600 bg-red-50";
-  };
-
-  const getScoreBadgeColor = (score) => {
-    if (score >= 80) return "bg-green-100 text-green-800 border-green-200";
-    if (score >= 60) return "bg-yellow-100 text-yellow-800 border-yellow-200";
-    return "bg-red-100 text-red-800 border-red-200";
-  };
-
-  // Tambahkan fungsi ini sebelum return statement
-  const getFilteredAndSortedResults = () => {
-    let filtered = results.filter((result) => {
-      const searchLower = searchTerm.toLowerCase();
-      return (
-        (result.Nama || "").toLowerCase().includes(searchLower) ||
-        (result.Email || "").toLowerCase().includes(searchLower) ||
-        (result["Pendidikan Terakhir"] || "")
-          .toLowerCase()
-          .includes(searchLower) ||
-        (result.Kekuatan || "").toLowerCase().includes(searchLower) ||
-        (result.Kekurangan || "").toLowerCase().includes(searchLower)
-      );
-    });
-
-    if (sortConfig.key) {
-      filtered.sort((a, b) => {
-        let aValue = a[sortConfig.key] || 0;
-        let bValue = b[sortConfig.key] || 0;
-
-        // Special handling for Overall Fit (numeric)
-        if (sortConfig.key === "Overall Fit") {
-          aValue = Number(aValue) || 0;
-          bValue = Number(bValue) || 0;
-        }
-
-        if (aValue < bValue) {
-          return sortConfig.direction === "asc" ? -1 : 1;
-        }
-        if (aValue > bValue) {
-          return sortConfig.direction === "asc" ? 1 : -1;
-        }
-        return 0;
-      });
-    }
-
-    return filtered;
-  };
-
-  const handleSort = (key) => {
-    let direction = "asc";
-    if (sortConfig.key === key && sortConfig.direction === "asc") {
-      direction = "desc";
-    }
-    setSortConfig({ key, direction });
-  };
-
-  const getSortIcon = (columnName) => {
-    if (sortConfig.key !== columnName) {
-      return (
-        <svg
-          className="w-4 h-4 text-gray-400"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"
-          />
-        </svg>
-      );
-    }
-
-    if (sortConfig.direction === "asc") {
-      return (
-        <svg
-          className="w-4 h-4 text-blue-600"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M5 15l7-7 7 7"
-          />
-        </svg>
-      );
-    } else {
-      return (
-        <svg
-          className="w-4 h-4 text-blue-600"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M19 9l-7 7-7-7"
-          />
-        </svg>
-      );
-    }
-  };
-
-  // Show loading state while checking authentication
-  if (isCheckingAuth) {
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="text-center">
-          <svg
-            className="animate-spin w-8 h-8 text-blue-600 mx-auto mb-4"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <circle
-              className="opacity-25"
-              cx="12"
-              cy="12"
-              r="10"
-              stroke="currentColor"
-              strokeWidth="4"
-            ></circle>
-            <path
-              className="opacity-75"
-              fill="currentColor"
-              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-            ></path>
-          </svg>
-          <p className="text-gray-600">Checking authentication...</p>
+          {/* Mobile Menu Button */}
+          <div className="md:hidden">
+            <Link href="/screening">
+              <button className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium">
+                Mulai Screening
+              </button>
+            </Link>
+          </div>
         </div>
       </div>
-    );
-  }
+    </nav>
+  );
 
-  // Show login page if not authenticated
+  // Hero Section Component
+  const HeroSection = () => (
+    <section id="hero" className="min-h-screen relative overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50/30 to-violet-50/30">
+      {/* Aurora Background Effect */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute -top-40 -right-80 w-80 h-80 bg-gradient-to-r from-blue-400/20 to-violet-400/20 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute -bottom-40 -left-80 w-96 h-96 bg-gradient-to-r from-violet-400/20 to-blue-400/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
+      </div>
 
-  return (
-    <div className="min-h-screen bg-white">
-      {/* Navbar */}
-      <nav className="bg-white border-b border-gray-100 sticky top-0 z-50">
+      <div className="relative z-10 flex items-center justify-center min-h-screen px-4">
+        <div className="text-center max-w-5xl mx-auto">
+          <h1 className="text-5xl md:text-7xl font-extrabold text-slate-800 mb-8 leading-tight">
+            Otomatiskan Screening{' '}
+            <span className="bg-gradient-to-r from-blue-600 to-violet-600 bg-clip-text text-transparent">
+              Ratusan CV
+            </span>{' '}
+            dalam Hitungan Menit
+          </h1>
+          
+          <p className="text-xl md:text-2xl text-slate-600 mb-12 max-w-4xl mx-auto leading-relaxed">
+            Rekruta adalah asisten rekrutmen AI Anda. Biarkan teknologi kami menganalisis, memfilter, dan memberi peringkat kandidat terbaik langsung dari Gmail & Google Drive Anda, sementara Anda fokus pada hal terpenting: wawancara.
+          </p>
+
+          <button 
+            onClick={() => scrollToSection('screening-configuration')}
+            className="group bg-gradient-to-r from-blue-600 to-violet-600 text-white px-8 py-4 rounded-2xl text-lg font-semibold hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 inline-flex items-center space-x-3"
+          >
+            <span>Coba Gratis Sekarang</span>
+            <svg className="w-6 h-6 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </section>
+  );
+
+  // Features Section Component
+  const FeaturesSection = () => {
+    const features = [
+      {
+        icon: (
+          <svg className="w-8 h-8 text-red-500" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M20 6L9 17l-5-5"/>
+          </svg>
+        ),
+        title: "Analisis CV Langsung dari Inbox",
+        description: "Secara otomatis mendeteksi dan memproses lampiran CV dari email yang masuk tanpa perlu mengunduh satu per satu."
+      },
+      {
+        icon: (
+          <svg className="w-8 h-8 text-blue-500" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+          </svg>
+        ),
+        title: "Hubungkan Folder Kandidat Anda",
+        description: "Sinkronkan folder Google Drive berisi CV dan biarkan AI kami bekerja untuk menyusun daftar kandidat potensial."
+      },
+      {
+        icon: (
+          <svg className="w-8 h-8 text-green-500" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M3 3h18v18H3V3zm16 16V5H5v14h14zM11 7h6v2h-6V7zm0 4h6v2h-6v-2zm0 4h4v2h-4v-2zM7 7h2v2H7V7zm0 4h2v2H7v-2zm0 4h2v2H7v-2z"/>
+          </svg>
+        ),
+        title: "Laporan Hasil Otomatis",
+        description: "Hasil screening, peringkat kandidat, dan informasi kontak diekspor secara rapi ke Google Sheets untuk kemudahan pelacakan."
+      }
+    ];
+
+    return (
+      <section id="features" className="py-24 bg-white relative">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-20">
-            {/* Logo and Brand Section */}
-            <div className="flex items-center space-x-4">
-              <div className="flex-shrink-0">
-                <img
-                  src="/rekruta1.jpg"
-                  alt="Rekruta Logo"
-                  className="w-32 h-16 rounded-xl object-contain"
-                />
+          <div className="text-center mb-20">
+            <h2 className="text-4xl md:text-5xl font-bold text-slate-800 mb-6">
+              Semua yang Anda Butuhkan dalam{' '}
+              <span className="bg-gradient-to-r from-blue-600 to-violet-600 bg-clip-text text-transparent">
+                Satu Platform Cerdas
+              </span>
+            </h2>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            {features.map((feature, index) => (
+              <div key={index} className="group p-8 rounded-2xl bg-gradient-to-br from-white to-slate-50/50 border border-slate-100 hover:border-blue-200 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2">
+                <div className="w-16 h-16 bg-gradient-to-r from-blue-100 to-violet-100 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+                  {feature.icon}
+                </div>
+                <h3 className="text-xl font-bold text-slate-800 mb-4">
+                  {feature.title}
+                </h3>
+                <p className="text-slate-600 leading-relaxed">
+                  {feature.description}
+                </p>
               </div>
-              <Link href="/screening" className="text-gray-700 hover:text-blue-600 font-semibold">
-            Coba Screening
-          </Link>
-            </div>
+            ))}
+          </div>
+        </div>
+      </section>
+    );
+  };
 
-            {/* Desktop Menu */}
-            <div className="hidden md:flex items-center space-x-6">
-              {isLoggedIn ? (
-                <div className="flex items-center space-x-6">
-                  {/* Status Indicator */}
-                  <div className="flex items-center space-x-2">
-                    <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
-                    <span className="text-sm font-medium text-gray-600">
-                      Online
-                    </span>
-                  </div>
-
-                  {/* User Avatar */}
-                  <div className="w-10 h-10 bg-gradient-to-r from-sky-100 to-blue-100 rounded-full flex items-center justify-center ring-2 ring-sky-200">
-                    <svg
-                      className="w-5 h-5 text-sky-600"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
-                        clipRule="evenodd"
-                      />
+  // About Section Component
+  const AboutSection = () => (
+    <section id="about" className="py-24 bg-gradient-to-br from-slate-50 to-blue-50/30">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="grid lg:grid-cols-2 gap-16 items-center">
+          {/* Image/Illustration */}
+          <div className="order-2 lg:order-1">
+            <div className="relative">
+              <div className="w-full h-96 bg-gradient-to-br from-blue-100 to-violet-100 rounded-3xl flex items-center justify-center">
+                <div className="text-center">
+                  <div className="w-24 h-24 bg-gradient-to-r from-blue-600 to-violet-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                    <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                     </svg>
                   </div>
-
-                  {/* Logout Button */}
-                  <button
-                    onClick={handleLogout}
-                    disabled={isLoggingOut}
-                    className="inline-flex items-center px-5 py-2.5 border border-red-200 text-red-600 bg-red-50 rounded-xl hover:bg-red-100 hover:border-red-300 transition-all duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed text-sm"
-                  >
-                    {isLoggingOut ? (
-                      <>
-                        <svg
-                          className="animate-spin w-4 h-4 mr-2"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                        >
-                          <circle
-                            className="opacity-25"
-                            cx="12"
-                            cy="12"
-                            r="10"
-                            stroke="currentColor"
-                            strokeWidth="4"
-                          ></circle>
-                          <path
-                            className="opacity-75"
-                            fill="currentColor"
-                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                          ></path>
-                        </svg>
-                        Logging out...
-                      </>
-                    ) : (
-                      <>
-                        <svg
-                          className="w-4 h-4 mr-2"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-                          />
-                        </svg>
-                        Logout
-                      </>
-                    )}
-                  </button>
+                  <p className="text-slate-600 font-medium">AI-Powered Recruitment</p>
                 </div>
-              ) : (
-                <button
-                  onClick={handleLogin}
-                  className="inline-flex items-center px-4 py-2 border border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors duration-200 font-medium"
-                >
-                  <svg
-                    className="w-4 h-4 mr-2"
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
-                  >
-                    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
-                    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
-                    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
-                    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
-                  </svg>
-                  Login with Google
-                </button>
-              )}
+              </div>
             </div>
+          </div>
 
-            {/* Mobile Menu Button */}
-            <div className="md:hidden">
-              {isLoggedIn ? (
-                <div className="flex items-center space-x-3">
-                  {/* Mobile Status */}
-                  <div className="flex items-center space-x-2">
-                    <div className="w-2 h-2 bg-emerald-400 rounded-full"></div>
-                    <div className="w-8 h-8 bg-gradient-to-r from-sky-100 to-blue-100 rounded-full flex items-center justify-center">
-                      <svg
-                        className="w-4 h-4 text-sky-600"
-                        fill="currentColor"
-                        viewBox="0 0 20 20"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                    </div>
-                  </div>
-
-                  {/* Mobile Logout Button */}
-                  <button
-                    onClick={handleLogout}
-                    disabled={isLoggingOut}
-                    className="inline-flex items-center px-3 py-2 border border-red-200 text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {isLoggingOut ? (
-                      <svg
-                        className="animate-spin w-4 h-4"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                      >
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                        ></circle>
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                        ></path>
-                      </svg>
-                    ) : (
-                      <svg
-                        className="w-4 h-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-                        />
-                      </svg>
-                    )}
-                  </button>
-                </div>
-              ) : (
-                <button
-                  onClick={handleLogin}
-                  className="inline-flex items-center px-3 py-2 border-2 border-blue-500 text-blue-600 bg-white rounded-lg hover:bg-blue-50 hover:border-blue-600 transition-all duration-200 font-medium text-xs"
-                >
-                  <svg
-                    className="w-3 h-3 mr-1.5"
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
-                  >
-                    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
-                    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
-                    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
-                    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
-                  </svg>
-                  Login with Google
-                </button>
-              )}
+          {/* Text Content */}
+          <div className="order-1 lg:order-2">
+            <h2 className="text-4xl md:text-5xl font-bold text-slate-800 mb-8">
+              Tentang{' '}
+              <span className="bg-gradient-to-r from-blue-600 to-violet-600 bg-clip-text text-transparent">
+                Rekruta
+              </span>
+            </h2>
+            <div className="space-y-6 text-lg text-slate-600 leading-relaxed">
+              <p>
+                Rekruta lahir dari visi untuk mengubah cara dunia melakukan rekrutmen. Kami percaya bahwa teknologi AI dapat memberdayakan tim HR untuk membuat keputusan yang lebih adil, cepat, dan berbasis data.
+              </p>
+              <p>
+                Dengan mengintegrasikan langsung ke ekosistem Google yang sudah Anda gunakan sehari-hari, Rekruta menghilangkan hambatan teknis dan memberikan solusi yang seamless untuk proses screening kandidat.
+              </p>
+              <p>
+                Misi kami adalah membantu setiap perusahaan, dari startup hingga enterprise, untuk menemukan talenta terbaik dengan efisiensi yang belum pernah ada sebelumnya.
+              </p>
             </div>
           </div>
         </div>
-      </nav>
-      <section className="relative bg-gradient-to-b from-white via-blue-50/30 to-white overflow-hidden border-b border-gray-100">
-        {/* Background Pattern */}
-        <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-100 rounded-full opacity-20 blur-3xl"></div>
-          <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-purple-100 rounded-full opacity-20 blur-3xl"></div>
-          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-sky-100 rounded-full opacity-10 blur-3xl"></div>
-        </div>
+      </div>
+    </section>
+  );
 
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-16 sm:pt-16 sm:pb-20">
-          <div className="text-center space-y-8">
-            {/* Main Heading */}
-            <div className="space-y-4">
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 tracking-tight">
-                Transform Your Recruitment with
-                <span className="block bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mt-2">
-                  Intelligent CV Screening
-                </span>
-              </h1>
+  // Contact Section Component
+  const ContactSection = () => {
+    const [formData, setFormData] = useState({
+      name: '',
+      email: '',
+      company: '',
+      message: ''
+    });
 
-              <p className="max-w-3xl mx-auto text-lg sm:text-xl text-gray-600 leading-relaxed">
-                Rekruta harnesses the power of AI to automate your CV screening process.
-                Seamlessly integrated with Gmail, Google Drive, and Google Sheets to deliver
-                a smarter, faster, and more accurate hiring experience.
+    const handleSubmit = () => {
+      // Handle form submission here
+      console.log('Form submitted:', formData);
+      alert('Terima kasih! Pesan Anda telah terkirim.');
+    };
+
+    const handleChange = (e) => {
+      setFormData({
+        ...formData,
+        [e.target.name]: e.target.value
+      });
+    };
+
+    return (
+      <section id="contact" className="py-24 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-bold text-slate-800 mb-6">
+              Get in Touch{' '}
+              <span className="bg-gradient-to-r from-blue-600 to-violet-600 bg-clip-text text-transparent">
+                with Us
+              </span>
+            </h2>
+          </div>
+
+          <div className="grid lg:grid-cols-2 gap-16">
+            {/* Contact Info */}
+            <div>
+              <h3 className="text-2xl font-bold text-slate-800 mb-6">
+                Punya pertanyaan atau butuh demo?
+              </h3>
+              <p className="text-lg text-slate-600 mb-8 leading-relaxed">
+                Tim kami siap membantu Anda mengoptimalkan proses rekrutmen dengan teknologi AI terdepan. Jangan ragu untuk menghubungi kami.
               </p>
-            </div>
 
-            {/* Feature Pills */}
-            <div className="flex flex-wrap justify-center gap-3 pt-4">
-              <div className="flex items-center px-4 py-2 bg-white border border-gray-200 rounded-lg shadow-sm">
-                <svg className="w-4 h-4 mr-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-                <span className="text-sm font-medium text-gray-700">Gmail Integration</span>
-              </div>
-              <div className="flex items-center px-4 py-2 bg-white border border-gray-200 rounded-lg shadow-sm">
-                <svg className="w-4 h-4 mr-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-                <span className="text-sm font-medium text-gray-700">Automated Scoring</span>
-              </div>
-              <div className="flex items-center px-4 py-2 bg-white border border-gray-200 rounded-lg shadow-sm">
-                <svg className="w-4 h-4 mr-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-                <span className="text-sm font-medium text-gray-700">Real-time Analysis</span>
-              </div>
-            </div>
-
-            {/* CTA Button */}
-            <div className="pt-6">
-              <button
-                onClick={() => {
-                  const mainElement = document.querySelector('main.max-w-7xl');
-                  if (mainElement) {
-                    mainElement.scrollIntoView({
-                      behavior: 'smooth',
-                      block: 'start'
-                    });
-                  }
-                }}
-                className="group relative inline-flex items-center px-8 py-4 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
-              >
-                {/* Button Gradient Effect */}
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-
-                {/* Button Content */}
-                <span className="relative flex items-center">
-                  <svg
-                    className="w-5 h-5 mr-2"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M13 10V3L4 14h7v7l9-11h-7z"
-                    />
-                  </svg>
-                  Get Started Now
-                  <svg
-                    className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform duration-200"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 5l7 7-7 7"
-                    />
-                  </svg>
-                </span>
-              </button>
-
-              <p className="mt-4 text-sm text-gray-500">
-                No credit card required • Setup in 2 minutes
-              </p>
-            </div>
-
-            {/* Enhanced Stats Section */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-12 max-w-4xl mx-auto">
-              <div className="group bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md hover:border-blue-200 transition-all duration-300 hover:-translate-y-1">
-                <div className="text-center">
-                  <div className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent mb-2">90%</div>
-                  <div className="text-sm font-medium text-gray-600 mb-1">Time Saved</div>
-                  <div className="text-xs text-gray-400">Compared to manual screening</div>
+              <div className="space-y-6">
+                <div className="flex items-center space-x-4">
+                  <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="font-medium text-slate-800">Email</p>
+                    <p className="text-slate-600">hello@rekruta.id</p>
+                  </div>
                 </div>
-              </div>
-              <div className="group bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md hover:border-purple-200 transition-all duration-300 hover:-translate-y-1">
-                <div className="text-center">
-                  <div className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-purple-700 bg-clip-text text-transparent mb-2">1000+</div>
-                  <div className="text-sm font-medium text-gray-600 mb-1">CVs Processed</div>
-                  <div className="text-xs text-gray-400">Monthly processing volume</div>
-                </div>
-              </div>
-              <div className="group bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md hover:border-green-200 transition-all duration-300 hover:-translate-y-1">
-                <div className="text-center">
-                  <div className="text-4xl font-bold bg-gradient-to-r from-green-600 to-green-700 bg-clip-text text-transparent mb-2">99%</div>
-                  <div className="text-sm font-medium text-gray-600 mb-1">Accuracy Rate</div>
-                  <div className="text-xs text-gray-400">AI-powered precision</div>
+
+                <div className="flex items-center space-x-4">
+                  <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="font-medium text-slate-800">Alamat</p>
+                    <p className="text-slate-600">Jakarta, Indonesia</p>
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* AI-Powered Badge - Moved to bottom */}
-            <div className="pt-8">
-              <div className="inline-flex items-center px-4 py-1.5 bg-blue-50 border border-blue-200 rounded-full">
-                <div className="flex items-center space-x-2">
-                  <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse"></div>
-                  <span className="text-xs font-medium text-blue-700">AI-Powered CV Screening</span>
+            {/* Contact Form */}
+            <div className="bg-gradient-to-br from-slate-50 to-blue-50/30 p-8 rounded-3xl">
+              <div className="space-y-6">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    Nama Lengkap
+                  </label>
+                  <input
+                    type="text"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  />
                 </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    Alamat Email
+                  </label>
+                  <input
+                    type="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    Nama Perusahaan
+                  </label>
+                  <input
+                    type="text"
+                    name="company"
+                    value={formData.company}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    Pesan Anda
+                  </label>
+                  <textarea
+                    name="message"
+                    value={formData.message}
+                    onChange={handleChange}
+                    rows="4"
+                    className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
+                  ></textarea>
+                </div>
+
+                <button
+                  onClick={handleSubmit}
+                  className="w-full bg-gradient-to-r from-blue-600 to-violet-600 text-white py-4 rounded-xl font-semibold hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5"
+                >
+                  Kirim Pesan
+                </button>
               </div>
             </div>
           </div>
         </div>
       </section>
+    );
+  };
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Error Alert */}
-        {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-            <div className="flex items-center">
-              <svg
-                className="w-5 h-5 text-red-400 mr-3"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                  clipRule="evenodd"
-                />
-              </svg>
-              <p className="text-red-700 font-medium">{error}</p>
-            </div>
-          </div>
-        )}
+  // Screening Configuration Section (Target for CTA)
+  const ScreeningConfigSection = () => (
+    <section id="screening-configuration" className="py-24 bg-gradient-to-br from-blue-600 to-violet-600 text-white">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <h2 className="text-4xl md:text-5xl font-bold mb-8">
+          Siap Memulai?
+        </h2>
+        <p className="text-xl mb-12 opacity-90">
+          Bergabunglah dengan ratusan perusahaan yang sudah merasakan efisiensi rekrutmen dengan Rekruta
+        </p>
+        <Link href="/screening">
+          <button className="bg-white text-blue-600 px-8 py-4 rounded-2xl text-lg font-semibold hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 inline-flex items-center space-x-3">
+            <span>Mulai Screening Gratis</span>
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+            </svg>
+          </button>
+        </Link>
+      </div>
+    </section>
+  );
 
-        {/* Configuration Section */}
-        <div className="bg-white border border-gray-200 rounded-xl p-6 mb-8">
-          <div className="flex items-center mb-6">
-            <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center mr-3">
-              <svg
-                className="w-5 h-5 text-purple-600"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-                />
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                />
-              </svg>
-            </div>
-            <div>
-              <h2 className="text-lg font-semibold text-gray-900">
-                Screening Configuration
-              </h2>
-              <p className="text-sm text-gray-600">
-                Setup job position and email criteria
-              </p>
-            </div>
-          </div>
-
-          {/* Configuration Status Alert - Moved to top */}
-          {configStatus && (
-            <div
-              className={`mb-6 p-4 rounded-lg text-sm font-medium ${configStatus.includes("berhasil") ||
-                configStatus.includes("Sukses") ||
-                configStatus.includes("disimpan")
-                ? "bg-green-50 text-green-800 border border-green-200"
-                : configStatus.includes("Error") ||
-                  configStatus.includes("kosong") ||
-                  configStatus.includes("Gagal")
-                  ? "bg-red-50 text-red-800 border border-red-200"
-                  : "bg-blue-50 text-blue-800 border border-blue-200"
-                }`}
-            >
-              <div className="flex items-start">
-                <div className="flex-shrink-0">
-                  {configStatus.includes("berhasil") ||
-                    configStatus.includes("Sukses") ||
-                    configStatus.includes("disimpan") ? (
-                    <svg
-                      className="w-5 h-5 text-green-600 mt-0.5"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                      />
-                    </svg>
-                  ) : configStatus.includes("Error") ||
-                    configStatus.includes("kosong") ||
-                    configStatus.includes("Gagal") ? (
-                    <svg
-                      className="w-5 h-5 text-red-600 mt-0.5"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                      />
-                    </svg>
-                  ) : (
-                    <svg
-                      className="w-5 h-5 text-blue-600 mt-0.5"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                      />
-                    </svg>
-                  )}
-                </div>
-                <div className="ml-3">{configStatus}</div>
-              </div>
-            </div>
-          )}
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Job Position Form */}
-            <div className="space-y-4">
-              <div>
-                <label
-                  htmlFor="jobPosition"
-                  className="block text-sm font-medium text-gray-700 mb-2"
-                >
-                  Nama Posisi Pekerjaan
-                </label>
-                <input
-                  type="text"
-                  id="jobPosition"
-                  value={jobPosition}
-                  onChange={(e) => setJobPosition(e.target.value)}
-                  placeholder="e.g., UI/UX Designer, Frontend Developer"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 bg-white text-gray-900 placeholder-gray-500"
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Nama ini akan digunakan untuk penamaan spreadsheet
-                </p>
-              </div>
-            </div>
-
-            {/* Email Subjects Form */}
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Format Subjek Email yang Diterima
-                </label>
-                <div className="space-y-2">
-                  {emailSubjects.map((subject, index) => (
-                    <div key={index} className="flex items-center space-x-2">
-                      <input
-                        type="text"
-                        value={subject}
-                        onChange={(e) =>
-                          updateEmailSubject(index, e.target.value)
-                        }
-                        placeholder="e.g., cv-ui/ux, resume-frontend"
-                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 bg-white text-gray-900 placeholder-gray-500"
-                      />
-                      {emailSubjects.length > 1 && (
-                        <button
-                          onClick={() => removeEmailSubject(index)}
-                          className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors duration-200"
-                        >
-                          <svg
-                            className="w-4 h-4"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                            />
-                          </svg>
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-
-                <button
-                  onClick={addEmailSubject}
-                  className="mt-2 inline-flex items-center px-3 py-2 text-sm text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors duration-200"
-                >
-                  <svg
-                    className="w-4 h-4 mr-1"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 4v16m8-8H4"
-                    />
-                  </svg>
-                  Tambah Subjek Email
-                </button>
-
-                <p className="text-xs text-gray-500 mt-1">
-                  Email dengan subjek ini akan di-scan untuk mencari CV
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Bottom Section - Spreadsheet Info and Save Button */}
-          <div className="mt-6 pt-6 border-t border-gray-200">
-            <div className="flex items-center justify-between">
-              <div className="flex-1">
-                {currentSpreadsheetName && (
-                  <p className="text-sm text-gray-600">
-                    <span className="font-medium">Spreadsheet:</span>
-                    {currentSpreadsheetUrl ? (
-                      <a
-                        href={currentSpreadsheetUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-600 hover:text-blue-800 hover:underline ml-1"
-                      >
-                        {currentSpreadsheetName}
-                        <svg
-                          className="w-3 h-3 inline ml-1"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                          />
-                        </svg>
-                      </a>
-                    ) : (
-                      <span className="ml-1">{currentSpreadsheetName}</span>
-                    )}
-                  </p>
-                )}
-              </div>
-
-              <button
-                onClick={handleSaveConfig}
-                disabled={
-                  !jobPosition.trim() || emailSubjects.every((s) => !s.trim())
-                }
-                className="ml-4 bg-purple-600 text-white py-2 px-6 rounded-lg hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors duration-200 font-medium flex items-center"
-              >
-                {isConfigSaved ? (
-                  <>
-                    <svg
-                      className="w-4 h-4 mr-2"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M5 13l4 4L19 7"
-                      />
-                    </svg>
-                    Update Config
-                  </>
-                ) : (
-                  <>
-                    <svg
-                      className="w-4 h-4 mr-2"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 0V4a2 2 0 00-2-2H9a2 2 0 00-2 2v3m1 0h4"
-                      />
-                    </svg>
-                    Save Config
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Main Process Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
-          {/* Upload Section */}
-          <div className="bg-white border border-gray-200 rounded-xl p-6">
-            <div className="flex items-center mb-6">
-              <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
-                <svg
-                  className="w-5 h-5 text-blue-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-                  />
-                </svg>
-              </div>
-              <div>
-                <h2 className="text-lg font-semibold text-gray-900">
-                  Job Description Upload
-                </h2>
-                <p className="text-sm text-gray-600">
-                  Upload PDF file containing job requirements
-                </p>
-              </div>
-            </div>
-
-            {/* Configuration Reminder */}
-            {!isConfigSaved && (
-              <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                <div className="flex items-center">
-                  <svg
-                    className="w-4 h-4 text-amber-500 mr-2"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                  <p className="text-amber-700 text-sm">
-                    Simpan konfigurasi screening terlebih dahulu
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {/* File Upload Area */}
-            <div
-              className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors duration-200 ${isDragOver
-                ? "border-blue-400 bg-blue-50"
-                : selectedFile
-                  ? "border-green-300 bg-green-50"
-                  : "border-gray-300 hover:border-gray-400"
-                }`}
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-              onDrop={handleDrop}
-            >
-              <input
-                type="file"
-                accept=".pdf"
-                onChange={handleFileChange}
-                className="hidden"
-                id="file-upload"
-              />
-
-              {selectedFile ? (
-                <div className="space-y-3">
-                  <svg
-                    className="w-12 h-12 text-green-500 mx-auto"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
-                  </svg>
-                  <div>
-                    <p className="font-medium text-gray-900">
-                      {selectedFile.name}
-                    </p>
-                    <p className="text-sm text-gray-500">
-                      {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
-                    </p>
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  <svg
-                    className="w-12 h-12 text-gray-400 mx-auto"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-                    />
-                  </svg>
-                  <div>
-                    <label htmlFor="file-upload" className="cursor-pointer">
-                      <span className="text-blue-600 hover:text-blue-500 font-medium">
-                        Click to upload
-                      </span>
-                      <span className="text-gray-600"> or drag and drop</span>
-                    </label>
-                    <p className="text-sm text-gray-500">PDF files only</p>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Upload Button */}
-            <button
-              onClick={handleUpload}
-              disabled={!selectedFile || !isConfigSaved}
-              className="w-full mt-4 bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors duration-200 font-medium"
-            >
-              Upload Job Description
-            </button>
-
-            {/* Upload Status */}
-            {uploadStatus && (
-              <div
-                className={`mt-4 p-3 rounded-lg text-sm font-medium ${uploadStatus.includes("Sukses")
-                  ? "bg-green-50 text-green-700 border border-green-200"
-                  : uploadStatus.includes("Gagal")
-                    ? "bg-red-50 text-red-700 border border-red-200"
-                    : "bg-blue-50 text-blue-700 border border-blue-200"
-                  }`}
-              >
-                {uploadStatus}
-              </div>
-            )}
-          </div>
-
-          {/* AI Analysis Section */}
-          <div className="bg-white border border-gray-200 rounded-xl p-6">
-            <div className="flex items-center mb-6">
-              <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
-                <svg
-                  className="w-5 h-5 text-blue-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
-                  />
-                </svg>
-              </div>
-              <div>
-                <h2 className="text-lg font-semibold text-gray-900">
-                  AI Analysis
-                </h2>
-                <p className="text-sm text-gray-600">
-                  Process CVs with intelligent screening
-                </p>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              {/* Prerequisites Check */}
-              <div className="bg-gray-50 rounded-lg p-4">
-                <h3 className="font-medium text-gray-900 mb-3">
-                  Prerequisites
-                </h3>
-                <div className="space-y-2">
-                  <div className="flex items-center">
-                    <svg
-                      className={`w-4 h-4 mr-2 ${isConfigSaved ? "text-green-500" : "text-gray-400"
-                        }`}
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                    <span
-                      className={`text-sm ${isConfigSaved ? "text-green-700" : "text-gray-600"
-                        }`}
-                    >
-                      Screening configuration saved
-                    </span>
-                  </div>
-                  <div className="flex items-center">
-                    <svg
-                      className={`w-4 h-4 mr-2 ${uploadStatus.includes("Sukses")
-                        ? "text-green-500"
-                        : "text-gray-400"
-                        }`}
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                    <span
-                      className={`text-sm ${uploadStatus.includes("Sukses")
-                        ? "text-green-700"
-                        : "text-gray-600"
-                        }`}
-                    >
-                      Job description uploaded
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Process Overview */}
-              <div className="bg-gray-50 rounded-lg p-4">
-                <h3 className="font-medium text-gray-900 mb-2">
-                  Process Overview
-                </h3>
-                <ul className="text-sm text-gray-600 space-y-1">
-                  <li className="flex items-center">
-                    <svg
-                      className="w-4 h-4 text-green-500 mr-2"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                    Scan Gmail for CV attachments
-                  </li>
-                  <li className="flex items-center">
-                    <svg
-                      className="w-4 h-4 text-green-500 mr-2"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                    Extract and analyze text content
-                  </li>
-                  <li className="flex items-center">
-                    <svg
-                      className="w-4 h-4 text-green-500 mr-2"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                    Upload CVs to Google Drive
-                  </li>
-                  <li className="flex items-center">
-                    <svg
-                      className="w-4 h-4 text-green-500 mr-2"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                    Generate compatibility scores
-                  </li>
-                </ul>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="space-y-3">
-                <button
-                  onClick={handleStartScreening}
-                  disabled={
-                    isLoading ||
-                    !uploadStatus.includes("Sukses") ||
-                    !isConfigSaved
-                  }
-                  className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors duration-200 font-medium flex items-center justify-center"
-                >
-                  {isLoading ? (
-                    <>
-                      <svg
-                        className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                      >
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                        ></circle>
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                        ></path>
-                      </svg>
-                      Processing...
-                    </>
-                  ) : (
-                    <>
-                      <svg
-                        className="w-5 h-5 mr-2"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M13 10V3L4 14h7v7l9-11h-7z"
-                        />
-                      </svg>
-                      Start AI Analysis
-                    </>
-                  )}
-                </button>
-
-                {results.length > 0 && (
-                  <button
-                    onClick={handleClearResults}
-                    disabled={isLoading}
-                    className="w-full bg-red-600 text-white py-3 px-4 rounded-lg hover:bg-red-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors duration-200 font-medium flex items-center justify-center"
-                  >
-                    <svg
-                      className="w-5 h-5 mr-2"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                      />
-                    </svg>
-                    Clear All Data
-                  </button>
-                )}
-              </div>
-
-              {/* Screening Status */}
-              {screeningStatus && (
-                <div
-                  className={`p-3 rounded-lg text-sm font-medium ${screeningStatus.includes("berhasil") ||
-                    screeningStatus.includes("Sukses")
-                    ? "bg-green-50 text-green-700 border border-green-200"
-                    : screeningStatus.includes("Error") ||
-                      screeningStatus.includes("Gagal")
-                      ? "bg-red-50 text-red-700 border border-red-200"
-                      : "bg-blue-50 text-blue-700 border border-blue-200"
-                    }`}
-                >
-                  {screeningStatus}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Results Section */}
-        <div className="bg-white border border-gray-200 rounded-xl p-6">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center">
-              <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
-                <svg
-                  className="w-5 h-5 text-blue-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-                  />
-                </svg>
-              </div>
-              <div>
-                <h2 className="text-lg font-semibold text-gray-900">
-                  Analysis Results
-                </h2>
-                <p className="text-sm text-gray-600">
-                  {results.length > 0
-                    ? `${results.length} candidates analyzed`
-                    : "No data available"}
-                </p>
-              </div>
-            </div>
-
-            {results.length > 0 && (
-              <div className="flex items-center space-x-4 text-sm">
-                <div className="flex items-center">
-                  <div className="w-3 h-3 bg-green-200 rounded mr-2"></div>
-                  <span className="text-gray-600">High Match (80%+)</span>
-                </div>
-                <div className="flex items-center">
-                  <div className="w-3 h-3 bg-yellow-200 rounded mr-2"></div>
-                  <span className="text-gray-600">Medium Match (60-79%)</span>
-                </div>
-                <div className="flex items-center">
-                  <div className="w-3 h-3 bg-red-200 rounded mr-2"></div>
-                  <span className="text-gray-600">Low Match (&lt;60%)</span>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Search Bar - positioned below header and aligned right */}
-          {results.length > 0 && (
-            <div className="flex justify-between items-center mb-6">
-              <div className="flex-1"></div>
-              <div className="relative max-w-md w-full sm:w-80">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <svg
-                    className="h-5 w-5 text-gray-400"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                    />
-                  </svg>
-                </div>
-                <input
-                  type="text"
-                  placeholder="Search candidates..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                />
-              </div>
-            </div>
-          )}
-
-          {/* Search Results Counter */}
-          {results.length > 0 && searchTerm && (
-            <div className="flex justify-end mb-4">
-              <p className="text-sm text-gray-600">
-                Showing {getFilteredAndSortedResults().length} of{" "}
-                {results.length} candidates
-              </p>
-            </div>
-          )}
-
-          {/* Results Content */}
-          {!isLoggedIn ? (
-            <div className="text-center py-12">
-              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg
-                  className="w-8 h-8 text-gray-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-                  />
-                </svg>
-              </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
-                Authentication Required
-              </h3>
-              <p className="text-gray-600 mb-4">
-                Please login with your Google account to view analysis results.
-              </p>
-              <button
-                onClick={handleLogin}
-                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 font-medium"
-              >
-                <svg
-                  className="w-4 h-4 mr-2"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M3 3a1 1 0 011 1v12a1 1 0 11-2 0V4a1 1 0 011-1zm7.707 3.293a1 1 0 010 1.414L9.414 9H17a1 1 0 110 2H9.414l1.293 1.293a1 1 0 01-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 011.414 0z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-                Login with Google
-              </button>
-            </div>
-          ) : results.length > 0 ? (
-            <>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-gray-200 bg-gray-50">
-                      <th className="text-left py-4 px-4 font-medium text-gray-900 w-48">
-                        <button
-                          onClick={() => handleSort("Nama")}
-                          className="flex items-center space-x-1 hover:text-blue-600 transition-colors"
-                        >
-                          <span>Candidate</span>
-                          {getSortIcon("Nama")}
-                        </button>
-                      </th>
-
-                      <th className="text-left py-4 px-2 font-medium text-gray-900 w-32">
-                        <button
-                          onClick={() => handleSort("Pendidikan Terakhir")}
-                          className="flex items-center space-x-1 hover:text-blue-600 transition-colors"
-                        >
-                          <span>Education</span>
-                          {getSortIcon("Pendidikan Terakhir")}
-                        </button>
-                      </th>
-
-                      <th className="text-center py-4 px-2 font-medium text-gray-900 w-28">
-                        <button
-                          onClick={() => handleSort("Overall Fit")}
-                          className="flex items-center space-x-1 hover:text-blue-600 transition-colors mx-auto"
-                        >
-                          <span>Score</span>
-                          {getSortIcon("Overall Fit")}
-                        </button>
-                      </th>
-
-                      <th className="text-left py-4 px-4 font-medium text-gray-900 w-64">
-                        Strengths
-                      </th>
-                      <th className="text-left py-4 px-4 font-medium text-gray-900 w-64">
-                        Weaknesses
-                      </th>
-                      <th className="text-left py-4 px-4 font-medium text-gray-900 w-64">
-                        Analysis
-                      </th>
-
-                      <th className="text-left py-4 px-2 font-medium text-gray-900 w-24">
-                        CV
-                      </th>
-
-                      <th className="text-left py-4 px-2 font-medium text-gray-900 w-28">
-                        <button
-                          onClick={() => handleSort("Waktu")}
-                          className="flex items-center space-x-1 hover:text-blue-600 transition-colors"
-                        >
-                          <span>Date</span>
-                          {getSortIcon("Waktu")}
-                        </button>
-                      </th>
-
-                      <th className="text-center py-4 px-2 font-medium text-gray-900 w-20">
-                        Details
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100">
-                    {getFilteredAndSortedResults().map((result, index) => (
-                      <tr
-                        key={index}
-                        className="hover:bg-gray-50 transition-colors duration-150"
-                      >
-                        {/* Candidate Info */}
-                        <td className="py-4 px-4">
-                          <div className="flex items-center">
-                            <div className="min-w-0">
-                              <p
-                                className="font-medium text-gray-900 truncate"
-                                title={result.Nama || "N/A"}
-                              >
-                                {result.Nama || "N/A"}
-                              </p>
-                            </div>
-                          </div>
-                          <div className="text-xs space-y-1">
-                            {result.Email &&
-                              result.Email !== "Tidak tercantum" ? (
-                              <a
-                                href={`mailto:${result.Email}`}
-                                className="text-blue-600 hover:text-blue-800 hover:underline block truncate"
-                                title={result.Email}
-                              >
-                                {result.Email.length > 25
-                                  ? `${result.Email.substring(0, 25)}...`
-                                  : result.Email}
-                              </a>
-                            ) : (
-                              <span className="text-gray-400 block">
-                                No email
-                              </span>
-                            )}
-                            {result["Nomor Telepon"] &&
-                              result["Nomor Telepon"] !== "Tidak tercantum" ? (
-                              <a
-                                href={`https://wa.me/${result["Nomor Telepon"]}`}
-                                className="text-blue-600 hover:text-blue-800 hover:underline block"
-                                title={result["Nomor Telepon"]}
-                              >
-                                {result["Nomor Telepon"]}
-                              </a>
-                            ) : (
-                              <span className="text-gray-400 block">
-                                No phone
-                              </span>
-                            )}
-                          </div>
-                        </td>
-
-                        {/* Education */}
-                        <td className="py-4 px-2">
-                          <div className="max-w-[120px]">
-                            <p
-                              className="text-[12px] text-gray-900 line-clamp-2 cursor-help"
-                              title={result["Pendidikan Terakhir"] || "N/A"}
-                            >
-                              {result["Pendidikan Terakhir"]
-                                ? result["Pendidikan Terakhir"].length > 40
-                                  ? `${result["Pendidikan Terakhir"].substring(
-                                    0,
-                                    40
-                                  )}...`
-                                  : result["Pendidikan Terakhir"]
-                                : "N/A"}
-                            </p>
-                          </div>
-                        </td>
-
-                        {/* Match Score */}
-                        <td className="py-4 px-2 text-center">
-                          <div className="inline-flex items-center">
-                            <div
-                              className={`px-2 py-1 rounded-full text-sm font-medium border ${getScoreBadgeColor(
-                                result["Overall Fit"] || 0
-                              )}`}
-                            >
-                              {result["Overall Fit"] || 0}%
-                            </div>
-                          </div>
-                        </td>
-
-                        {/* Strengths */}
-                        <td className="py-4 px-4">
-                          <div className="max-w-[240px]">
-                            <p
-                              className="text-xs text-gray-900 line-clamp-3 cursor-help"
-                              title={result.Kekuatan || "N/A"}
-                            >
-                              {result.Kekuatan
-                                ? result.Kekuatan.length > 120
-                                  ? `${result.Kekuatan.substring(0, 120)}...`
-                                  : result.Kekuatan
-                                : "N/A"}
-                            </p>
-                          </div>
-                        </td>
-
-                        {/* Weaknesses */}
-                        <td className="py-4 px-4">
-                          <div className="max-w-[240px]">
-                            <p
-                              className="text-xs text-gray-900 line-clamp-3 cursor-help"
-                              title={result.Kekurangan || "N/A"}
-                            >
-                              {result.Kekurangan
-                                ? result.Kekurangan.length > 120
-                                  ? `${result.Kekurangan.substring(0, 120)}...`
-                                  : result.Kekurangan
-                                : "N/A"}
-                            </p>
-                          </div>
-                        </td>
-
-                        {/* Analysis */}
-                        <td className="py-4 px-4">
-                          <div className="max-w-[240px]">
-                            <p
-                              className="text-xs text-gray-900 line-clamp-3 cursor-help"
-                              title={result.Justifikasi || "N/A"}
-                            >
-                              {result.Justifikasi
-                                ? result.Justifikasi.length > 120
-                                  ? `${result.Justifikasi.substring(0, 120)}...`
-                                  : result.Justifikasi
-                                : "N/A"}
-                            </p>
-                          </div>
-                        </td>
-
-                        {/* CV Link */}
-                        <td className="py-4 px-2">
-                          {result["Drive Link"] &&
-                            result["Drive Link"] !== "Gagal upload ke Drive" ? (
-                            <a
-                              href={result["Drive Link"]}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium hover:bg-blue-200 transition-colors duration-200"
-                            >
-                              <svg
-                                className="w-3 h-3 mr-1"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
-                                />
-                              </svg>
-                              CV
-                            </a>
-                          ) : (
-                            <span className="text-gray-400 text-xs">
-                              No link
-                            </span>
-                          )}
-                        </td>
-
-                        {/* Date */}
-                        <td className="py-4 px-2">
-                          <div className="text-xs text-gray-500">
-                            {result.Waktu ? (
-                              <div>
-                                <p>
-                                  {new Date(result.Waktu).toLocaleDateString(
-                                    "en-GB",
-                                    {
-                                      day: "2-digit",
-                                      month: "2-digit",
-                                      year: "2-digit",
-                                    }
-                                  )}
-                                </p>
-                                <p className="text-xs text-gray-400">
-                                  {new Date(result.Waktu).toLocaleTimeString(
-                                    "en-US",
-                                    { hour: "2-digit", minute: "2-digit" }
-                                  )}
-                                </p>
-                              </div>
-                            ) : (
-                              "N/A"
-                            )}
-                          </div>
-                        </td>
-
-                        {/* Details Button */}
-                        <td className="py-4 px-2 text-center">
-                          <button
-                            onClick={() => {
-                              // You need to add this state: const [selectedCandidate, setSelectedCandidate] = useState(null);
-                              if (typeof setSelectedCandidate === "function") {
-                                setSelectedCandidate(result);
-                              } else {
-                                console.log("Selected candidate:", result);
-                                alert(
-                                  "Please add selectedCandidate state to your component"
-                                );
-                              }
-                            }}
-                            className="inline-flex items-center px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs font-medium hover:bg-gray-200 transition-colors duration-200"
-                          >
-                            <svg
-                              className="w-5 h-5"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                              />
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                              />
-                            </svg>
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Detail Modal */}
-              {typeof selectedCandidate !== "undefined" &&
-                selectedCandidate && (
-                  <div className="fixed inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-lg shadow-xl border border-gray-200 max-w-6xl w-full max-h-[90vh] overflow-y-auto">
-                      {/* Modal Header */}
-                      <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 rounded-t-lg">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center">
-                            <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center mr-4">
-                              <span className="text-gray-700 font-semibold text-lg">
-                                {(selectedCandidate.Nama || "N/A")
-                                  .charAt(0)
-                                  .toUpperCase()}
-                              </span>
-                            </div>
-                            <div>
-                              <h2 className="text-xl font-semibold text-gray-900">
-                                {selectedCandidate.Nama || "N/A"}
-                              </h2>
-                              <p className="text-sm text-gray-500">
-                                Candidate Analysis Report
-                              </p>
-                            </div>
-                          </div>
-                          <div className="flex items-center space-x-4">
-                            <div
-                              className={`px-4 py-2 rounded-md text-sm font-medium border ${getScoreBadgeColor(
-                                selectedCandidate["Overall Fit"] || 0
-                              )}`}
-                            >
-                              {selectedCandidate["Overall Fit"] || 0}% Match
-                            </div>
-                            <button
-                              onClick={() => {
-                                if (
-                                  typeof setSelectedCandidate === "function"
-                                ) {
-                                  setSelectedCandidate(null);
-                                } else {
-                                  console.log("Close modal");
-                                }
-                              }}
-                              className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-md transition-colors"
-                            >
-                              <svg
-                                className="w-5 h-5"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M6 18L18 6M6 6l12 12"
-                                />
-                              </svg>
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Modal Content */}
-                      <div className="p-6 space-y-6">
-                        {/* Contact Information */}
-                        <div className="bg-gray-50/50 rounded-lg p-5 border border-gray-100">
-                          <h3 className="text-lg font-medium text-gray-900 mb-4">
-                            Contact Information
-                          </h3>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                              <label className="text-sm font-medium text-gray-600 mb-1 block">
-                                Email Address
-                              </label>
-                              <p className="text-sm text-gray-900">
-                                {selectedCandidate.Email &&
-                                  selectedCandidate.Email !==
-                                  "Tidak tercantum" ? (
-                                  <a
-                                    href={`mailto:${selectedCandidate.Email}`}
-                                    className="text-blue-600 hover:underline flex items-center"
-                                  >
-                                    <svg
-                                      className="w-4 h-4 mr-1"
-                                      fill="none"
-                                      stroke="currentColor"
-                                      viewBox="0 0 24 24"
-                                    >
-                                      <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth={2}
-                                        d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-                                      />
-                                    </svg>
-                                    {selectedCandidate.Email}
-                                  </a>
-                                ) : (
-                                  <span className="text-gray-400">
-                                    Not available
-                                  </span>
-                                )}
-                              </p>
-                            </div>
-                            <div>
-                              <label className="text-sm font-medium text-gray-600 mb-1 block">
-                                Phone Number
-                              </label>
-                              <p className="text-sm text-gray-900">
-                                {selectedCandidate["Nomor Telepon"] &&
-                                  selectedCandidate["Nomor Telepon"] !==
-                                  "Tidak tercantum" ? (
-                                  <a
-                                    href={`tel:${selectedCandidate["Nomor Telepon"]}`}
-                                    className="text-blue-600 hover:underline flex items-center"
-                                  >
-                                    <svg
-                                      className="w-4 h-4 mr-1"
-                                      fill="none"
-                                      stroke="currentColor"
-                                      viewBox="0 0 24 24"
-                                    >
-                                      <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth={2}
-                                        d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
-                                      />
-                                    </svg>
-                                    {selectedCandidate["Nomor Telepon"]}
-                                  </a>
-                                ) : (
-                                  <span className="text-gray-400">
-                                    Not available
-                                  </span>
-                                )}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Education */}
-                        <div className="bg-white border border-gray-100 rounded-lg p-5">
-                          <h3 className="text-lg font-medium text-gray-900 mb-3 flex items-center">
-                            <svg
-                              className="w-5 h-5 mr-2 text-gray-600"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path d="M12 14l9-5-9-5-9 5 9 5z"></path>
-                              <path d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"></path>
-                            </svg>
-                            Education Background
-                          </h3>
-                          <p className="text-sm text-gray-800 bg-gray-50/50 p-3 rounded border">
-                            {selectedCandidate["Pendidikan Terakhir"] ||
-                              "No education information available"}
-                          </p>
-                        </div>
-
-                        {/* Strengths & Weaknesses */}
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                          {/* Strengths */}
-                          <div className="bg-white border border-gray-100 rounded-lg p-5">
-                            <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
-                              <svg
-                                className="w-5 h-5 mr-2 text-green-600"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                                />
-                              </svg>
-                              <span className="text-green-700">Strengths</span>
-                            </h3>
-                            <div className="bg-green-50/70 border border-green-100 rounded-md p-4">
-                              {selectedCandidate.Kekuatan ? (
-                                Array.isArray(selectedCandidate.Kekuatan) ? (
-                                  <ol className="list-decimal list-inside space-y-1 text-sm text-gray-800 leading-relaxed">
-                                    {selectedCandidate.Kekuatan.map(
-                                      (item, idx) => (
-                                        <li key={idx}>
-                                          {item.replace(/^\d+\.\s*/, "").trim()}
-                                        </li>
-                                      )
-                                    )}
-                                  </ol>
-                                ) : (
-                                  <ol className="list-decimal list-inside space-y-1 text-sm text-gray-800 leading-relaxed">
-                                    {selectedCandidate.Kekuatan
-                                      // Pecah hanya berdasarkan baris baru, buang baris kosong
-                                      .split(/\r?\n+/)
-                                      .map((line) =>
-                                        line.replace(/^\d+\.\s*/, "").trim()
-                                      ) // Hapus nomor di awal baris
-                                      .filter((line) => line.length > 0) // Buang baris kosong
-                                      // Gabungkan potongan pendek yang tampaknya kelanjutan baris sebelumnya
-                                      .reduce((acc, line) => {
-                                        if (
-                                          acc.length &&
-                                          line.match(/^[\d./]+$/)
-                                        ) {
-                                          // Jika baris hanya angka atau pecahan seperti "97/", gabungkan ke baris sebelumnya
-                                          acc[acc.length - 1] += " " + line;
-                                        } else {
-                                          acc.push(line);
-                                        }
-                                        return acc;
-                                      }, [])
-                                      .map((strength, idx) => (
-                                        <li key={idx}>{strength}</li>
-                                      ))}
-                                  </ol>
-                                )
-                              ) : (
-                                <p className="text-gray-400 text-sm">
-                                  No strengths data available
-                                </p>
-                              )}
-                            </div>
-                          </div>
-
-                          {/* Weaknesses */}
-                          <div className="bg-white border border-gray-100 rounded-lg p-5">
-                            <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
-                              <svg
-                                className="w-5 h-5 mr-2 text-orange-600"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
-                                />
-                              </svg>
-                              <span className="text-orange-700">
-                                Areas for Improvement
-                              </span>
-                            </h3>
-                            <div className="bg-orange-50/70 border border-orange-100 rounded-md p-4">
-                              {selectedCandidate.Kekurangan ? (
-                                Array.isArray(selectedCandidate.Kekurangan) ? (
-                                  <ol className="list-decimal list-inside space-y-1 text-sm text-gray-800 leading-relaxed">
-                                    {selectedCandidate.Kekurangan.map(
-                                      (weakness, index) => (
-                                        <li key={index}>
-                                          {weakness.replace(/^\d+\.\s*/, "")}
-                                        </li>
-                                      )
-                                    )}
-                                  </ol>
-                                ) : (
-                                  <ol className="list-decimal list-inside space-y-1 text-sm text-gray-800 leading-relaxed">
-                                    {selectedCandidate.Kekurangan.split(
-                                      /\r?\n|\d+\.\s*/
-                                    )
-                                      .filter((item) => item.trim() !== "")
-                                      .map((weakness, index) => (
-                                        <li key={index}>{weakness.trim()}</li>
-                                      ))}
-                                  </ol>
-                                )
-                              ) : (
-                                <p className="text-gray-400 text-sm">
-                                  No weaknesses data available
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Risk & Reward Factors */}
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-                          {/* Risk Factors */}
-                          <div className="bg-white border border-gray-100 rounded-lg p-5">
-                            <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
-                              <svg
-                                className="w-5 h-5 mr-2 text-red-600"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
-                                />
-                              </svg>
-                              <span className="text-red-700">Risk Factors</span>
-                            </h3>
-                            <div className="bg-red-50/70 border border-red-100 rounded-md p-4">
-                              {selectedCandidate["Risk Factor"] ? (
-                                Array.isArray(
-                                  selectedCandidate["Risk Factor"]
-                                ) ? (
-                                  <ol className="list-decimal list-inside space-y-1 text-sm text-gray-800 leading-relaxed">
-                                    {selectedCandidate["Risk Factor"].map(
-                                      (risk, index) => (
-                                        <li key={index}>
-                                          {risk.replace(/^\d+\.\s*/, "")}
-                                        </li>
-                                      )
-                                    )}
-                                  </ol>
-                                ) : (
-                                  <ol className="list-decimal list-inside space-y-1 text-sm text-gray-800 leading-relaxed">
-                                    {selectedCandidate["Risk Factor"]
-                                      .split(/\r?\n|\d+\.\s*/)
-                                      .filter((item) => item.trim() !== "")
-                                      .map((risk, index) => (
-                                        <li key={index}>{risk.trim()}</li>
-                                      ))}
-                                  </ol>
-                                )
-                              ) : (
-                                <p className="text-gray-400 text-sm">
-                                  No risk factors data available
-                                </p>
-                              )}
-                            </div>
-                          </div>
-
-                          {/* Reward Potential */}
-                          <div className="bg-white border border-gray-100 rounded-lg p-5">
-                            <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
-                              <svg
-                                className="w-5 h-5 mr-2 text-blue-600"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M13 10V3L4 14h7v7l9-11h-7z"
-                                />
-                              </svg>
-                              <span className="text-blue-700">
-                                Reward Potential
-                              </span>
-                            </h3>
-                            <div className="bg-blue-50/70 border border-blue-100 rounded-md p-4">
-                              {selectedCandidate["Reward Factor"] ? (
-                                Array.isArray(
-                                  selectedCandidate["Reward Factor"]
-                                ) ? (
-                                  <ol className="list-decimal list-inside space-y-1 text-sm text-gray-800 leading-relaxed">
-                                    {selectedCandidate["Reward Factor"].map(
-                                      (reward, index) => (
-                                        <li key={index}>
-                                          {reward.replace(/^\d+\.\s*/, "")}
-                                        </li>
-                                      )
-                                    )}
-                                  </ol>
-                                ) : (
-                                  <ol className="list-decimal list-inside space-y-1 text-sm text-gray-800 leading-relaxed">
-                                    {selectedCandidate["Reward Factor"]
-                                      .split(/\r?\n|\d+\.\s*/)
-                                      .filter((item) => item.trim() !== "")
-                                      .map((reward, index) => (
-                                        <li key={index}>{reward.trim()}</li>
-                                      ))}
-                                  </ol>
-                                )
-                              ) : (
-                                <p className="text-gray-400 text-sm">
-                                  No reward factors data available
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Detailed Analysis */}
-                        <div className="bg-white border border-gray-100 rounded-lg p-5">
-                          <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
-                            <svg
-                              className="w-5 h-5 mr-2 text-gray-600"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                              />
-                            </svg>
-                            Analysis Summary
-                          </h3>
-                          <div className="bg-gray-50/50 border border-gray-100 rounded-md p-4">
-                            <p className="text-sm text-gray-800 leading-relaxed whitespace-pre-wrap">
-                              {selectedCandidate.Justifikasi ||
-                                "No analysis data available"}
-                            </p>
-                          </div>
-                        </div>
-
-                        {/* Footer Information */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-gray-100">
-                          <div className="bg-gray-50/50 rounded-lg p-4 border border-gray-100">
-                            <h4 className="text-sm font-medium text-gray-700 mb-2 flex items-center">
-                              <svg
-                                className="w-4 h-4 mr-1"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                                />
-                              </svg>
-                              CV Document
-                            </h4>
-                            {selectedCandidate["Drive Link"] &&
-                              selectedCandidate["Drive Link"] !==
-                              "Gagal upload ke Drive" ? (
-                              <a
-                                href={selectedCandidate["Drive Link"]}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center px-3 py-2 bg-blue-50 text-blue-700 rounded-md text-sm font-medium hover:bg-blue-100 transition-colors duration-200 border border-blue-200"
-                              >
-                                <svg
-                                  className="w-4 h-4 mr-2"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  viewBox="0 0 24 24"
-                                >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                                  />
-                                </svg>
-                                View Document
-                              </a>
-                            ) : (
-                              <p className="text-gray-400 text-sm">
-                                Document not available
-                              </p>
-                            )}
-                          </div>
-
-                          <div className="bg-gray-50/50 rounded-lg p-4 border border-gray-100">
-                            <h4 className="text-sm font-medium text-gray-700 mb-2 flex items-center">
-                              <svg
-                                className="w-4 h-4 mr-1"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                                />
-                              </svg>
-                              Analysis Date
-                            </h4>
-                            {selectedCandidate.Waktu ? (
-                              <div className="text-sm text-gray-700">
-                                <p className="font-medium">
-                                  {new Date(
-                                    selectedCandidate.Waktu
-                                  ).toLocaleDateString("en-US", {
-                                    year: "numeric",
-                                    month: "long",
-                                    day: "numeric",
-                                  })}
-                                </p>
-                                <p className="text-gray-500 text-xs mt-1">
-                                  {new Date(
-                                    selectedCandidate.Waktu
-                                  ).toLocaleTimeString("en-US", {
-                                    hour: "2-digit",
-                                    minute: "2-digit",
-                                  })}
-                                </p>
-                              </div>
-                            ) : (
-                              <p className="text-gray-400 text-sm">
-                                Date not available
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-            </>
-          ) : (
-            <div className="text-center py-12">
-              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg
-                  className="w-8 h-8 text-gray-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-                  />
-                </svg>
-              </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
-                No Analysis Data
-              </h3>
-              <p className="text-gray-600 mb-4">
-                Start the screening process to see candidate analysis results
-                here.
-              </p>
-              <div className="text-sm text-gray-500">
-                <p>
-                  💡 <strong>Tip:</strong> Make sure your Gmail contains emails
-                  with subjects including "resume" or "cv" with PDF attachments.
-                </p>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Stats Summary */}
-        {results.length > 0 && (
-          <div className="mt-8 grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="bg-white border border-gray-200 rounded-lg p-4">
-              <div className="flex items-center">
-                <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
-                  <svg
-                    className="w-4 h-4 text-blue-600"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-                <div>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {results.length}
-                  </p>
-                  <p className="text-sm text-gray-600">Total CVs</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white border border-gray-200 rounded-lg p-4">
-              <div className="flex items-center">
-                <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center mr-3">
-                  <svg
-                    className="w-4 h-4 text-green-600"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                </div>
-                <div>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {
-                      results.filter((r) => (r["Overall Fit"] || 0) >= 80)
-                        .length
-                    }
-                  </p>
-                  <p className="text-sm text-gray-600">High Match</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white border border-gray-200 rounded-lg p-4">
-              <div className="flex items-center">
-                <div className="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center mr-3">
-                  <svg
-                    className="w-4 h-4 text-yellow-600"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                </div>
-                <div>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {
-                      results.filter(
-                        (r) =>
-                          (r["Overall Fit"] || 0) >= 60 &&
-                          (r["Overall Fit"] || 0) < 80
-                      ).length
-                    }
-                  </p>
-                  <p className="text-sm text-gray-600">Medium Match</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white border border-gray-200 rounded-lg p-4">
-              <div className="flex items-center">
-                <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center mr-3">
-                  <svg
-                    className="w-4 h-4 text-gray-600"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                </div>
-                <div>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {results.length > 0
-                      ? Math.round(
-                        results.reduce(
-                          (sum, r) => sum + (r["Overall Fit"] || 0),
-                          0
-                        ) / results.length
-                      )
-                      : 0}
-                    %
-                  </p>
-                  <p className="text-sm text-gray-600">Avg Score</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-      </main>
-      <footer className="bg-gradient-to-br from-slate-50 to-gray-100 border-t border-gray-200 mt-auto">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-center">
-            {/* Brand Section */}
-            <div className="text-center md:text-left">
-              <div className="flex items-center justify-center md:justify-start space-x-3 mb-4">
-                <img
-                  src="rekruta1.jpg"
-                  alt="RekrutAI Logo"
-                  className="w-10 h-10 rounded-lg object-cover"
-                />
-              </div>
-              <p className="text-gray-600 text-sm leading-relaxed max-w-md mx-auto md:mx-0">
-                Transforming recruitment with intelligent CV screening and
-                AI-powered candidate matching.
-              </p>
-            </div>
-
-            {/* Contact Section */}
-            <div className="text-center">
-              <h4 className="text-lg font-semibold text-gray-800 mb-6">
-                Get in Touch
-              </h4>
-              <div className="space-y-4">
-                {/* Phone */}
-                <div className="flex items-center justify-center space-x-3 group">
-                  <div className="w-10 h-10 bg-gradient-to-r from-emerald-100 to-green-100 rounded-full flex items-center justify-center group-hover:from-emerald-200 group-hover:to-green-200 transition-all duration-300">
-                    <svg
-                      className="w-5 h-5 text-emerald-600"
-                      fill="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path d="M6.62,10.79C8.06,13.62 10.38,15.94 13.21,17.38L15.41,15.18C15.69,14.9 16.08,14.82 16.43,14.93C17.55,15.3 18.75,15.5 20,15.5A1,1 0 0,1 21,16.5V20A1,1 0 0,1 20,21A17,17 0 0,1 3,4A1,1 0 0,1 4,3H7.5A1,1 0 0,1 8.5,4C8.5,5.25 8.7,6.45 9.07,7.57C9.18,7.92 9.1,8.31 8.82,8.59L6.62,10.79Z" />
-                    </svg>
-                  </div>
-                  <div className="text-left">
-                    <p className="text-xs text-gray-500 uppercase tracking-wide">
-                      Phone
-                    </p>
-                    <a
-                      href="tel:08983178032"
-                      className="text-gray-800 hover:text-emerald-600 transition-colors duration-200 font-medium"
-                    >
-                      08983178032
-                    </a>
-                  </div>
-                </div>
-
-                {/* Email */}
-                <div className="flex items-center justify-center space-x-3 group">
-                  <div className="w-10 h-10 bg-gradient-to-r from-blue-100 to-sky-100 rounded-full flex items-center justify-center group-hover:from-blue-200 group-hover:to-sky-200 transition-all duration-300">
-                    <svg
-                      className="w-5 h-5 text-blue-600"
-                      fill="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path d="M20,8L12,13L4,8V6L12,11L20,6M20,4H4C2.89,4 2,4.89 2,6V18A2,2 0 0,0 4,20H20A2,2 0 0,0 22,18V6C22,4.89 21.1,4 20,4Z" />
-                    </svg>
-                  </div>
-                  <div className="text-left">
-                    <p className="text-xs text-gray-500 uppercase tracking-wide">
-                      Email
-                    </p>
-                    <a
-                      href="mailto:agustamayasa21@gmail.com"
-                      className="text-gray-800 hover:text-blue-600 transition-colors duration-200 font-medium"
-                    >
-                      agustamayasa21@gmail.com
-                    </a>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Social Links Section */}
-            <div className="text-center md:text-right">
-              <h4 className="text-lg font-semibold text-gray-800 mb-6">
-                Connect
-              </h4>
-              <div className="flex justify-center md:justify-end space-x-4">
-                {/* Instagram */}
-                <a
-                  href="https://www.instagram.com/agus_tamayasa"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="group w-12 h-12 bg-gradient-to-r from-pink-100 to-purple-100 rounded-xl flex items-center justify-center hover:from-pink-200 hover:to-purple-200 hover:scale-105 transform transition-all duration-300"
-                  aria-label="Instagram Profile"
-                >
-                  <svg
-                    className="w-6 h-6 text-pink-600 group-hover:text-purple-600 transition-colors duration-300"
-                    fill="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path d="M12,2.163c3.204,0,3.584,0.012,4.85,0.07c3.252,0.148,4.771,1.691,4.919,4.919c0.058,1.265,0.069,1.645,0.069,4.849c0,3.205-0.012,3.584-0.069,4.849c-0.149,3.225-1.664,4.771-4.919,4.919c-1.266,0.058-1.644,0.07-4.85,0.07s-3.584-0.012-4.849-0.07c-3.26-0.149-4.771-1.699-4.919-4.92c-0.058-1.265-0.07-1.644-0.07-4.849c0-3.204,0.013-3.583,0.07-4.849c0.149-3.227,1.664-4.771,4.919-4.919c1.266-0.057,1.645-0.069,4.849-0.069zm0-2.163c-3.259,0-3.667,0.014-4.947,0.072c-4.358,0.2-6.78,2.618-6.98,6.98c-0.059,1.281-0.073,1.689-0.073,4.948c0,3.259,0.014,3.668,0.072,4.948c0.2,4.358,2.618,6.78,6.98,6.98c1.281,0.058,1.689,0.072,4.948,0.072c3.259,0,3.668-0.014,4.948-0.072c4.354-0.2,6.782-2.618,6.979-6.98c0.059-1.28,0.073-1.689,0.073-4.948c0-3.259-0.014-3.667-0.072-4.947c-0.196-4.354-2.617-6.78-6.979-6.98c-1.281-0.059-1.69-0.073-4.949-0.073zm0,5.838c-3.403,0-6.162,2.759-6.162,6.162c0,3.403,2.759,6.163,6.162,6.163s6.162-2.759,6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0,10.162c-2.209,0-4-1.79-4-4c0-2.209,1.791-4,4-4s4,1.791,4,4c0,2.21-1.791,4-4,4zm6.406-11.845c-0.796,0-1.441,0.645-1.441,1.44s0.645,1.44,1.441,1.44c0.795,0,1.439-0.645,1.439-1.44s-0.644-1.44-1.439-1.44z" />
-                  </svg>
-                </a>
-
-                {/* GitHub */}
-                <a
-                  href="https://github.com/agustamayasa"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="group w-12 h-12 bg-gradient-to-r from-gray-100 to-slate-100 rounded-xl flex items-center justify-center hover:from-gray-200 hover:to-slate-200 hover:scale-105 transform transition-all duration-300"
-                  aria-label="GitHub Profile"
-                >
-                  <svg
-                    className="w-6 h-6 text-gray-700 group-hover:text-gray-900 transition-colors duration-300"
-                    fill="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path d="M12,2A10,10 0 0,0 2,12C2,16.42 4.87,20.17 8.84,21.5C9.34,21.58 9.5,21.27 9.5,21C9.5,20.77 9.5,20.14 9.5,19.31C6.73,19.91 6.14,17.97 6.14,17.97C5.68,16.81 5.03,16.5 5.03,16.5C4.12,15.88 5.1,15.9 5.1,15.9C6.1,15.97 6.63,16.93 6.63,16.93C7.5,18.45 8.97,18 9.54,17.76C9.63,17.11 9.89,16.67 10.17,16.42C7.95,16.17 5.62,15.31 5.62,11.5C5.62,10.39 6,9.5 6.65,8.79C6.55,8.54 6.2,7.5 6.75,6.15C6.75,6.15 7.59,5.88 9.5,7.17C10.29,6.95 11.15,6.84 12,6.84C12.85,6.84 13.71,6.95 14.5,7.17C16.41,5.88 17.25,6.15 17.25,6.15C17.8,7.5 17.45,8.54 17.35,8.79C18,9.5 18.38,10.39 18.38,11.5C18.38,15.32 16.04,16.16 13.81,16.41C14.17,16.72 14.5,17.33 14.5,18.26C14.5,19.6 14.5,20.68 14.5,21C14.5,21.27 14.66,21.59 15.17,21.5C19.14,20.16 22,16.42 22,12A10,10 0 0,0 12,2Z" />
-                  </svg>
-                </a>
-              </div>
-            </div>
-          </div>
-
-          {/* Divider */}
-          <div className="border-t border-gray-300 mt-8 pt-8">
-            {/* Copyright */}
-            <div className="text-center">
-              <p className="text-gray-600 text-sm flex items-center justify-center space-x-2">
-                <svg
-                  className="w-4 h-4 text-gray-500"
-                  fill="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17M11,9H13V7H11V9Z" />
-                </svg>
-                <span>
-                  © 2025 Copyright By{" "}
-                  <span className="font-semibold text-gray-800">
-                    Agus Tamayasa
-                  </span>
-                </span>
-              </p>
-              <p className="text-xs text-gray-500 mt-2">
-                Built with passion for innovative recruitment solutions
-              </p>
-            </div>
-          </div>
-        </div>
-      </footer>
-
-      {/* Custom styles for line clamping */}
-      <style jsx>{`
-        .line-clamp-2 {
-          display: -webkit-box;
-          -webkit-line-clamp: 2;
-          -webkit-box-orient: vertical;
-          overflow: hidden;
-        }
-        .line-clamp-3 {
-          display: -webkit-box;
-          -webkit-line-clamp: 3;
-          -webkit-box-orient: vertical;
-          overflow: hidden;
-        }
-      `}</style>
+  return (
+    <div className="min-h-screen bg-white">
+      <Navbar />
+      <HeroSection />
+      <FeaturesSection />
+      <AboutSection />
+      <ScreeningConfigSection />
+      <ContactSection />
     </div>
   );
-}
+};
+
+export default HomePage;
