@@ -103,13 +103,16 @@ const Navbar = () => {
         ? 'bg-white/90 backdrop-blur-md' 
         : 'bg-transparent'
     }`}>
+      {/* Safe area untuk iPhone dengan notch */}
+      <div className="w-full h-safe-top bg-transparent"></div>
+      
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-20">
+        <div className="flex justify-between items-center h-16 sm:h-20">
           {/* Logo */}
           <div className="flex items-center flex-shrink-0">
-            <div className="h-14 w-auto max-w-xs overflow-hidden">
+            <div className="h-10 sm:h-14 w-auto max-w-xs overflow-hidden">
               <img
-                src="./logo2.jpg"
+                src="./logo2.png"
                 alt="RekrutAI Logo"
                 className="h-full w-auto object-contain"
                 onError={(e) => {
@@ -118,9 +121,9 @@ const Navbar = () => {
                 }}
               />
               {/* Fallback icon */}
-              <div className="h-14 w-32 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center" style={{display: 'none'}}>
+              <div className="h-10 sm:h-14 w-24 sm:w-32 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center" style={{display: 'none'}}>
                 <svg
-                  className="w-8 h-8 text-white mr-2"
+                  className="w-6 sm:w-8 h-6 sm:h-8 text-white mr-2"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -132,7 +135,7 @@ const Navbar = () => {
                     d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                   />
                 </svg>
-                <span className="text-white font-bold text-lg">RekrutAI</span>
+                <span className="text-white font-bold text-sm sm:text-lg">RekrutAI</span>
               </div>
             </div>
           </div>
@@ -167,7 +170,7 @@ const Navbar = () => {
           <div className="md:hidden">
             <Link 
               href="/screening"
-              className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-600 to-violet-600 text-white font-semibold rounded-lg text-sm"
+              className="inline-flex items-center px-3 py-2 bg-gradient-to-r from-blue-600 to-violet-600 text-white font-semibold rounded-lg text-xs"
             >
               Mulai
             </Link>
