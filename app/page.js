@@ -100,17 +100,17 @@ const Navbar = () => {
   return (
     <nav className={`fixed top-0 w-full z-50 transition-all duration-300 ${
       isScrolled 
-        ? 'bg-white/80 backdrop-blur-lg border-b border-slate-200/50 shadow-sm' 
+        ? 'bg-white/90 backdrop-blur-md' 
         : 'bg-transparent'
     }`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-20">
           {/* Logo */}
           <div className="flex items-center">
-            <div className="w-12 h-12 rounded-lg overflow-hidden shadow-md flex-shrink-0 relative">
+            <div className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 relative">
               <img
-                src="./logo.jpg"
-                alt="RekrutAI Logo"
+                src="./rekruta1.jpg"
+                alt="rekrutra Logo"
                 className="w-full h-full object-contain bg-white"
                 onError={(e) => {
                   e.target.style.display = 'none';
@@ -134,9 +134,6 @@ const Navbar = () => {
                 </svg>
               </div>
             </div>
-            <span className="ml-3 text-xl font-bold bg-gradient-to-r from-blue-600 to-violet-600 bg-clip-text text-transparent">
-              RekrutAI
-            </span>
           </div>
 
           {/* Desktop Menu */}
@@ -156,7 +153,7 @@ const Navbar = () => {
             ))}
             <Link 
               href="/screening"
-              className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-violet-600 text-white font-semibold rounded-xl hover:shadow-lg hover:scale-105 transition-all duration-200"
+              className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-violet-600 text-white font-semibold rounded-xl hover:scale-105 transition-all duration-200"
             >
               Mulai Screening
               <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
