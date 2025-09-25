@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import axios from "axios";
-import Link from 'next/link';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -567,9 +566,6 @@ export default function Home() {
                   className="w-32 h-16 rounded-xl object-contain"
                 />
               </div>
-              <Link href="/screening" className="text-gray-700 hover:text-blue-600 font-semibold">
-            Coba Screening
-          </Link>
             </div>
 
             {/* Desktop Menu */}
@@ -755,145 +751,7 @@ export default function Home() {
           </div>
         </div>
       </nav>
-      <section className="relative bg-gradient-to-b from-white via-blue-50/30 to-white overflow-hidden border-b border-gray-100">
-        {/* Background Pattern */}
-        <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-100 rounded-full opacity-20 blur-3xl"></div>
-          <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-purple-100 rounded-full opacity-20 blur-3xl"></div>
-          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-sky-100 rounded-full opacity-10 blur-3xl"></div>
-        </div>
 
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-16 sm:pt-16 sm:pb-20">
-          <div className="text-center space-y-8">
-            {/* Main Heading */}
-            <div className="space-y-4">
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 tracking-tight">
-                Transform Your Recruitment with
-                <span className="block bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mt-2">
-                  Intelligent CV Screening
-                </span>
-              </h1>
-
-              <p className="max-w-3xl mx-auto text-lg sm:text-xl text-gray-600 leading-relaxed">
-                Rekruta harnesses the power of AI to automate your CV screening process.
-                Seamlessly integrated with Gmail, Google Drive, and Google Sheets to deliver
-                a smarter, faster, and more accurate hiring experience.
-              </p>
-            </div>
-
-            {/* Feature Pills */}
-            <div className="flex flex-wrap justify-center gap-3 pt-4">
-              <div className="flex items-center px-4 py-2 bg-white border border-gray-200 rounded-lg shadow-sm">
-                <svg className="w-4 h-4 mr-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-                <span className="text-sm font-medium text-gray-700">Gmail Integration</span>
-              </div>
-              <div className="flex items-center px-4 py-2 bg-white border border-gray-200 rounded-lg shadow-sm">
-                <svg className="w-4 h-4 mr-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-                <span className="text-sm font-medium text-gray-700">Automated Scoring</span>
-              </div>
-              <div className="flex items-center px-4 py-2 bg-white border border-gray-200 rounded-lg shadow-sm">
-                <svg className="w-4 h-4 mr-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-                <span className="text-sm font-medium text-gray-700">Real-time Analysis</span>
-              </div>
-            </div>
-
-            {/* CTA Button */}
-            <div className="pt-6">
-              <button
-                onClick={() => {
-                  const mainElement = document.querySelector('main.max-w-7xl');
-                  if (mainElement) {
-                    mainElement.scrollIntoView({
-                      behavior: 'smooth',
-                      block: 'start'
-                    });
-                  }
-                }}
-                className="group relative inline-flex items-center px-8 py-4 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
-              >
-                {/* Button Gradient Effect */}
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-
-                {/* Button Content */}
-                <span className="relative flex items-center">
-                  <svg
-                    className="w-5 h-5 mr-2"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M13 10V3L4 14h7v7l9-11h-7z"
-                    />
-                  </svg>
-                  Get Started Now
-                  <svg
-                    className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform duration-200"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 5l7 7-7 7"
-                    />
-                  </svg>
-                </span>
-              </button>
-
-              <p className="mt-4 text-sm text-gray-500">
-                No credit card required • Setup in 2 minutes
-              </p>
-            </div>
-
-            {/* Enhanced Stats Section */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-12 max-w-4xl mx-auto">
-              <div className="group bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md hover:border-blue-200 transition-all duration-300 hover:-translate-y-1">
-                <div className="text-center">
-                  <div className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent mb-2">90%</div>
-                  <div className="text-sm font-medium text-gray-600 mb-1">Time Saved</div>
-                  <div className="text-xs text-gray-400">Compared to manual screening</div>
-                </div>
-              </div>
-              <div className="group bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md hover:border-purple-200 transition-all duration-300 hover:-translate-y-1">
-                <div className="text-center">
-                  <div className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-purple-700 bg-clip-text text-transparent mb-2">1000+</div>
-                  <div className="text-sm font-medium text-gray-600 mb-1">CVs Processed</div>
-                  <div className="text-xs text-gray-400">Monthly processing volume</div>
-                </div>
-              </div>
-              <div className="group bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md hover:border-green-200 transition-all duration-300 hover:-translate-y-1">
-                <div className="text-center">
-                  <div className="text-4xl font-bold bg-gradient-to-r from-green-600 to-green-700 bg-clip-text text-transparent mb-2">99%</div>
-                  <div className="text-sm font-medium text-gray-600 mb-1">Accuracy Rate</div>
-                  <div className="text-xs text-gray-400">AI-powered precision</div>
-                </div>
-              </div>
-            </div>
-
-            {/* AI-Powered Badge - Moved to bottom */}
-            <div className="pt-8">
-              <div className="inline-flex items-center px-4 py-1.5 bg-blue-50 border border-blue-200 rounded-full">
-                <div className="flex items-center space-x-2">
-                  <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse"></div>
-                  <span className="text-xs font-medium text-blue-700">AI-Powered CV Screening</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
