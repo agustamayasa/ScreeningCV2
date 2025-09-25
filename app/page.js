@@ -242,285 +242,188 @@ const Navbar = () => {
 
   // Features Section Component
   const FeaturesSection = () => {
-  const [visibleCards, setVisibleCards] = useState([]);
+    const [visibleCards, setVisibleCards] = useState([]);
 
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setVisibleCards(prev => {
-        if (prev.length < 4) {
-          return [...prev, prev.length];
-        }
-        clearInterval(timer);
-        return prev;
-      });
-    }, 200);
+    useEffect(() => {
+      const timer = setInterval(() => {
+        setVisibleCards(prev => {
+          if (prev.length < 4) {
+            return [...prev, prev.length];
+          }
+          clearInterval(timer);
+          return prev;
+        });
+      }, 200);
 
-    return () => clearInterval(timer);
-  }, []);
+      return () => clearInterval(timer);
+    }, []);
 
-  const features = [
-    {
-      icon: (
-        <svg className="w-8 h-8" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
-          <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
-          <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
-          <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
-        </svg>
-      ),
-      title: 'Login Cepat dengan Akun Google',
-      description: 'Masuk dengan aman dan cepat menggunakan akun Google Anda. Tidak perlu mengingat password baru, langsung hubungkan semua layanan Google Anda dalam satu platform terpadu.',
-      gradient: 'from-red-500 to-yellow-500',
-      bgGradient: 'from-red-50 to-yellow-50'
-    },
-    {
-      icon: (
-        <svg className="w-8 h-8 text-red-500" fill="currentColor" viewBox="0 0 24 24">
-          <path d="M24 5.457v13.909c0 .904-.732 1.636-1.636 1.636h-3.819V11.73L12 16.64l-6.545-4.91v9.273H1.636A1.636 1.636 0 0 1 0 19.366V5.457c0-.9.732-1.636 1.636-1.636h.273L12 9.545l10.091-5.724h.273c.904 0 1.636.732 1.636 1.636z"/>
-        </svg>
-      ),
-      title: 'Analisis CV Langsung dari Inbox',
-      description: 'Secara otomatis mendeteksi dan memproses lampiran CV dari email yang masuk tanpa perlu mengunduh atau memindahkannya satu per satu.',
-      gradient: 'from-red-500 to-pink-500',
-      bgGradient: 'from-red-50 to-pink-50'
-    },
-    {
-      icon: (
-        <svg className="w-8 h-8 text-blue-500" fill="currentColor" viewBox="0 0 24 24">
-          <path d="M12.01 2C6.5 2 2.01 6.5 2.01 12s4.49 10 9.99 10c5.51 0 10-4.5 10-10S17.52 2 12.01 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S9.33 8 8.5 8 7 8.67 7 9.5 7.67 11 8.5 11zm3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5z"/>
-        </svg>
-      ),
-      title: 'Hubungkan Folder Kandidat Anda',
-      description: 'Sinkronkan folder Google Drive berisi CV dan biarkan AI kami bekerja untuk menyusun daftar kandidat potensial secara otomatis.',
-      gradient: 'from-blue-500 to-cyan-500',
-      bgGradient: 'from-blue-50 to-cyan-50'
-    },
-    {
-      icon: (
-        <svg className="w-8 h-8 text-green-600" fill="currentColor" viewBox="0 0 24 24">
-          <path d="M19.14,7.5A2.86,2.86,0,0,1,22,10.36V19.5A2.86,2.86,0,0,1,19.14,22.36H4.86A2.86,2.86,0,0,1,2,19.5V4.5A2.86,2.86,0,0,1,4.86,1.64H14a2.86,2.86,0,0,1,2.86,2.86V7.5Z"/>
-        </svg>
-      ),
-      title: 'Laporan Hasil Otomatis',
-      description: 'Hasil screening, peringkat kandidat, dan informasi kontak diekspor secara rapi ke Google Sheets untuk kemudahan pelacakan dan kolaborasi tim.',
-      gradient: 'from-green-500 to-emerald-500',
-      bgGradient: 'from-green-50 to-emerald-50'
-    }
-  ];
-
-  return (
-    <section id="features" className="py-24 bg-gradient-to-br from-slate-50 via-white to-blue-50/20 relative overflow-hidden">
-      {/* Background Pattern */}
-      <div className="absolute inset-0 opacity-40">
-        <div className="absolute top-10 left-10 w-32 h-32 bg-blue-200 rounded-full mix-blend-multiply filter blur-xl animate-pulse"></div>
-        <div className="absolute top-40 right-10 w-24 h-24 bg-purple-200 rounded-full mix-blend-multiply filter blur-xl animate-pulse" style={{animationDelay: '2s'}}></div>
-        <div className="absolute bottom-20 left-1/3 w-20 h-20 bg-pink-200 rounded-full mix-blend-multiply filter blur-xl animate-pulse" style={{animationDelay: '4s'}}></div>
-      </div>
-
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-20">
-          <h2 className="text-4xl sm:text-5xl font-extrabold text-slate-800 mb-6">
-            Semua yang Anda Butuhkan dalam{' '}
-            <span className="bg-gradient-to-r from-blue-600 to-violet-600 bg-clip-text text-transparent">
-              Satu Platform Cerdas
-            </span>
-          </h2>
-          <p className="text-xl text-slate-600 max-w-3xl mx-auto">
-            Platform terintegrasi yang menghubungkan semua tools Google Workspace Anda untuk proses rekrutmen yang lebih efisien
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
-          {features.map((feature, index) => (
-            <div
-              key={index}
-              className={`group relative bg-white/70 backdrop-blur-sm border border-white/50 rounded-3xl p-8 hover:shadow-2xl hover:shadow-blue-500/10 hover:scale-[1.02] transition-all duration-500 ${
-                visibleCards.includes(index) ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
-              }`}
-              style={{ transitionDelay: `${index * 150}ms` }}
-            >
-              {/* Background Gradient */}
-              <div className={`absolute inset-0 bg-gradient-to-br ${feature.bgGradient} opacity-0 group-hover:opacity-100 rounded-3xl transition-opacity duration-500`}></div>
-              
-              {/* Glow Effect */}
-              <div className={`absolute -inset-1 bg-gradient-to-r ${feature.gradient} rounded-3xl opacity-0 group-hover:opacity-20 blur transition-opacity duration-500`}></div>
-              
-              <div className="relative flex flex-col space-y-6">
-                <div className="flex items-start space-x-6">
-                  <div className="flex-shrink-0">
-                    <div className={`w-20 h-20 bg-gradient-to-r ${feature.gradient} rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300`}>
-                      <div className="text-white">
-                        {feature.icon}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="text-2xl font-bold text-slate-800 mb-4 group-hover:text-slate-900 transition-colors duration-300">
-                      {feature.title}
-                    </h3>
-                  </div>
-                </div>
-                
-                <p className="text-slate-600 leading-relaxed text-lg group-hover:text-slate-700 transition-colors duration-300 pl-0">
-                  {feature.description}
-                </p>
-                
-                {/* Arrow indicator */}
-                <div className="flex justify-end opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                  <div className={`w-8 h-8 bg-gradient-to-r ${feature.gradient} rounded-full flex items-center justify-center`}>
-                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-};
-
-  // About Section Component
-  const AboutSection = () => {
-  const [isVisible, setIsVisible] = useState(false);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setIsVisible(true);
-        }
+    const features = [
+      {
+        icon: (
+          <svg className="w-8 h-8" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
+            <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
+            <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
+            <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
+          </svg>
+        ),
+        title: 'Login Cepat dengan Akun Google',
+        description: 'Masuk dengan aman dan cepat menggunakan akun Google Anda. Tidak perlu mengingat password baru, langsung hubungkan semua layanan Google Anda dalam satu platform terpadu.'
       },
-      { threshold: 0.3 }
-    );
+      {
+        icon: (
+          <svg className="w-8 h-8 text-red-500" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M24 5.457v13.909c0 .904-.732 1.636-1.636 1.636h-3.819V11.73L12 16.64l-6.545-4.91v9.273H1.636A1.636 1.636 0 0 1 0 19.366V5.457c0-.9.732-1.636 1.636-1.636h.273L12 9.545l10.091-5.724h.273c.904 0 1.636.732 1.636 1.636z"/>
+          </svg>
+        ),
+        title: 'Analisis CV Langsung dari Inbox',
+        description: 'Secara otomatis mendeteksi dan memproses lampiran CV dari email yang masuk tanpa perlu mengunduh atau memindahkannya satu per satu.'
+      },
+      {
+        icon: (
+          <svg className="w-8 h-8 text-blue-500" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M12.01 2C6.5 2 2.01 6.5 2.01 12s4.49 10 9.99 10c5.51 0 10-4.5 10-10S17.52 2 12.01 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S9.33 8 8.5 8 7 8.67 7 9.5 7.67 11 8.5 11zm3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5z"/>
+          </svg>
+        ),
+        title: 'Hubungkan Folder Kandidat Anda',
+        description: 'Sinkronkan folder Google Drive berisi CV dan biarkan AI kami bekerja untuk menyusun daftar kandidat potensial secara otomatis.'
+      },
+      {
+        icon: (
+          <svg className="w-8 h-8 text-green-600" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M19.14,7.5A2.86,2.86,0,0,1,22,10.36V19.5A2.86,2.86,0,0,1,19.14,22.36H4.86A2.86,2.86,0,0,1,2,19.5V4.5A2.86,2.86,0,0,1,4.86,1.64H14a2.86,2.86,0,0,1,2.86,2.86V7.5Z"/>
+          </svg>
+        ),
+        title: 'Laporan Hasil Otomatis',
+        description: 'Hasil screening, peringkat kandidat, dan informasi kontak diekspor secara rapi ke Google Sheets untuk kemudahan pelacakan dan kolaborasi tim.'
+      }
+    ];
 
-    const aboutElement = document.getElementById('about');
-    if (aboutElement) observer.observe(aboutElement);
-
-    return () => observer.disconnect();
-  }, []);
-
-  return (
-    <section id="about" className="py-24 bg-white relative overflow-hidden">
-      {/* Background Elements */}
-      <div className="absolute inset-0">
-        <div className="absolute top-1/4 -left-32 w-64 h-64 bg-gradient-to-r from-blue-100 to-purple-100 rounded-full blur-3xl opacity-60"></div>
-        <div className="absolute bottom-1/4 -right-32 w-64 h-64 bg-gradient-to-r from-purple-100 to-pink-100 rounded-full blur-3xl opacity-60"></div>
-      </div>
-
-      <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-16">
-          <h2 className="text-4xl sm:text-5xl font-extrabold text-slate-800 mb-6">
-            Tentang{' '}
-            <span className="bg-gradient-to-r from-blue-600 to-violet-600 bg-clip-text text-transparent">
-              Rekruta
-            </span>
-          </h2>
-          <div className="w-24 h-1 bg-gradient-to-r from-blue-600 to-violet-600 mx-auto rounded-full"></div>
-        </div>
-
-        <div className={`transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
-          {/* Main Content Card */}
-          <div className="bg-white/80 backdrop-blur-sm rounded-3xl p-12 shadow-2xl border border-slate-100 mb-16">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-              {/* Left: Visual Element */}
-              <div className="relative">
-                <div className="relative w-full h-80 bg-gradient-to-br from-blue-50 to-violet-50 rounded-3xl flex items-center justify-center overflow-hidden">
-                  {/* Floating Elements */}
-                  <div className="absolute top-6 left-6 w-16 h-16 bg-blue-200 rounded-2xl opacity-60 animate-float"></div>
-                  <div className="absolute top-16 right-8 w-12 h-12 bg-purple-200 rounded-xl opacity-60 animate-float" style={{animationDelay: '2s'}}></div>
-                  <div className="absolute bottom-12 left-12 w-10 h-10 bg-pink-200 rounded-lg opacity-60 animate-float" style={{animationDelay: '4s'}}></div>
-                  
-                  {/* Center Icon */}
-                  <div className="relative z-10 w-32 h-32 bg-gradient-to-r from-blue-600 to-violet-600 rounded-3xl flex items-center justify-center shadow-2xl">
-                    <svg className="w-16 h-16 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                    </svg>
-                  </div>
-                  
-                  {/* Glow Effect */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-blue-400/20 to-violet-400/20 rounded-3xl"></div>
-                </div>
-              </div>
-
-              {/* Right: Content */}
-              <div className="space-y-8">
-                <div className="space-y-6">
-                  <div className="flex items-center space-x-4">
-                    <div className="w-12 h-12 bg-gradient-to-r from-blue-600 to-violet-600 rounded-xl flex items-center justify-center">
-                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                      </svg>
-                    </div>
-                    <div>
-                      <h3 className="text-xl font-bold text-slate-800">AI-Powered Platform</h3>
-                      <p className="text-slate-600">Teknologi terdepan untuk HR modern</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center space-x-4">
-                    <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl flex items-center justify-center">
-                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                      </svg>
-                    </div>
-                    <div>
-                      <h3 className="text-xl font-bold text-slate-800">Efisiensi Maksimal</h3>
-                      <p className="text-slate-600">Proses rekrutmen 10x lebih cepat</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center space-x-4">
-                    <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
-                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4" />
-                      </svg>
-                    </div>
-                    <div>
-                      <h3 className="text-xl font-bold text-slate-800">Google Integration</h3>
-                      <p className="text-slate-600">Terintegrasi dengan workspace Anda</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+    return (
+      <section id="features" className="py-24 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-20">
+            <h2 className="text-4xl sm:text-5xl font-extrabold text-slate-800 mb-6">
+              Semua yang Anda Butuhkan dalam{' '}
+              <span className="bg-gradient-to-r from-blue-600 to-violet-600 bg-clip-text text-transparent">
+                Satu Platform Cerdas
+              </span>
+            </h2>
+            <p className="text-xl text-slate-600 max-w-3xl mx-auto">
+              Platform terintegrasi yang menghubungkan semua tools Google Workspace Anda untuk proses rekrutmen yang lebih efisien
+            </p>
           </div>
 
-          {/* Stats Section */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
-            {[
-              { number: '95%', label: 'Waktu Tersimpan', color: 'from-blue-600 to-blue-500' },
-              { number: '10x', label: 'Lebih Cepat', color: 'from-violet-600 to-violet-500' },
-              { number: '500+', label: 'CV Diproses', color: 'from-green-600 to-green-500' },
-              { number: '99%', label: 'Akurasi AI', color: 'from-orange-600 to-orange-500' }
-            ].map((stat, index) => (
-              <div key={index} className="text-center group">
-                <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 hover:bg-white/80 transition-all duration-300 border border-slate-100 hover:shadow-xl">
-                  <div className={`text-4xl font-bold bg-gradient-to-r ${stat.color} bg-clip-text text-transparent mb-2 group-hover:scale-110 transition-transform duration-300`}>
-                    {stat.number}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {features.map((feature, index) => (
+              <div
+                key={index}
+                className={`group bg-slate-50 border border-slate-200 rounded-2xl p-8 hover:shadow-xl hover:scale-105 transition-all duration-500 ${
+                  visibleCards.includes(index) ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
+                }`}
+                style={{ transitionDelay: `${index * 100}ms` }}
+              >
+                <div className="flex items-start space-x-6">
+                  <div className="flex-shrink-0">
+                    <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center group-hover:bg-blue-200 transition-colors duration-300">
+                      {feature.icon}
+                    </div>
                   </div>
-                  <div className="text-slate-600 font-medium">{stat.label}</div>
+                  <div>
+                    <h3 className="text-xl font-bold text-slate-800 mb-3 group-hover:text-blue-600 transition-colors duration-300">
+                      {feature.title}
+                    </h3>
+                    <p className="text-slate-600 leading-relaxed">
+                      {feature.description}
+                    </p>
+                  </div>
                 </div>
               </div>
             ))}
           </div>
         </div>
-      </div>
+      </section>
+    );
+  };
 
-      <style jsx>{`
-        @keyframes float {
-          0%, 100% { transform: translateY(0px); }
-          50% { transform: translateY(-20px); }
-        }
-        .animate-float {
-          animation: float 6s ease-in-out infinite;
-        }
-      `}</style>
-    </section>
-  );
-};
+  // About Section Component
+  const AboutSection = () => {
+    const [isVisible, setIsVisible] = useState(false);
+
+    useEffect(() => {
+      const observer = new IntersectionObserver(
+        ([entry]) => {
+          if (entry.isIntersecting) {
+            setIsVisible(true);
+          }
+        },
+        { threshold: 0.3 }
+      );
+
+      const aboutElement = document.getElementById('about');
+      if (aboutElement) observer.observe(aboutElement);
+
+      return () => observer.disconnect();
+    }, []);
+
+    return (
+      <section id="about" className="py-24 bg-gradient-to-br from-slate-50 to-blue-50/30">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+            <div className={`transition-all duration-1000 ${isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-10'}`}>
+              <div className="relative">
+                <div className="w-full h-96 bg-gradient-to-br from-blue-100 to-violet-100 rounded-3xl flex items-center justify-center">
+                  <div className="text-center">
+                    <div className="w-32 h-32 bg-gradient-to-r from-blue-600 to-violet-600 rounded-3xl mx-auto mb-6 flex items-center justify-center">
+                      <svg className="w-16 h-16 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                      </svg>
+                    </div>
+                    <p className="text-slate-600 font-medium">AI-Powered Recruitment</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className={`transition-all duration-1000 delay-300 ${isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-10'}`}>
+              <h2 className="text-4xl sm:text-5xl font-extrabold text-slate-800 mb-8">
+                Tentang{' '}
+                <span className="bg-gradient-to-r from-blue-600 to-violet-600 bg-clip-text text-transparent">
+                  Rekruta
+                </span>
+              </h2>
+              
+              <div className="space-y-6 text-lg text-slate-600 leading-relaxed">
+                <p>
+                  Rekruta lahir dari visi untuk memberdayakan tim HR dengan teknologi AI terdepan. Kami percaya bahwa proses rekrutmen harus lebih adil, cepat, dan berbasis data.
+                </p>
+                
+                <p>
+                  Dengan mengintegrasikan langsung ke dalam ekosistem Google yang sudah Anda gunakan sehari-hari, Rekruta menghilangkan gesekan dalam proses screening CV dan memungkinkan Anda fokus pada aspek yang paling penting: membangun hubungan dengan kandidat terbaik.
+                </p>
+                
+                <p>
+                  Misi kami sederhana namun ambisius: mengubah cara dunia merekrut talenta terbaik dengan menggabungkan kecerdasan buatan yang canggih dengan kemudahan penggunaan yang luar biasa.
+                </p>
+              </div>
+
+              <div className="mt-10 grid grid-cols-2 gap-8">
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-blue-600 mb-2">95%</div>
+                  <div className="text-slate-600">Waktu Tersimpan</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-violet-600 mb-2">10x</div>
+                  <div className="text-slate-600">Lebih Cepat</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    );
+  };
 
   // Contact Section Component
   const ContactSection = () => {
