@@ -20,6 +20,17 @@ useEffect(() => {
     }
   };
 
+  useEffect(() => {
+  // Prevent horizontal scroll
+  document.body.style.overflowX = 'hidden';
+  document.documentElement.style.overflowX = 'hidden';
+  
+  return () => {
+    document.body.style.overflowX = 'auto';
+    document.documentElement.style.overflowX = 'auto';
+  };
+}, []);
+
   window.addEventListener('scroll', handleScroll);
   handleScroll(); // Set initial active section
   return () => window.removeEventListener('scroll', handleScroll);
@@ -66,7 +77,6 @@ useEffect(() => {
 // Navbar Component
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
-  const [activeSection, setActiveSection] = useState('home');
 
   useEffect(() => {
     const handleScroll = () => {
@@ -86,7 +96,7 @@ const Navbar = () => {
     };
     
     window.addEventListener('scroll', handleScroll);
-    handleScroll(); // Jalankan sekali saat mount
+    handleScroll();
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
@@ -98,19 +108,21 @@ const Navbar = () => {
   ];
 
   return (
-    <nav className={`fixed top-0 w-full z-50 transition-all duration-300 ${
-      isScrolled 
-        ? 'bg-white/90 backdrop-blur-md' 
-        : 'bg-transparent'
-    }`}>
-      {/* Safe area untuk iPhone dengan notch */}
-      <div className="w-full h-safe-top bg-transparent"></div>
-      
+    <nav 
+      className={`fixed top-0 w-full z-50 transition-all duration-300 safe-top ${
+        isScrolled 
+          ? 'bg-white/90 backdrop-blur-md shadow-sm' 
+          : 'bg-transparent'
+      }`}
+      style={{
+        paddingTop: 'max(env(safe-area-inset-top), 0px)'
+      }}
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16 sm:h-20">
           {/* Logo */}
           <div className="flex items-center flex-shrink-0">
-            <div className="h-10 sm:h-14 w-auto max-w-xs overflow-hidden">
+            <div className="h-8 sm:h-12 w-auto max-w-xs overflow-hidden">
               <img
                 src="./logo2.png"
                 alt="RekrutAI Logo"
@@ -121,9 +133,9 @@ const Navbar = () => {
                 }}
               />
               {/* Fallback icon */}
-              <div className="h-10 sm:h-14 w-24 sm:w-32 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center" style={{display: 'none'}}>
+              <div className="h-8 sm:h-12 w-20 sm:w-28 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center" style={{display: 'none'}}>
                 <svg
-                  className="w-6 sm:w-8 h-6 sm:h-8 text-white mr-2"
+                  className="w-4 sm:w-6 h-4 sm:h-6 text-white mr-1"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -135,7 +147,7 @@ const Navbar = () => {
                     d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                   />
                 </svg>
-                <span className="text-white font-bold text-sm sm:text-lg">RekrutAI</span>
+                <span className="text-white font-bold text-xs sm:text-base">RekrutAI</span>
               </div>
             </div>
           </div>
@@ -190,26 +202,32 @@ const Navbar = () => {
     }, []);
 
     return (
-      <section id="home" className="relative min-h-screen flex items-center justify-center overflow-hidden">
+      <section 
+    id="home" 
+    className="relative min-h-screen flex items-center justify-center overflow-hidden"
+    style={{
+      paddingTop: 'max(env(safe-area-inset-top), 80px)'
+    }}
+  >
         {/* Background with Aurora Effect */}
-        <div className="absolute inset-0 bg-gradient-to-br from-slate-50 via-white to-blue-50/30">
-          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-gradient-to-r from-blue-400/20 to-violet-400/20 rounded-full blur-3xl animate-pulse"></div>
-          <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-gradient-to-r from-violet-400/20 to-blue-400/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }}></div>
-        </div>
+<div className="absolute inset-0 bg-gradient-to-br from-slate-50 via-white to-blue-50/30 overflow-hidden">
+  <div className="absolute top-1/4 left-1/4 w-72 sm:w-96 h-72 sm:h-96 bg-gradient-to-r from-blue-400/20 to-violet-400/20 rounded-full blur-3xl animate-pulse"></div>
+  <div className="absolute bottom-1/4 right-1/4 w-64 sm:w-80 h-64 sm:h-80 bg-gradient-to-r from-violet-400/20 to-blue-400/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }}></div>
+</div>
 
         <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className={`transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
-            <h1 className="text-4xl sm:text-5xl lg:text-7xl font-extrabold text-slate-800 mb-8 leading-tight">
-              Otomatiskan Screening{' '}
-              <span className="bg-gradient-to-r from-blue-600 to-violet-600 bg-clip-text text-transparent">
-                Ratusan CV
-              </span>{' '}
-              dalam Hitungan Menit
-            </h1>
-            
-            <p className="text-xl sm:text-2xl text-slate-600 mb-12 max-w-4xl mx-auto leading-relaxed">
-              Rekruta adalah asisten rekrutmen AI Anda. Biarkan teknologi kami menganalisis, memfilter, dan memberi peringkat kandidat terbaik langsung dari Gmail & Google Drive Anda, sementara Anda fokus pada hal terpenting: wawancara.
-            </p>
+            <h1 className="text-3xl sm:text-4xl lg:text-6xl xl:text-7xl font-extrabold text-slate-800 mb-6 sm:mb-8 leading-tight px-4 sm:px-0">
+  Otomatiskan Screening{' '}
+  <span className="bg-gradient-to-r from-blue-600 to-violet-600 bg-clip-text text-transparent">
+    Ratusan CV
+  </span>{' '}
+  dalam Hitungan Menit
+</h1>
+
+<p className="text-lg sm:text-xl lg:text-2xl text-slate-600 mb-8 sm:mb-12 max-w-4xl mx-auto leading-relaxed px-4 sm:px-0">
+  Rekruta adalah asisten rekrutmen AI Anda. Biarkan teknologi kami menganalisis, memfilter, dan memberi peringkat kandidat terbaik langsung dari Gmail & Google Drive Anda, sementara Anda fokus pada hal terpenting: wawancara.
+</p>
 
             <div className={`transition-all duration-1000 delay-300 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
               <button
@@ -471,7 +489,7 @@ const Navbar = () => {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16">
             {/* Contact Info */}
             <div className={`transition-all duration-1000 ${isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-10'}`}>
               <div className="space-y-8">
@@ -722,15 +740,15 @@ const Navbar = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white">
-      <Navbar />
-      <HeroSection />
-      <FeaturesSection />
-      <AboutSection />
-      <ContactSection />
-      <Footer />
-    </div>
-  );
+  <div className="min-h-screen bg-white overflow-x-hidden">
+    <Navbar />
+    <HeroSection />
+    <FeaturesSection />
+    <AboutSection />
+    <ContactSection />
+    <Footer />
+  </div>
+);
 };
 
 export default HomePage;
