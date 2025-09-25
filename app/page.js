@@ -77,6 +77,7 @@ useEffect(() => {
 // Navbar Component
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
+  const [activeSection, setActiveSection] = useState('home');
 
   useEffect(() => {
     const handleScroll = () => {
@@ -96,7 +97,7 @@ const Navbar = () => {
     };
     
     window.addEventListener('scroll', handleScroll);
-    handleScroll();
+    handleScroll(); // Jalankan sekali saat mount
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
@@ -108,21 +109,19 @@ const Navbar = () => {
   ];
 
   return (
-    <nav 
-      className={`fixed top-0 w-full z-50 transition-all duration-300 safe-top ${
-        isScrolled 
-          ? 'bg-white/90 backdrop-blur-md shadow-sm' 
-          : 'bg-transparent'
-      }`}
-      style={{
-        paddingTop: 'max(env(safe-area-inset-top), 0px)'
-      }}
-    >
+    <nav className={`fixed top-0 w-full z-50 transition-all duration-300 ${
+      isScrolled 
+        ? 'bg-white/90 backdrop-blur-md' 
+        : 'bg-transparent'
+    }`}>
+      {/* Safe area untuk iPhone dengan notch */}
+      <div className="w-full h-safe-top bg-transparent"></div>
+      
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16 sm:h-20">
           {/* Logo */}
           <div className="flex items-center flex-shrink-0">
-            <div className="h-8 sm:h-12 w-auto max-w-xs overflow-hidden">
+            <div className="h-10 sm:h-14 w-auto max-w-xs overflow-hidden">
               <img
                 src="./logo2.png"
                 alt="RekrutAI Logo"
@@ -133,9 +132,9 @@ const Navbar = () => {
                 }}
               />
               {/* Fallback icon */}
-              <div className="h-8 sm:h-12 w-20 sm:w-28 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center" style={{display: 'none'}}>
+              <div className="h-10 sm:h-14 w-24 sm:w-32 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center" style={{display: 'none'}}>
                 <svg
-                  className="w-4 sm:w-6 h-4 sm:h-6 text-white mr-1"
+                  className="w-6 sm:w-8 h-6 sm:h-8 text-white mr-2"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -147,7 +146,7 @@ const Navbar = () => {
                     d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                   />
                 </svg>
-                <span className="text-white font-bold text-xs sm:text-base">RekrutAI</span>
+                <span className="text-white font-bold text-sm sm:text-lg">RekrutAI</span>
               </div>
             </div>
           </div>
@@ -202,13 +201,7 @@ const Navbar = () => {
     }, []);
 
     return (
-      <section 
-    id="home" 
-    className="relative min-h-screen flex items-center justify-center overflow-hidden"
-    style={{
-      paddingTop: 'max(env(safe-area-inset-top), 80px)'
-    }}
-  >
+      <section id="home" className="relative min-h-screen flex items-center justify-center overflow-hidden">
         {/* Background with Aurora Effect */}
 <div className="absolute inset-0 bg-gradient-to-br from-slate-50 via-white to-blue-50/30 overflow-hidden">
   <div className="absolute top-1/4 left-1/4 w-72 sm:w-96 h-72 sm:h-96 bg-gradient-to-r from-blue-400/20 to-violet-400/20 rounded-full blur-3xl animate-pulse"></div>
