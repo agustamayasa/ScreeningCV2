@@ -19,6 +19,9 @@ import gspread
 import hashlib
 from pydantic import BaseModel
 from typing import List, Optional
+import asyncio
+import json
+from fastapi.responses import StreamingResponse
 
 # ==============================================================================
 # KONFIGURASI DAN SETUP AWAL
@@ -565,6 +568,18 @@ def format_list_to_string(data_list):
     
     # Membuat string dengan format "1. item\n2. item\n..."
     return "\n".join(f"{i+1}. {item}" for i, item in enumerate(data_list))
+
+def update_progress(current, total, message=""):
+    """Update screening progress"""
+    if not hasattr(app.state, 'screening_progress'):
+        app.state.screening_progress = {}
+    
+    app.state.screening_progress = {
+        'current': current,
+        'total': total,
+        'message': message,
+        'percentage': round((current / total * 100) if total > 0 else 0, 1)
+    }
 # ==============================================================================
 # ENDPOINTS API
 # ==============================================================================
@@ -738,6 +753,27 @@ async def upload_job_description(file: UploadFile = File(...)):
         print(f"Upload error: {e}")
         raise HTTPException(status_code=500, detail=f"Error processing file: {str(e)}")
 
+from fastapi import Request, HTTPException
+from fastapi.responses import JSONResponse, StreamingResponse
+from datetime import datetime
+import asyncio
+import json
+
+@app.get("/api/screening-progress")
+async def screening_progress(request: Request):
+    """Stream progress updates to frontend"""
+    async def generate():
+        try:
+            while True:
+                if hasattr(app.state, 'screening_progress'):
+                    progress_data = app.state.screening_progress
+                    yield f"data: {json.dumps(progress_data)}\n\n"
+                await asyncio.sleep(0.5)
+        except asyncio.CancelledError:
+            pass
+    
+    return StreamingResponse(generate(), media_type="text/event-stream")
+
 @app.post("/api/start-screening")
 async def start_screening(request: Request):
     global job_description_text, job_position_name, email_subjects
@@ -752,34 +788,66 @@ async def start_screening(request: Request):
         raise HTTPException(status_code=400, detail="Subjek email belum diset.")
     
     try:
+        # Reset progress
+        app.state.screening_progress = {'current': 0, 'total': 0, 'message': 'Memulai screening...', 'percentage': 0}
+        
         gmail, drive, gc, refreshed_creds = get_google_services(request=request)
         
-        # Buat struktur folder terlebih dahulu (dilakukan sekali di awal)
+        update_progress(0, 100, "Membuat struktur folder...")
+        
+        # Buat struktur folder terlebih dahulu
         screening_folder_id, cv_folder_id = ensure_folder_structure(drive, job_position_name)
         
-        # Generate nama spreadsheet berdasarkan posisi pekerjaan
+        # Generate nama spreadsheet
         spreadsheet_name = generate_spreadsheet_name(job_position_name)
         spreadsheet = ensure_spreadsheet_exists(gc, drive, spreadsheet_name, job_position_name)
         sheet = spreadsheet.sheet1
         
-        # Pastikan headers termasuk CV_Hash ada
+        # Pastikan headers ada
         ensure_headers_exist(sheet)
         
-        # Dapatkan hash CV yang sudah ada
-        existing_hashes = get_existing_hashes(sheet)
+        update_progress(0, 100, "Mengambil data CV yang sudah diproses...")
         
-        # Build query berdasarkan subjek email yang diinput
+        # Dapatkan semua data existing untuk pengecekan duplikasi yang lebih baik
+        existing_data = sheet.get_all_records()
+        existing_hashes = set()
+        existing_emails = set()
+        
+        for row in existing_data:
+            if 'CV_Hash' in row and row['CV_Hash']:
+                existing_hashes.add(row['CV_Hash'])
+            # Tambahkan pengecekan berdasarkan email juga
+            if 'Email' in row and row['Email'] and row['Email'] != 'Tidak tercantum':
+                existing_emails.add(row['Email'].lower().strip())
+        
+        # Build query berdasarkan subjek email
         gmail_query = build_gmail_query(email_subjects)
         print(f"Gmail query: {gmail_query}")
+        
+        update_progress(0, 100, "Mencari email dengan CV...")
         
         # Query Gmail untuk email dengan resume
         results = gmail.users().messages().list(
             userId='me', 
-            q=gmail_query
+            q=gmail_query,
+            maxResults=500  # Tingkatkan limit untuk mendapatkan lebih banyak email
         ).execute()
         
         messages = results.get('messages', [])
+        
+        # Paginate untuk mendapatkan semua email jika lebih dari 500
+        while 'nextPageToken' in results:
+            page_token = results['nextPageToken']
+            results = gmail.users().messages().list(
+                userId='me',
+                q=gmail_query,
+                maxResults=500,
+                pageToken=page_token
+            ).execute()
+            messages.extend(results.get('messages', []))
+        
         if not messages:
+            update_progress(0, 0, "Tidak ada email ditemukan")
             return JSONResponse(content={
                 "message": "Tidak ada email dengan resume ditemukan untuk subjek yang ditentukan.", 
                 "results": [],
@@ -790,118 +858,173 @@ async def start_screening(request: Request):
         processed_results = []
         processed_count = 0
         skipped_count = 0
+        error_count = 0
         
-        # Batasi proses maksimal 30 email untuk menghindari timeout
-        max_emails = min(30, len(messages))
+        # Proses semua email yang ditemukan (atau batasi jika terlalu banyak)
+        max_emails = min(100, len(messages))  # Tingkatkan dari 30 ke 100
+        
+        update_progress(0, max_emails, f"Memproses {max_emails} email...")
         
         for i, message in enumerate(messages[:max_emails]):
             try:
-                # Print progress untuk monitoring
-                if (i + 1) % 5 == 0:
-                    print(f"Progress: {i + 1}/{max_emails} emails processed")
+                current_progress = i + 1
+                update_progress(current_progress, max_emails, f"Memproses email {current_progress}/{max_emails}...")
                 
-                msg = gmail.users().messages().get(userId='me', id=message['id']).execute()
+                # Print progress untuk monitoring
+                if current_progress % 5 == 0:
+                    print(f"Progress: {current_progress}/{max_emails} emails processed")
+                
+                msg = gmail.users().messages().get(userId='me', id=message['id'], format='full').execute()
                 
                 # Periksa apakah email memiliki attachments
                 payload = msg['payload']
                 parts = payload.get('parts', [])
+                
+                # Jika tidak ada parts, coba cek payload langsung
+                if not parts and 'body' in payload and 'attachmentId' in payload.get('body', {}):
+                    parts = [payload]
+                
                 if not parts:
                     continue
                 
+                # Proses semua attachment PDF dalam email ini
                 for part in parts:
                     filename = part.get('filename', '')
-                    if filename and filename.lower().endswith('.pdf'):
-                        try:
+                    
+                    # Cek apakah ini adalah PDF
+                    mime_type = part.get('mimeType', '')
+                    is_pdf = filename.lower().endswith('.pdf') or mime_type == 'application/pdf'
+                    
+                    if not is_pdf:
+                        continue
+                    
+                    try:
+                        # Ambil attachment
+                        if 'attachmentId' in part.get('body', {}):
                             attachment_id = part['body']['attachmentId']
-                            attachment = gmail.users().messages().attachments().get(
-                                userId='me', 
-                                messageId=message['id'], 
-                                id=attachment_id
-                            ).execute()
-                            
-                            file_data = base64.urlsafe_b64decode(attachment['data'].encode('UTF-8'))
-                            resume_text = extract_text_from_pdf_bytes(file_data)
-                            
-                            if not resume_text:
-                                print(f"Gagal ekstrak teks dari {filename}")
-                                continue
-                            
-                            # Buat hash untuk CV ini
-                            cv_hash = create_cv_hash(filename, resume_text)
-                            
-                            # Periksa apakah CV sudah pernah diproses
-                            if cv_hash in existing_hashes:
-                                print(f"CV {filename} sudah pernah diproses, skip.")
-                                skipped_count += 1
-                                continue
-                            
-                            # Upload ke Google Drive dalam folder CV
-                            drive_link = upload_to_drive(drive, file_data, filename, cv_folder_id)
-                            if not drive_link:
-                                drive_link = "Gagal upload ke Drive"
-                            
-                            analysis_result = analyze_with_gemini(job_description_text, resume_text)
-                            if not analysis_result:
-                                print(f"Gagal analisis {filename}")
-                                continue
-
-                            kekuatan_data = analysis_result.get('kekuatan', [])
-                            kekurangan_data = analysis_result.get('kekurangan', [])
-                            risk_factor_data = analysis_result.get('risk_factor', [])
-                            reward_factor_data = analysis_result.get('reward_factor', [])
-
-                            current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                            row_to_insert = [
-                                current_time,
-                                drive_link,
-                                analysis_result.get('nama', 'Tidak tercantum'),
-                                analysis_result.get('email', 'Tidak tercantum'),
-                                analysis_result.get('nomor_telepon', 'Tidak tercantum'),
-                                analysis_result.get('pendidikan_terakhir', 'Tidak tercantum'),
-                                format_list_to_string(kekuatan_data),
-                                format_list_to_string(kekurangan_data),
-                                format_list_to_string(risk_factor_data),
-                                format_list_to_string(reward_factor_data),
-                                analysis_result.get('overall_fit', 0),
-                                analysis_result.get('justifikasi', 'Tidak dapat dianalisis'),
-                                cv_hash
-                            ]
-                            
-                            sheet.append_row(row_to_insert)
-                            existing_hashes.add(cv_hash)
-                            
-                            processed_results.append({
-                                "Waktu": current_time,
-                                "Drive Link": drive_link,
-                                "Nama": analysis_result.get('nama', 'Tidak tercantum'),
-                                "Email": analysis_result.get('email', 'Tidak tercantum'),
-                                "Nomor Telepon": analysis_result.get('nomor_telepon', 'Tidak tercantum'),
-                                "Pendidikan Terakhir": analysis_result.get('pendidikan_terakhir', 'Tidak tercantum'),
-                                "Kekuatan": analysis_result.get('kekuatan', 'Tidak dapat dianalisis'),
-                                "Kekurangan": analysis_result.get('kekurangan', 'Tidak dapat dianalisis'),
-                                "Risk Factor": analysis_result.get('risk_factor', 'Tidak dapat dianalisis'),
-                                "Reward Factor": analysis_result.get('reward_factor', 'Tidak dapat dianalisis'),
-                                "Overall Fit": analysis_result.get('overall_fit', 0),
-                                "Justifikasi": analysis_result.get('justifikasi', 'Tidak dapat dianalisis')
-                            })
-                            processed_count += 1
-                            print(f"Berhasil proses: {filename}")
-                            
-                        except Exception as e:
-                            print(f"Error processing attachment {filename}: {e}")
+                        else:
                             continue
+                        
+                        update_progress(current_progress, max_emails, f"Mengunduh CV: {filename}...")
+                        
+                        attachment = gmail.users().messages().attachments().get(
+                            userId='me', 
+                            messageId=message['id'], 
+                            id=attachment_id
+                        ).execute()
+                        
+                        file_data = base64.urlsafe_b64decode(attachment['data'].encode('UTF-8'))
+                        
+                        update_progress(current_progress, max_emails, f"Mengekstrak teks dari: {filename}...")
+                        
+                        resume_text = extract_text_from_pdf_bytes(file_data)
+                        
+                        if not resume_text or len(resume_text.strip()) < 100:
+                            print(f"Gagal ekstrak teks dari {filename} atau teks terlalu pendek")
+                            error_count += 1
+                            continue
+                        
+                        # Buat hash untuk CV ini
+                        cv_hash = create_cv_hash(filename, resume_text)
+                        
+                        # Periksa apakah CV sudah pernah diproses berdasarkan hash
+                        if cv_hash in existing_hashes:
+                            print(f"CV {filename} sudah pernah diproses (hash match), skip.")
+                            skipped_count += 1
+                            continue
+                        
+                        update_progress(current_progress, max_emails, f"Menganalisis: {filename}...")
+                        
+                        # Analisis dengan Gemini
+                        analysis_result = analyze_with_gemini(job_description_text, resume_text)
+                        if not analysis_result:
+                            print(f"Gagal analisis {filename}")
+                            error_count += 1
+                            continue
+                        
+                        # Cek apakah email kandidat sudah ada (double check)
+                        candidate_email = analysis_result.get('email', 'Tidak tercantum')
+                        if candidate_email != 'Tidak tercantum' and candidate_email.lower().strip() in existing_emails:
+                            print(f"Kandidat dengan email {candidate_email} sudah pernah diproses, skip.")
+                            skipped_count += 1
+                            continue
+                        
+                        update_progress(current_progress, max_emails, f"Mengupload ke Drive: {filename}...")
+                        
+                        # Upload ke Google Drive dalam folder CV
+                        drive_link = upload_to_drive(drive, file_data, filename, cv_folder_id)
+                        if not drive_link:
+                            drive_link = "Gagal upload ke Drive"
+                        
+                        kekuatan_data = analysis_result.get('kekuatan', [])
+                        kekurangan_data = analysis_result.get('kekurangan', [])
+                        risk_factor_data = analysis_result.get('risk_factor', [])
+                        reward_factor_data = analysis_result.get('reward_factor', [])
+
+                        current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                        row_to_insert = [
+                            current_time,
+                            drive_link,
+                            analysis_result.get('nama', 'Tidak tercantum'),
+                            candidate_email,
+                            analysis_result.get('nomor_telepon', 'Tidak tercantum'),
+                            analysis_result.get('pendidikan_terakhir', 'Tidak tercantum'),
+                            format_list_to_string(kekuatan_data),
+                            format_list_to_string(kekurangan_data),
+                            format_list_to_string(risk_factor_data),
+                            format_list_to_string(reward_factor_data),
+                            analysis_result.get('overall_fit', 0),
+                            analysis_result.get('justifikasi', 'Tidak dapat dianalisis'),
+                            cv_hash
+                        ]
+                        
+                        update_progress(current_progress, max_emails, f"Menyimpan data: {filename}...")
+                        
+                        sheet.append_row(row_to_insert)
+                        existing_hashes.add(cv_hash)
+                        if candidate_email != 'Tidak tercantum':
+                            existing_emails.add(candidate_email.lower().strip())
+                        
+                        processed_results.append({
+                            "Waktu": current_time,
+                            "Drive Link": drive_link,
+                            "Nama": analysis_result.get('nama', 'Tidak tercantum'),
+                            "Email": candidate_email,
+                            "Nomor Telepon": analysis_result.get('nomor_telepon', 'Tidak tercantum'),
+                            "Pendidikan Terakhir": analysis_result.get('pendidikan_terakhir', 'Tidak tercantum'),
+                            "Kekuatan": analysis_result.get('kekuatan', 'Tidak dapat dianalisis'),
+                            "Kekurangan": analysis_result.get('kekurangan', 'Tidak dapat dianalisis'),
+                            "Risk Factor": analysis_result.get('risk_factor', 'Tidak dapat dianalisis'),
+                            "Reward Factor": analysis_result.get('reward_factor', 'Tidak dapat dianalisis'),
+                            "Overall Fit": analysis_result.get('overall_fit', 0),
+                            "Justifikasi": analysis_result.get('justifikasi', 'Tidak dapat dianalisis')
+                        })
+                        processed_count += 1
+                        print(f"✓ Berhasil proses: {filename}")
+                        
+                    except Exception as e:
+                        print(f"Error processing attachment {filename}: {e}")
+                        error_count += 1
+                        continue
                             
             except Exception as e:
                 print(f"Error processing message {message['id']}: {e}")
+                error_count += 1
                 continue
 
-        message = f"{processed_count} resume baru berhasil diproses, {skipped_count} resume sudah ada sebelumnya dari {max_emails} email yang diperiksa (total {len(messages)} email ditemukan)."
+        update_progress(max_emails, max_emails, "Screening selesai!")
+        
+        message = f"✓ {processed_count} CV baru berhasil diproses, {skipped_count} CV sudah ada sebelumnya"
+        if error_count > 0:
+            message += f", {error_count} CV gagal diproses"
+        message += f" dari {max_emails} email yang diperiksa (total {len(messages)} email ditemukan)."
         
         return JSONResponse(content={
             "message": message, 
             "results": processed_results,
             "processed_count": processed_count,
             "skipped_count": skipped_count,
+            "error_count": error_count,
             "total_emails": len(messages),
             "emails_checked": max_emails,
             "spreadsheet_name": spreadsheet_name,
@@ -909,49 +1032,12 @@ async def start_screening(request: Request):
         })
 
     except HTTPException as e:
+        update_progress(0, 0, f"Error: {e.detail}")
         raise e
     except Exception as e:
         print(f"Terjadi error tak terduga di start_screening: {e}")
+        update_progress(0, 0, f"Error: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
-
-@app.get("/api/get-results")
-async def get_results(request: Request):
-    global job_position_name
-    
-    try:
-        gmail, drive, gc, _ = get_google_services(request=request)
-        
-        # Jika tidak ada nama posisi yang diset, gunakan default
-        if not job_position_name:
-            spreadsheet_name = "Analisis Resume AI"
-            position_for_folder = "General"  # Default position untuk folder
-        else:
-            spreadsheet_name = generate_spreadsheet_name(job_position_name)
-            position_for_folder = job_position_name
-        
-        # Panggil ensure_spreadsheet_exists dengan parameter lengkap
-        spreadsheet = ensure_spreadsheet_exists(gc, drive, spreadsheet_name, position_for_folder)
-        sheet = spreadsheet.sheet1
-        
-        # Ambil semua data
-        all_records = sheet.get_all_records()
-        
-        # Hapus kolom CV_Hash dari hasil yang dikembalikan ke frontend
-        filtered_records = []
-        for record in all_records:
-            filtered_record = {k: v for k, v in record.items() if k != 'CV_Hash'}
-            filtered_records.append(filtered_record)
-        
-        return JSONResponse(content={
-            "results": filtered_records,
-            "spreadsheet_name": spreadsheet_name
-        })
-        
-    except HTTPException as e:
-        raise e
-    except Exception as e:
-        print(f"Error in get_results: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to fetch results: {str(e)}")
 
 # ==============================================================================
 # MODIFIKASI ENDPOINT /api/clear-results
