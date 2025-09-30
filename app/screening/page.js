@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import axios from "axios";
-import { Calendar, Settings, Mail, Briefcase, Plus, Trash2, CheckCircle, AlertCircle, Info, ExternalLink, Save } from 'lucide-react';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
