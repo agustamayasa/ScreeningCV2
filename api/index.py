@@ -476,6 +476,7 @@ def create_cv_hash(filename, resume_text):
     content = f"{filename}:{resume_text[:1000]}"  # Gunakan 1000 karakter pertama
     return hashlib.md5(content.encode()).hexdigest()
 
+
 def get_existing_hashes(sheet):
     """Mengambil semua hash CV yang sudah ada di spreadsheet"""
     try:
@@ -514,21 +515,25 @@ def build_gmail_query(email_subjects: List[str]) -> str:
     """Membangun query Gmail berdasarkan subjek email yang diinput"""
     if not email_subjects:
         # Default query jika tidak ada subjek yang dispecified
-        return 'subject:cv OR subject:resume has:attachment filename:pdf'
+        return 'subject:(cv OR resume) has:attachment filename:pdf'
     
     # Bangun query dengan OR untuk setiap subjek
     subject_queries = []
     for subject in email_subjects:
         subject = subject.strip()
         if subject:
-            # Escape special characters jika perlu
-            subject_queries.append(f'subject:{subject}')
+            # Tambahkan quotes jika subjek mengandung spasi
+            if ' ' in subject:
+                subject_queries.append(f'"{subject}"')
+            else:
+                subject_queries.append(subject)
     
     if not subject_queries:
-        return 'subject:cv OR subject:resume has:attachment filename:pdf'
+        return 'subject:(cv OR resume) has:attachment filename:pdf'
     
-    # Gabungkan semua subjek dengan OR dan tambahkan filter attachment
-    query = ' OR '.join(subject_queries) + ' has:attachment filename:pdf'
+    # Gabungkan semua subjek dengan OR dalam tanda kurung dan tambahkan filter attachment
+    # Format: subject:(Subjek1 OR Subjek2 OR Subjek3) has:attachment filename:pdf
+    query = f'subject:({" OR ".join(subject_queries)}) has:attachment filename:pdf'
     return query
 
 def get_spreadsheet_safe(gc, spreadsheet_name: str):
@@ -708,12 +713,16 @@ async def get_screening_config(request: Request):
         except:
             pass  # Ignore error jika belum login atau spreadsheet belum ada
     
+    # Preview query untuk debugging
+    preview_query = build_gmail_query(email_subjects) if email_subjects else ""
+    
     return JSONResponse(content={
         "job_position": job_position_name,
         "email_subjects": email_subjects,
         "spreadsheet_name": generate_spreadsheet_name(job_position_name) if job_position_name else "",
         "spreadsheet_url": spreadsheet_url,
-        "has_job_description": bool(job_description_text)
+        "has_job_description": bool(job_description_text),
+        "gmail_query_preview": preview_query
     })
 
 @app.post("/api/upload-job-description")
