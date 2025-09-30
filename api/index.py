@@ -18,6 +18,7 @@ import google.generativeai as genai
 import gspread
 import hashlib
 from pydantic import BaseModel
+from datetime import datetime
 from typing import List, Optional
 
 # ==============================================================================
@@ -493,6 +494,7 @@ def get_existing_hashes(sheet):
         print(f"Error getting existing hashes: {e}")
         return set()
 
+
 def ensure_headers_exist(sheet):
     """Memastikan header kolom termasuk CV_Hash ada di spreadsheet"""
     try:
@@ -511,29 +513,46 @@ def ensure_headers_exist(sheet):
     except Exception as e:
         print(f"Error ensuring headers: {e}")
 
-def build_gmail_query(email_subjects: List[str]) -> str:
-    """Membangun query Gmail berdasarkan subjek email yang diinput"""
+def build_gmail_query(email_subjects: List[str], start_date: Optional[str] = None, end_date: Optional[str] = None) -> str:
+    """
+    Membangun query Gmail berdasarkan subjek email dan rentang tanggal
+    
+    Args:
+        email_subjects: List subjek email yang akan dicari
+        start_date: Tanggal mulai dalam format 'YYYY/MM/DD' (optional)
+        end_date: Tanggal akhir dalam format 'YYYY/MM/DD' (optional)
+    
+    Returns:
+        Query string untuk Gmail API
+    """
     if not email_subjects:
         # Default query jika tidak ada subjek yang dispecified
-        return 'subject:(cv OR resume) has:attachment filename:pdf'
+        query = 'subject:(cv OR resume) has:attachment filename:pdf'
+    else:
+        # Bangun query dengan OR untuk setiap subjek
+        subject_queries = []
+        for subject in email_subjects:
+            subject = subject.strip()
+            if subject:
+                # Tambahkan quotes jika subjek mengandung spasi
+                if ' ' in subject:
+                    subject_queries.append(f'"{subject}"')
+                else:
+                    subject_queries.append(subject)
+        
+        if not subject_queries:
+            query = 'subject:(cv OR resume) has:attachment filename:pdf'
+        else:
+            # Gabungkan semua subjek dengan OR dalam tanda kurung dan tambahkan filter attachment
+            query = f'subject:({" OR ".join(subject_queries)}) has:attachment filename:pdf'
     
-    # Bangun query dengan OR untuk setiap subjek
-    subject_queries = []
-    for subject in email_subjects:
-        subject = subject.strip()
-        if subject:
-            # Tambahkan quotes jika subjek mengandung spasi
-            if ' ' in subject:
-                subject_queries.append(f'"{subject}"')
-            else:
-                subject_queries.append(subject)
+    # Tambahkan filter tanggal jika ada
+    if start_date:
+        query += f' after:{start_date}'
     
-    if not subject_queries:
-        return 'subject:(cv OR resume) has:attachment filename:pdf'
+    if end_date:
+        query += f' before:{end_date}'
     
-    # Gabungkan semua subjek dengan OR dalam tanda kurung dan tambahkan filter attachment
-    # Format: subject:(Subjek1 OR Subjek2 OR Subjek3) has:attachment filename:pdf
-    query = f'subject:({" OR ".join(subject_queries)}) has:attachment filename:pdf'
     return query
 
 def get_spreadsheet_safe(gc, spreadsheet_name: str):
@@ -665,18 +684,40 @@ async def get_auth_status(request: Request):
 
 @app.post("/api/set-screening-config")
 async def set_screening_config(config: ScreeningConfig, request: Request):
-    """Set konfigurasi screening: nama posisi dan subjek email"""
-    global job_position_name, email_subjects
+    """Set konfigurasi screening: nama posisi, subjek email, dan periode tanggal"""
+    global job_position_name, email_subjects, screening_start_date, screening_end_date
     
     try:
         job_position_name = config.job_position.strip()
         email_subjects = [subject.strip() for subject in config.email_subjects if subject.strip()]
+        screening_start_date = config.start_date if hasattr(config, 'start_date') else None
+        screening_end_date = config.end_date if hasattr(config, 'end_date') else None
         
         if not job_position_name:
             raise HTTPException(status_code=400, detail="Nama posisi pekerjaan tidak boleh kosong")
         
         if not email_subjects:
             raise HTTPException(status_code=400, detail="Minimal satu subjek email harus diisi")
+        
+        # Validasi format tanggal jika ada
+        if screening_start_date:
+            try:
+                datetime.strptime(screening_start_date, '%Y/%m/%d')
+            except ValueError:
+                raise HTTPException(status_code=400, detail="Format tanggal mulai tidak valid (gunakan YYYY/MM/DD)")
+        
+        if screening_end_date:
+            try:
+                datetime.strptime(screening_end_date, '%Y/%m/%d')
+            except ValueError:
+                raise HTTPException(status_code=400, detail="Format tanggal akhir tidak valid (gunakan YYYY/MM/DD)")
+        
+        # Validasi tanggal mulai tidak lebih besar dari tanggal akhir
+        if screening_start_date and screening_end_date:
+            start = datetime.strptime(screening_start_date, '%Y/%m/%d')
+            end = datetime.strptime(screening_end_date, '%Y/%m/%d')
+            if start > end:
+                raise HTTPException(status_code=400, detail="Tanggal mulai tidak boleh lebih besar dari tanggal akhir")
         
         # Coba dapatkan URL spreadsheet
         spreadsheet_url = ""
@@ -687,12 +728,18 @@ async def set_screening_config(config: ScreeningConfig, request: Request):
         except:
             pass
         
+        # Preview query untuk debugging
+        preview_query = build_gmail_query(email_subjects, screening_start_date, screening_end_date)
+        
         return JSONResponse(content={
             "message": "Konfigurasi screening berhasil disimpan",
             "job_position": job_position_name,
             "email_subjects": email_subjects,
+            "start_date": screening_start_date,
+            "end_date": screening_end_date,
             "spreadsheet_name": generate_spreadsheet_name(job_position_name),
-            "spreadsheet_url": spreadsheet_url
+            "spreadsheet_url": spreadsheet_url,
+            "gmail_query_preview": preview_query
         })
         
     except HTTPException as e:
@@ -714,11 +761,13 @@ async def get_screening_config(request: Request):
             pass  # Ignore error jika belum login atau spreadsheet belum ada
     
     # Preview query untuk debugging
-    preview_query = build_gmail_query(email_subjects) if email_subjects else ""
+    preview_query = build_gmail_query(email_subjects, screening_start_date, screening_end_date) if email_subjects else ""
     
     return JSONResponse(content={
         "job_position": job_position_name,
         "email_subjects": email_subjects,
+        "start_date": screening_start_date,
+        "end_date": screening_end_date,
         "spreadsheet_name": generate_spreadsheet_name(job_position_name) if job_position_name else "",
         "spreadsheet_url": spreadsheet_url,
         "has_job_description": bool(job_description_text),
@@ -749,7 +798,7 @@ async def upload_job_description(file: UploadFile = File(...)):
 
 @app.post("/api/start-screening")
 async def start_screening(request: Request):
-    global job_description_text, job_position_name, email_subjects
+    global job_description_text, job_position_name, email_subjects, screening_start_date, screening_end_date
     
     if not job_description_text:
         raise HTTPException(status_code=400, detail="Deskripsi pekerjaan belum di-upload.")
@@ -777,9 +826,19 @@ async def start_screening(request: Request):
         # Dapatkan hash CV yang sudah ada
         existing_hashes = get_existing_hashes(sheet)
         
-        # Build query berdasarkan subjek email yang diinput
-        gmail_query = build_gmail_query(email_subjects)
+        # Build query berdasarkan subjek email dan rentang tanggal yang diinput
+        gmail_query = build_gmail_query(email_subjects, screening_start_date, screening_end_date)
         print(f"Gmail query: {gmail_query}")
+        
+        # Informasi periode untuk user
+        period_info = ""
+        if screening_start_date or screening_end_date:
+            if screening_start_date and screening_end_date:
+                period_info = f" dari periode {screening_start_date} hingga {screening_end_date}"
+            elif screening_start_date:
+                period_info = f" sejak {screening_start_date}"
+            elif screening_end_date:
+                period_info = f" hingga {screening_end_date}"
         
         # Query Gmail untuk email dengan resume
         results = gmail.users().messages().list(
@@ -790,10 +849,11 @@ async def start_screening(request: Request):
         messages = results.get('messages', [])
         if not messages:
             return JSONResponse(content={
-                "message": "Tidak ada email dengan resume ditemukan untuk subjek yang ditentukan.", 
+                "message": f"Tidak ada email dengan resume ditemukan untuk subjek yang ditentukan{period_info}.", 
                 "results": [],
                 "spreadsheet_name": spreadsheet_name,
-                "gmail_query_used": gmail_query
+                "gmail_query_used": gmail_query,
+                "period_info": period_info
             })
         
         processed_results = []
@@ -904,7 +964,7 @@ async def start_screening(request: Request):
                 print(f"Error processing message {message['id']}: {e}")
                 continue
 
-        message = f"{processed_count} resume baru berhasil diproses, {skipped_count} resume sudah ada sebelumnya dari {max_emails} email yang diperiksa (total {len(messages)} email ditemukan)."
+        message = f"{processed_count} resume baru berhasil diproses, {skipped_count} resume sudah ada sebelumnya dari {max_emails} email yang diperiksa{period_info} (total {len(messages)} email ditemukan)."
         
         return JSONResponse(content={
             "message": message, 
@@ -914,7 +974,8 @@ async def start_screening(request: Request):
             "total_emails": len(messages),
             "emails_checked": max_emails,
             "spreadsheet_name": spreadsheet_name,
-            "gmail_query_used": gmail_query
+            "gmail_query_used": gmail_query,
+            "period_info": period_info
         })
 
     except HTTPException as e:
@@ -922,6 +983,7 @@ async def start_screening(request: Request):
     except Exception as e:
         print(f"Terjadi error tak terduga di start_screening: {e}")
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+    
 
 @app.get("/api/get-results")
 async def get_results(request: Request):
