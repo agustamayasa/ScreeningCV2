@@ -25,6 +25,8 @@ from typing import List, Optional
 # KONFIGURASI DAN SETUP AWAL
 # ==============================================================================
 os.environ['GOOGLE_APPLICATION_CREDENTIALS_JSON'] = '1'
+os.environ['GRPC_VERBOSITY'] = 'ERROR'
+os.environ['GLOG_minloglevel'] = '2'
 logging.getLogger('googleapiclient.discovery_cache').setLevel(logging.ERROR)
 logging.getLogger('googleapiclient.discovery').setLevel(logging.WARNING)
 load_dotenv()

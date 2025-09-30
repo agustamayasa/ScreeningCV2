@@ -26,6 +26,7 @@ export default function Home() {
   const [currentSpreadsheetName, setCurrentSpreadsheetName] = useState("");
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  
 
   const [currentSpreadsheetUrl, setCurrentSpreadsheetUrl] = useState("");
   // Tambahkan state ini di bagian atas dengan state lainnya
@@ -34,6 +35,20 @@ export default function Home() {
     key: "Overall Fit",
     direction: "desc",
   });
+  
+  useEffect(() => {
+  if (configStatus && (
+    configStatus.includes('Sukses') || 
+    configStatus.includes('berhasil') || 
+    configStatus.includes('disimpan')
+  )) {
+    const timer = setTimeout(() => {
+      setConfigStatus('');
+    }, 5000); // Hilang setelah 5 detik
+
+    return () => clearTimeout(timer);
+  }
+}, [configStatus]);
   
 
   // Fungsi untuk menangani error dengan lebih baik
@@ -824,7 +839,7 @@ export default function Home() {
   {/* Configuration Status Alert */}
   {configStatus && (
     <div
-      className={`mb-6 p-4 rounded-lg text-sm font-medium ${
+      className={`mb-6 p-4 rounded-lg text-sm font-medium transition-opacity duration-500 ${
         configStatus.includes("berhasil") ||
         configStatus.includes("Sukses") ||
         configStatus.includes("disimpan")
