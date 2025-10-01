@@ -4,7 +4,7 @@ import json
 import base64
 import pickle
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 import pdfplumber
 from fastapi import FastAPI, UploadFile, File, HTTPException, Request, Form
 from fastapi.responses import RedirectResponse, JSONResponse
@@ -18,7 +18,6 @@ import google.generativeai as genai
 import gspread
 import hashlib
 from pydantic import BaseModel
-from datetime import datetime
 from typing import List, Optional
 
 # ==============================================================================
@@ -528,15 +527,12 @@ def build_gmail_query(email_subjects: List[str], start_date: Optional[str] = Non
         Query string untuk Gmail API
     """
     if not email_subjects:
-        # Default query jika tidak ada subjek yang dispecified
         query = 'subject:(cv OR resume) has:attachment filename:pdf'
     else:
-        # Bangun query dengan OR untuk setiap subjek
         subject_queries = []
         for subject in email_subjects:
             subject = subject.strip()
             if subject:
-                # Tambahkan quotes jika subjek mengandung spasi
                 if ' ' in subject:
                     subject_queries.append(f'"{subject}"')
                 else:
@@ -545,15 +541,23 @@ def build_gmail_query(email_subjects: List[str], start_date: Optional[str] = Non
         if not subject_queries:
             query = 'subject:(cv OR resume) has:attachment filename:pdf'
         else:
-            # Gabungkan semua subjek dengan OR dalam tanda kurung dan tambahkan filter attachment
             query = f'subject:({" OR ".join(subject_queries)}) has:attachment filename:pdf'
     
     # Tambahkan filter tanggal jika ada
+    # after: mencari email SETELAH tanggal (tidak inklusif)
+    # before: mencari email SEBELUM tanggal (tidak inklusif)
+    # Untuk membuat inklusif, kita perlu adjust tanggalnya
     if start_date:
-        query += f' after:{start_date}'
+        # Kurangi 1 hari agar tanggal start_date ikut termasuk
+        start_dt = datetime.strptime(start_date, '%Y/%m/%d')
+        adjusted_start = (start_dt - timedelta(days=1)).strftime('%Y/%m/%d')
+        query += f' after:{adjusted_start}'
     
     if end_date:
-        query += f' before:{end_date}'
+        # Tambah 1 hari agar tanggal end_date ikut termasuk
+        end_dt = datetime.strptime(end_date, '%Y/%m/%d')
+        adjusted_end = (end_dt + timedelta(days=1)).strftime('%Y/%m/%d')
+        query += f' before:{adjusted_end}'
     
     return query
 
@@ -692,8 +696,17 @@ async def set_screening_config(config: ScreeningConfig, request: Request):
     try:
         job_position_name = config.job_position.strip()
         email_subjects = [subject.strip() for subject in config.email_subjects if subject.strip()]
-        screening_start_date = config.start_date if hasattr(config, 'start_date') else None
-        screening_end_date = config.end_date if hasattr(config, 'end_date') else None
+        
+        # Konversi format tanggal dari YYYY-MM-DD ke YYYY/MM/DD jika perlu
+        if hasattr(config, 'start_date') and config.start_date:
+            screening_start_date = config.start_date.replace('-', '/')
+        else:
+            screening_start_date = None
+            
+        if hasattr(config, 'end_date') and config.end_date:
+            screening_end_date = config.end_date.replace('-', '/')
+        else:
+            screening_end_date = None
         
         if not job_position_name:
             raise HTTPException(status_code=400, detail="Nama posisi pekerjaan tidak boleh kosong")
@@ -701,18 +714,19 @@ async def set_screening_config(config: ScreeningConfig, request: Request):
         if not email_subjects:
             raise HTTPException(status_code=400, detail="Minimal satu subjek email harus diisi")
         
-        # Validasi format tanggal jika ada
+        # Validasi format tanggal jika ada (terima kedua format)
         if screening_start_date:
             try:
+                # Coba parse dengan format YYYY/MM/DD
                 datetime.strptime(screening_start_date, '%Y/%m/%d')
             except ValueError:
-                raise HTTPException(status_code=400, detail="Format tanggal mulai tidak valid (gunakan YYYY/MM/DD)")
+                raise HTTPException(status_code=400, detail="Format tanggal mulai tidak valid (gunakan YYYY/MM/DD atau YYYY-MM-DD)")
         
         if screening_end_date:
             try:
                 datetime.strptime(screening_end_date, '%Y/%m/%d')
             except ValueError:
-                raise HTTPException(status_code=400, detail="Format tanggal akhir tidak valid (gunakan YYYY/MM/DD)")
+                raise HTTPException(status_code=400, detail="Format tanggal akhir tidak valid (gunakan YYYY/MM/DD atau YYYY-MM-DD)")
         
         # Validasi tanggal mulai tidak lebih besar dari tanggal akhir
         if screening_start_date and screening_end_date:

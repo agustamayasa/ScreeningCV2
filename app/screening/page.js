@@ -544,6 +544,7 @@ export default function Home() {
       );
     }
   };
+  
 
   // Show loading state while checking authentication
   if (isCheckingAuth) {
