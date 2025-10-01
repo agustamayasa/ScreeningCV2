@@ -527,12 +527,15 @@ def build_gmail_query(email_subjects: List[str], start_date: Optional[str] = Non
         Query string untuk Gmail API
     """
     if not email_subjects:
+        # Default query jika tidak ada subjek yang dispecified
         query = 'subject:(cv OR resume) has:attachment filename:pdf'
     else:
+        # Bangun query dengan OR untuk setiap subjek
         subject_queries = []
         for subject in email_subjects:
             subject = subject.strip()
             if subject:
+                # Tambahkan quotes jika subjek mengandung spasi
                 if ' ' in subject:
                     subject_queries.append(f'"{subject}"')
                 else:
@@ -541,23 +544,39 @@ def build_gmail_query(email_subjects: List[str], start_date: Optional[str] = Non
         if not subject_queries:
             query = 'subject:(cv OR resume) has:attachment filename:pdf'
         else:
+            # Gabungkan semua subjek dengan OR dalam tanda kurung dan tambahkan filter attachment
             query = f'subject:({" OR ".join(subject_queries)}) has:attachment filename:pdf'
     
     # Tambahkan filter tanggal jika ada
-    # after: mencari email SETELAH tanggal (tidak inklusif)
-    # before: mencari email SEBELUM tanggal (tidak inklusif)
-    # Untuk membuat inklusif, kita perlu adjust tanggalnya
-    if start_date:
-        # Kurangi 1 hari agar tanggal start_date ikut termasuk
-        start_dt = datetime.strptime(start_date, '%Y/%m/%d')
-        adjusted_start = (start_dt - timedelta(days=1)).strftime('%Y/%m/%d')
-        query += f' after:{adjusted_start}'
-    
-    if end_date:
-        # Tambah 1 hari agar tanggal end_date ikut termasuk
-        end_dt = datetime.strptime(end_date, '%Y/%m/%d')
-        adjusted_end = (end_dt + timedelta(days=1)).strftime('%Y/%m/%d')
-        query += f' before:{adjusted_end}'
+    # Gmail menggunakan format YYYY/MM/DD
+    # after: mencari email SETELAH tanggal (tidak termasuk tanggal tersebut)
+    # before: mencari email SEBELUM tanggal (tidak termasuk tanggal tersebut)
+    if start_date and end_date:
+        # Untuk range yang tepat, kita perlu:
+        # - after: (start_date - 1 hari) untuk include start_date
+        # - before: (end_date + 1 hari) untuk include end_date
+        from datetime import datetime, timedelta
+        
+        start = datetime.strptime(start_date, '%Y/%m/%d')
+        end = datetime.strptime(end_date, '%Y/%m/%d')
+        
+        # Kurangi 1 hari dari start_date
+        adjusted_start = start - timedelta(days=1)
+        # Tambah 1 hari ke end_date
+        adjusted_end = end + timedelta(days=1)
+        
+        query += f' after:{adjusted_start.strftime("%Y/%m/%d")}'
+        query += f' before:{adjusted_end.strftime("%Y/%m/%d")}'
+    elif start_date:
+        from datetime import datetime, timedelta
+        start = datetime.strptime(start_date, '%Y/%m/%d')
+        adjusted_start = start - timedelta(days=1)
+        query += f' after:{adjusted_start.strftime("%Y/%m/%d")}'
+    elif end_date:
+        from datetime import datetime, timedelta
+        end = datetime.strptime(end_date, '%Y/%m/%d')
+        adjusted_end = end + timedelta(days=1)
+        query += f' before:{adjusted_end.strftime("%Y/%m/%d")}'
     
     return query
 
