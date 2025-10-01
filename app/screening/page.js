@@ -77,11 +77,6 @@ export default function Home() {
     }
   };
 
-  const formatDateForGmail = (dateString) => {
-  if (!dateString) return null;
-  // Convert from YYYY-MM-DD to YYYY/MM/DD
-  return dateString.replace(/-/g, '/');
-};
 
   const checkAuthStatus = async () => {
     try {
@@ -215,17 +210,22 @@ export default function Home() {
       setIsLoggingOut(false);
     }
   };
+  const formatDateForGmail = (dateString) => {
+  if (!dateString) return null;
+  return dateString.replace(/-/g, '/');
+};
 
   // New functions for configuration
   const handleSaveConfig = async () => {
+  // Validasi basic
   if (!jobPosition.trim()) {
-    setError('Nama posisi pekerjaan harus diisi');
+    setConfigStatus('Error: Nama posisi pekerjaan tidak boleh kosong');
     return;
   }
 
-  const validSubjects = emailSubjects.filter(s => s.trim() !== '');
+  const validSubjects = emailSubjects.filter(s => s.trim());
   if (validSubjects.length === 0) {
-    setError('Minimal satu subjek email harus diisi');
+    setConfigStatus('Error: Minimal satu subjek email harus diisi');
     return;
   }
 
@@ -234,43 +234,40 @@ export default function Home() {
     const start = new Date(startDate);
     const end = new Date(endDate);
     if (start > end) {
-      setError('Tanggal mulai tidak boleh lebih besar dari tanggal akhir');
+      setConfigStatus('Error: Tanggal mulai tidak boleh lebih besar dari tanggal akhir');
       return;
     }
   }
 
-  setLoading(true);
-  setError('');
+  const configData = {
+    job_position: jobPosition.trim(),
+    email_subjects: validSubjects,
+    start_date: formatDateForGmail(startDate),  // Gunakan fungsi helper
+    end_date: formatDateForGmail(endDate)        // Gunakan fungsi helper
+  };
 
   try {
     const response = await fetch('/api/set-screening-config', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        job_position: jobPosition,
-        email_subjects: validSubjects,
-        start_date: formatDateForGmail(startDate), // Format ke YYYY/MM/DD
-        end_date: formatDateForGmail(endDate)       // Format ke YYYY/MM/DD
-      }),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(configData)
     });
-
+    
     const data = await response.json();
-
+    
     if (response.ok) {
-      setSuccess('Konfigurasi berhasil disimpan!');
-      setSpreadsheetUrl(data.spreadsheet_url || '');
-      console.log('Gmail Query:', data.gmail_query_preview);
-      setTimeout(() => setSuccess(''), 3000);
+      setConfigStatus('Sukses: ' + data.message);
+      setIsConfigSaved(true);
+      setCurrentSpreadsheetName(data.spreadsheet_name);
+      setCurrentSpreadsheetUrl(data.spreadsheet_url);
+      
+      // Debug: log query yang digunakan
+      console.log('Gmail Query Preview:', data.gmail_query_preview);
     } else {
-      setError(data.detail || 'Gagal menyimpan konfigurasi');
+      setConfigStatus('Error: ' + data.detail);
     }
-  } catch (err) {
-    setError('Terjadi kesalahan saat menyimpan konfigurasi');
-    console.error(err);
-  } finally {
-    setLoading(false);
+  } catch (error) {
+    setConfigStatus('Error: ' + error.message);
   }
 };
 
