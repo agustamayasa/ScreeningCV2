@@ -802,7 +802,7 @@ export default function Home() {
         )}
 
         {/* Configuration Section */}
-<div className="bg-white border border-gray-200 rounded-xl p-8 mb-8 max-w-4xl mx-auto">
+<div className="bg-white border border-gray-200 rounded-xl p-8 mb-8 mx-auto">
       {/* Header */}
       <div className="flex items-start mb-8 pb-6 border-b border-gray-100">
         <div className="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center mr-4 flex-shrink-0">
