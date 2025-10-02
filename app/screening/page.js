@@ -24,6 +24,8 @@ export default function Home() {
   const [configStatus, setConfigStatus] = useState("");
   const [isConfigSaved, setIsConfigSaved] = useState(false);
   const [currentSpreadsheetName, setCurrentSpreadsheetName] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   const [currentSpreadsheetUrl, setCurrentSpreadsheetUrl] = useState("");
   // Tambahkan state ini di bagian atas dengan state lainnya
@@ -388,6 +390,26 @@ export default function Home() {
   const handleLogin = () => {
     window.location.href = `${API_BASE_URL}/api/login`;
   };
+
+  // Function untuk mendapatkan data dengan pagination
+const getPaginatedResults = () => {
+  const filtered = getFilteredAndSortedResults();
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  return filtered.slice(startIndex, endIndex);
+};
+
+// Function untuk menghitung total halaman
+const getTotalPages = () => {
+  const filtered = getFilteredAndSortedResults();
+  return Math.ceil(filtered.length / itemsPerPage);
+};
+
+// Function untuk reset halaman saat search atau sort berubah
+// Panggil function ini di dalam useEffect atau saat search/sort berubah
+const resetToFirstPage = () => {
+  setCurrentPage(1);
+};
 
   const handleClearResults = async () => {
     if (
@@ -947,7 +969,7 @@ export default function Home() {
               </div>
               <div className="flex-1">
                 <h2 className="text-xl font-semibold text-gray-900 mb-1">Unggah Deskripsi Pekerjaan</h2>
-                <p className="text-sm text-gray-500">Unggah file PDF berisi persyaratan pekerjaan</p>
+                <p className="text-sm text-gray-500">Unggah file PDF berisi Deskripsi pekerjaan yang sedang dibuka</p>
               </div>
             </div>
             
@@ -1090,7 +1112,7 @@ export default function Home() {
                 <svg className="w-4 h-4 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
                 </svg>
-                Persyaratan
+                Persyaratan Awal
               </h3>
               <div className="bg-gray-50 rounded-lg p-4 space-y-3">
                 <div className="flex items-center">
@@ -1215,968 +1237,281 @@ export default function Home() {
       </div>
 
         {/* Results Section */}
-        <div className="bg-white border border-gray-200 rounded-xl p-8">
-        {/* Header */}
-        <div className="flex items-start justify-between mb-8 pb-6 border-b border-gray-100">
-          <div className="flex items-start">
-            <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center mr-4 flex-shrink-0">
-              <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-              </svg>
+        <div className="bg-white border border-gray-200 rounded-xl p-8 max-w-[1400px] mx-auto">
+      {/* Header */}
+      <div className="flex items-start justify-between mb-8 pb-6 border-b border-gray-100">
+        <div className="flex items-start">
+          <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center mr-4 flex-shrink-0">
+            <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+          </div>
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900 mb-1">Hasil Analisis</h2>
+            <p className="text-sm text-gray-500">
+              {results.length > 0 ? `${results.length} kandidat telah dianalisis` : "Belum ada data tersedia"}
+            </p>
+          </div>
+        </div>
+
+        {results.length > 0 && (
+          <div className="flex items-center gap-4 text-xs">
+            <div className="flex items-center">
+              <div className="w-3 h-3 bg-green-100 border border-green-300 rounded mr-2"></div>
+              <span className="text-gray-600">Tinggi (80%+)</span>
             </div>
-            <div>
-              <h2 className="text-xl font-semibold text-gray-900 mb-1">Hasil Analisis</h2>
-              <p className="text-sm text-gray-500">
-                {results.length > 0 ? `${results.length} kandidat telah dianalisis` : "Belum ada data tersedia"}
-              </p>
+            <div className="flex items-center">
+              <div className="w-3 h-3 bg-yellow-100 border border-yellow-300 rounded mr-2"></div>
+              <span className="text-gray-600">Sedang (60-79%)</span>
+            </div>
+            <div className="flex items-center">
+              <div className="w-3 h-3 bg-red-100 border border-red-300 rounded mr-2"></div>
+              <span className="text-gray-600">Rendah (&lt;60%)</span>
             </div>
           </div>
+        )}
+      </div>
 
-          {results.length > 0 && (
-            <div className="flex items-center space-x-4 text-sm">
-              <div className="flex items-center">
-                <div className="w-3 h-3 bg-green-200 rounded mr-2"></div>
-                <span className="text-gray-600">Tinggi (80%+)</span>
-              </div>
-              <div className="flex items-center">
-                <div className="w-3 h-3 bg-yellow-200 rounded mr-2"></div>
-                <span className="text-gray-600">Sedang (60-79%)</span>
-              </div>
-              <div className="flex items-center">
-                <div className="w-3 h-3 bg-red-200 rounded mr-2"></div>
-                <span className="text-gray-600">Rendah (&lt;60%)</span>
-              </div>
+      {/* Search Bar and Items Per Page */}
+      {results.length > 0 && (
+        <div className="flex justify-between items-center gap-4 mb-6">
+          <div className="flex items-center gap-3">
+            <span className="text-sm text-gray-600">Tampilkan:</span>
+            <select
+              value={itemsPerPage}
+              onChange={(e) => {
+                setItemsPerPage(Number(e.target.value));
+                setCurrentPage(1);
+              }}
+              className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+            >
+              <option value={5}>5</option>
+              <option value={10}>10</option>
+              <option value={25}>25</option>
+              <option value={50}>50</option>
+            </select>
+            <span className="text-sm text-gray-600">data per halaman</span>
+          </div>
+
+          <div className="relative max-w-md w-full">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
             </div>
+            <input
+              type="text"
+              placeholder="Cari kandidat..."
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm transition-all duration-200"
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Results Counter */}
+      {results.length > 0 && (
+        <div className="flex justify-between items-center mb-4 text-sm text-gray-600">
+          <p>
+            Menampilkan {((currentPage - 1) * itemsPerPage) + 1} - {Math.min(currentPage * itemsPerPage, getFilteredAndSortedResults().length)} dari {getFilteredAndSortedResults().length} kandidat
+          </p>
+          {searchTerm && (
+            <p>Hasil pencarian: {getFilteredAndSortedResults().length} kandidat</p>
           )}
         </div>
+      )}
 
-          {/* Search Bar - positioned below header and aligned right */}
-          {results.length > 0 && (
-            <div className="flex justify-between items-center mb-6">
-              <div className="flex-1"></div>
-              <div className="relative max-w-md w-full sm:w-80">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <svg
-                    className="h-5 w-5 text-gray-400"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                    />
+      {/* Results Content */}
+      {results.length > 0 ? (
+        <>
+          <div className="overflow-x-auto border border-gray-200 rounded-lg">
+            <table className="w-full">
+              <thead>
+                <tr className="bg-gray-50 border-b border-gray-200">
+                  <th className="text-left py-3.5 px-4 font-semibold text-gray-900 text-sm w-48">
+                    <button onClick={() => handleSort("Nama")} className="flex items-center gap-1.5 hover:text-blue-600 transition-colors">
+                      <span>Kandidat</span>
+                      {getSortIcon("Nama")}
+                    </button>
+                  </th>
+                  <th className="text-left py-3.5 px-3 font-semibold text-gray-900 text-sm w-32">
+                    <button onClick={() => handleSort("Pendidikan Terakhir")} className="flex items-center gap-1.5 hover:text-blue-600 transition-colors">
+                      <span>Pendidikan</span>
+                      {getSortIcon("Pendidikan Terakhir")}
+                    </button>
+                  </th>
+                  <th className="text-center py-3.5 px-3 font-semibold text-gray-900 text-sm w-24">
+                    <button onClick={() => handleSort("Overall Fit")} className="flex items-center gap-1.5 hover:text-blue-600 transition-colors mx-auto">
+                      <span>Skor</span>
+                      {getSortIcon("Overall Fit")}
+                    </button>
+                  </th>
+                  <th className="text-left py-3.5 px-4 font-semibold text-gray-900 text-sm w-56">Kekuatan</th>
+                  <th className="text-left py-3.5 px-4 font-semibold text-gray-900 text-sm w-56">Kekurangan</th>
+                  <th className="text-left py-3.5 px-4 font-semibold text-gray-900 text-sm w-56">Analisis</th>
+                  <th className="text-center py-3.5 px-3 font-semibold text-gray-900 text-sm w-20">CV</th>
+                  <th className="text-left py-3.5 px-3 font-semibold text-gray-900 text-sm w-28">
+                    <button onClick={() => handleSort("Waktu")} className="flex items-center gap-1.5 hover:text-blue-600 transition-colors">
+                      <span>Tanggal</span>
+                      {getSortIcon("Waktu")}
+                    </button>
+                  </th>
+                  <th className="text-center py-3.5 px-3 font-semibold text-gray-900 text-sm w-20">Detail</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {getPaginatedResults().map((result, index) => (
+                  <tr key={index} className="hover:bg-gray-50 transition-colors duration-150">
+                    <td className="py-3.5 px-4">
+                      <div className="min-w-0">
+                        <p className="font-medium text-gray-900 text-sm truncate" title={result.Nama}>{result.Nama}</p>
+                        <div className="text-xs space-y-0.5 mt-1">
+                          <a href={`mailto:${result.Email}`} className="text-blue-600 hover:text-blue-800 hover:underline block truncate" title={result.Email}>
+                            {result.Email.length > 25 ? `${result.Email.substring(0, 25)}...` : result.Email}
+                          </a>
+                          <a href={`https://wa.me/${result['Nomor Telepon']}`} className="text-blue-600 hover:text-blue-800 hover:underline block">
+                            {result['Nomor Telepon']}
+                          </a>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="py-3.5 px-3">
+                      <p className="text-xs text-gray-900 line-clamp-2" title={result['Pendidikan Terakhir']}>
+                        {result['Pendidikan Terakhir'].length > 40 ? `${result['Pendidikan Terakhir'].substring(0, 40)}...` : result['Pendidikan Terakhir']}
+                      </p>
+                    </td>
+                    <td className="py-3.5 px-3 text-center">
+                      <div className={`inline-block px-2.5 py-1 rounded-full text-xs font-semibold border ${getScoreBadgeColor(result['Overall Fit'])}`}>
+                        {result['Overall Fit']}%
+                      </div>
+                    </td>
+                    <td className="py-3.5 px-4">
+                      <p className="text-xs text-gray-700 line-clamp-3" title={result.Kekuatan}>
+                        {result.Kekuatan.length > 120 ? `${result.Kekuatan.substring(0, 120)}...` : result.Kekuatan}
+                      </p>
+                    </td>
+                    <td className="py-3.5 px-4">
+                      <p className="text-xs text-gray-700 line-clamp-3" title={result.Kekurangan}>
+                        {result.Kekurangan.length > 120 ? `${result.Kekurangan.substring(0, 120)}...` : result.Kekurangan}
+                      </p>
+                    </td>
+                    <td className="py-3.5 px-4">
+                      <p className="text-xs text-gray-700 line-clamp-3" title={result.Justifikasi}>
+                        {result.Justifikasi.length > 120 ? `${result.Justifikasi.substring(0, 120)}...` : result.Justifikasi}
+                      </p>
+                    </td>
+                    <td className="py-3.5 px-3 text-center">
+                      <a href={result['Drive Link']} target="_blank" rel="noopener noreferrer" className="inline-flex items-center px-2 py-1 bg-blue-50 text-blue-700 rounded text-xs font-medium hover:bg-blue-100 transition-colors">
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                        </svg>
+                      </a>
+                    </td>
+                    <td className="py-3.5 px-3">
+                      <div className="text-xs text-gray-600">
+                        <p className="font-medium">{new Date(result.Waktu).toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit', year: '2-digit' })}</p>
+                        <p className="text-gray-400">{new Date(result.Waktu).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</p>
+                      </div>
+                    </td>
+                    <td className="py-3.5 px-3 text-center">
+                      <button onClick={() => setSelectedCandidate(result)} className="p-1.5 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Pagination */}
+          {getTotalPages() > 1 && (
+            <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-100">
+              <div className="text-sm text-gray-600">
+                Halaman {currentPage} dari {getTotalPages()}
+              </div>
+              
+              <div className="flex items-center gap-2">
+                {/* Previous Button */}
+                <button
+                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                   </svg>
+                </button>
+
+                {/* Page Numbers */}
+                <div className="flex items-center gap-1">
+                  {[...Array(getTotalPages())].map((_, i) => {
+                    const pageNumber = i + 1;
+                    // Show first page, last page, current page, and pages around current
+                    if (
+                      pageNumber === 1 ||
+                      pageNumber === getTotalPages() ||
+                      (pageNumber >= currentPage - 1 && pageNumber <= currentPage + 1)
+                    ) {
+                      return (
+                        <button
+                          key={pageNumber}
+                          onClick={() => setCurrentPage(pageNumber)}
+                          className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                            currentPage === pageNumber
+                              ? 'bg-blue-600 text-white'
+                              : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
+                          }`}
+                        >
+                          {pageNumber}
+                        </button>
+                      );
+                    } else if (
+                      pageNumber === currentPage - 2 ||
+                      pageNumber === currentPage + 2
+                    ) {
+                      return <span key={pageNumber} className="px-2 text-gray-400">...</span>;
+                    }
+                    return null;
+                  })}
                 </div>
-                <input
-                  type="text"
-                  placeholder="Search candidates..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                />
+
+                {/* Next Button */}
+                <button
+                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, getTotalPages()))}
+                  disabled={currentPage === getTotalPages()}
+                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
               </div>
             </div>
           )}
-
-          {/* Search Results Counter */}
-          {results.length > 0 && searchTerm && (
-            <div className="flex justify-end mb-4">
-              <p className="text-sm text-gray-600">
-                Showing {getFilteredAndSortedResults().length} of{" "}
-                {results.length} candidates
-              </p>
-            </div>
-          )}
-
-          {/* Results Content */}
-          {!isLoggedIn ? (
-            <div className="text-center py-12">
-              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg
-                  className="w-8 h-8 text-gray-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-                  />
-                </svg>
-              </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
-                Authentication Required
-              </h3>
-              <p className="text-gray-600 mb-4">
-                Please login with your Google account to view analysis results.
-              </p>
-              <button
-                onClick={handleLogin}
-                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 font-medium"
-              >
-                <svg
-                  className="w-4 h-4 mr-2"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M3 3a1 1 0 011 1v12a1 1 0 11-2 0V4a1 1 0 011-1zm7.707 3.293a1 1 0 010 1.414L9.414 9H17a1 1 0 110 2H9.414l1.293 1.293a1 1 0 01-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 011.414 0z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-                Login with Google
-              </button>
-            </div>
-          ) : results.length > 0 ? (
-            <>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-gray-200 bg-gray-50">
-                      <th className="text-left py-4 px-4 font-medium text-gray-900 w-48">
-                        <button
-                          onClick={() => handleSort("Nama")}
-                          className="flex items-center space-x-1 hover:text-blue-600 transition-colors"
-                        >
-                          <span>Candidate</span>
-                          {getSortIcon("Nama")}
-                        </button>
-                      </th>
-
-                      <th className="text-left py-4 px-2 font-medium text-gray-900 w-32">
-                        <button
-                          onClick={() => handleSort("Pendidikan Terakhir")}
-                          className="flex items-center space-x-1 hover:text-blue-600 transition-colors"
-                        >
-                          <span>Education</span>
-                          {getSortIcon("Pendidikan Terakhir")}
-                        </button>
-                      </th>
-
-                      <th className="text-center py-4 px-2 font-medium text-gray-900 w-28">
-                        <button
-                          onClick={() => handleSort("Overall Fit")}
-                          className="flex items-center space-x-1 hover:text-blue-600 transition-colors mx-auto"
-                        >
-                          <span>Score</span>
-                          {getSortIcon("Overall Fit")}
-                        </button>
-                      </th>
-
-                      <th className="text-left py-4 px-4 font-medium text-gray-900 w-64">
-                        Strengths
-                      </th>
-                      <th className="text-left py-4 px-4 font-medium text-gray-900 w-64">
-                        Weaknesses
-                      </th>
-                      <th className="text-left py-4 px-4 font-medium text-gray-900 w-64">
-                        Analysis
-                      </th>
-
-                      <th className="text-left py-4 px-2 font-medium text-gray-900 w-24">
-                        CV
-                      </th>
-
-                      <th className="text-left py-4 px-2 font-medium text-gray-900 w-28">
-                        <button
-                          onClick={() => handleSort("Waktu")}
-                          className="flex items-center space-x-1 hover:text-blue-600 transition-colors"
-                        >
-                          <span>Date</span>
-                          {getSortIcon("Waktu")}
-                        </button>
-                      </th>
-
-                      <th className="text-center py-4 px-2 font-medium text-gray-900 w-20">
-                        Details
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100">
-                    {getFilteredAndSortedResults().map((result, index) => (
-                      <tr
-                        key={index}
-                        className="hover:bg-gray-50 transition-colors duration-150"
-                      >
-                        {/* Candidate Info */}
-                        <td className="py-4 px-4">
-                          <div className="flex items-center">
-                            <div className="min-w-0">
-                              <p
-                                className="font-medium text-gray-900 truncate"
-                                title={result.Nama || "N/A"}
-                              >
-                                {result.Nama || "N/A"}
-                              </p>
-                            </div>
-                          </div>
-                          <div className="text-xs space-y-1">
-                            {result.Email &&
-                              result.Email !== "Tidak tercantum" ? (
-                              <a
-                                href={`mailto:${result.Email}`}
-                                className="text-blue-600 hover:text-blue-800 hover:underline block truncate"
-                                title={result.Email}
-                              >
-                                {result.Email.length > 25
-                                  ? `${result.Email.substring(0, 25)}...`
-                                  : result.Email}
-                              </a>
-                            ) : (
-                              <span className="text-gray-400 block">
-                                No email
-                              </span>
-                            )}
-                            {result["Nomor Telepon"] &&
-                              result["Nomor Telepon"] !== "Tidak tercantum" ? (
-                              <a
-                                href={`https://wa.me/${result["Nomor Telepon"]}`}
-                                className="text-blue-600 hover:text-blue-800 hover:underline block"
-                                title={result["Nomor Telepon"]}
-                              >
-                                {result["Nomor Telepon"]}
-                              </a>
-                            ) : (
-                              <span className="text-gray-400 block">
-                                No phone
-                              </span>
-                            )}
-                          </div>
-                        </td>
-
-                        {/* Education */}
-                        <td className="py-4 px-2">
-                          <div className="max-w-[120px]">
-                            <p
-                              className="text-[12px] text-gray-900 line-clamp-2 cursor-help"
-                              title={result["Pendidikan Terakhir"] || "N/A"}
-                            >
-                              {result["Pendidikan Terakhir"]
-                                ? result["Pendidikan Terakhir"].length > 40
-                                  ? `${result["Pendidikan Terakhir"].substring(
-                                    0,
-                                    40
-                                  )}...`
-                                  : result["Pendidikan Terakhir"]
-                                : "N/A"}
-                            </p>
-                          </div>
-                        </td>
-
-                        {/* Match Score */}
-                        <td className="py-4 px-2 text-center">
-                          <div className="inline-flex items-center">
-                            <div
-                              className={`px-2 py-1 rounded-full text-sm font-medium border ${getScoreBadgeColor(
-                                result["Overall Fit"] || 0
-                              )}`}
-                            >
-                              {result["Overall Fit"] || 0}%
-                            </div>
-                          </div>
-                        </td>
-
-                        {/* Strengths */}
-                        <td className="py-4 px-4">
-                          <div className="max-w-[240px]">
-                            <p
-                              className="text-xs text-gray-900 line-clamp-3 cursor-help"
-                              title={result.Kekuatan || "N/A"}
-                            >
-                              {result.Kekuatan
-                                ? result.Kekuatan.length > 120
-                                  ? `${result.Kekuatan.substring(0, 120)}...`
-                                  : result.Kekuatan
-                                : "N/A"}
-                            </p>
-                          </div>
-                        </td>
-
-                        {/* Weaknesses */}
-                        <td className="py-4 px-4">
-                          <div className="max-w-[240px]">
-                            <p
-                              className="text-xs text-gray-900 line-clamp-3 cursor-help"
-                              title={result.Kekurangan || "N/A"}
-                            >
-                              {result.Kekurangan
-                                ? result.Kekurangan.length > 120
-                                  ? `${result.Kekurangan.substring(0, 120)}...`
-                                  : result.Kekurangan
-                                : "N/A"}
-                            </p>
-                          </div>
-                        </td>
-
-                        {/* Analysis */}
-                        <td className="py-4 px-4">
-                          <div className="max-w-[240px]">
-                            <p
-                              className="text-xs text-gray-900 line-clamp-3 cursor-help"
-                              title={result.Justifikasi || "N/A"}
-                            >
-                              {result.Justifikasi
-                                ? result.Justifikasi.length > 120
-                                  ? `${result.Justifikasi.substring(0, 120)}...`
-                                  : result.Justifikasi
-                                : "N/A"}
-                            </p>
-                          </div>
-                        </td>
-
-                        {/* CV Link */}
-                        <td className="py-4 px-2">
-                          {result["Drive Link"] &&
-                            result["Drive Link"] !== "Gagal upload ke Drive" ? (
-                            <a
-                              href={result["Drive Link"]}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium hover:bg-blue-200 transition-colors duration-200"
-                            >
-                              <svg
-                                className="w-3 h-3 mr-1"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
-                                />
-                              </svg>
-                              CV
-                            </a>
-                          ) : (
-                            <span className="text-gray-400 text-xs">
-                              No link
-                            </span>
-                          )}
-                        </td>
-
-                        {/* Date */}
-                        <td className="py-4 px-2">
-                          <div className="text-xs text-gray-500">
-                            {result.Waktu ? (
-                              <div>
-                                <p>
-                                  {new Date(result.Waktu).toLocaleDateString(
-                                    "en-GB",
-                                    {
-                                      day: "2-digit",
-                                      month: "2-digit",
-                                      year: "2-digit",
-                                    }
-                                  )}
-                                </p>
-                                <p className="text-xs text-gray-400">
-                                  {new Date(result.Waktu).toLocaleTimeString(
-                                    "en-US",
-                                    { hour: "2-digit", minute: "2-digit" }
-                                  )}
-                                </p>
-                              </div>
-                            ) : (
-                              "N/A"
-                            )}
-                          </div>
-                        </td>
-
-                        {/* Details Button */}
-                        <td className="py-4 px-2 text-center">
-                          <button
-                            onClick={() => {
-                              // You need to add this state: const [selectedCandidate, setSelectedCandidate] = useState(null);
-                              if (typeof setSelectedCandidate === "function") {
-                                setSelectedCandidate(result);
-                              } else {
-                                console.log("Selected candidate:", result);
-                                alert(
-                                  "Please add selectedCandidate state to your component"
-                                );
-                              }
-                            }}
-                            className="inline-flex items-center px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs font-medium hover:bg-gray-200 transition-colors duration-200"
-                          >
-                            <svg
-                              className="w-5 h-5"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                              />
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                              />
-                            </svg>
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Detail Modal */}
-              {typeof selectedCandidate !== "undefined" &&
-                selectedCandidate && (
-                  <div className="fixed inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-lg shadow-xl border border-gray-200 max-w-6xl w-full max-h-[90vh] overflow-y-auto">
-                      {/* Modal Header */}
-                      <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 rounded-t-lg">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center">
-                            <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center mr-4">
-                              <span className="text-gray-700 font-semibold text-lg">
-                                {(selectedCandidate.Nama || "N/A")
-                                  .charAt(0)
-                                  .toUpperCase()}
-                              </span>
-                            </div>
-                            <div>
-                              <h2 className="text-xl font-semibold text-gray-900">
-                                {selectedCandidate.Nama || "N/A"}
-                              </h2>
-                              <p className="text-sm text-gray-500">
-                                Candidate Analysis Report
-                              </p>
-                            </div>
-                          </div>
-                          <div className="flex items-center space-x-4">
-                            <div
-                              className={`px-4 py-2 rounded-md text-sm font-medium border ${getScoreBadgeColor(
-                                selectedCandidate["Overall Fit"] || 0
-                              )}`}
-                            >
-                              {selectedCandidate["Overall Fit"] || 0}% Match
-                            </div>
-                            <button
-                              onClick={() => {
-                                if (
-                                  typeof setSelectedCandidate === "function"
-                                ) {
-                                  setSelectedCandidate(null);
-                                } else {
-                                  console.log("Close modal");
-                                }
-                              }}
-                              className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-md transition-colors"
-                            >
-                              <svg
-                                className="w-5 h-5"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M6 18L18 6M6 6l12 12"
-                                />
-                              </svg>
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Modal Content */}
-                      <div className="p-6 space-y-6">
-                        {/* Contact Information */}
-                        <div className="bg-gray-50/50 rounded-lg p-5 border border-gray-100">
-                          <h3 className="text-lg font-medium text-gray-900 mb-4">
-                            Contact Information
-                          </h3>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                              <label className="text-sm font-medium text-gray-600 mb-1 block">
-                                Email Address
-                              </label>
-                              <p className="text-sm text-gray-900">
-                                {selectedCandidate.Email &&
-                                  selectedCandidate.Email !==
-                                  "Tidak tercantum" ? (
-                                  <a
-                                    href={`mailto:${selectedCandidate.Email}`}
-                                    className="text-blue-600 hover:underline flex items-center"
-                                  >
-                                    <svg
-                                      className="w-4 h-4 mr-1"
-                                      fill="none"
-                                      stroke="currentColor"
-                                      viewBox="0 0 24 24"
-                                    >
-                                      <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth={2}
-                                        d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-                                      />
-                                    </svg>
-                                    {selectedCandidate.Email}
-                                  </a>
-                                ) : (
-                                  <span className="text-gray-400">
-                                    Not available
-                                  </span>
-                                )}
-                              </p>
-                            </div>
-                            <div>
-                              <label className="text-sm font-medium text-gray-600 mb-1 block">
-                                Phone Number
-                              </label>
-                              <p className="text-sm text-gray-900">
-                                {selectedCandidate["Nomor Telepon"] &&
-                                  selectedCandidate["Nomor Telepon"] !==
-                                  "Tidak tercantum" ? (
-                                  <a
-                                    href={`tel:${selectedCandidate["Nomor Telepon"]}`}
-                                    className="text-blue-600 hover:underline flex items-center"
-                                  >
-                                    <svg
-                                      className="w-4 h-4 mr-1"
-                                      fill="none"
-                                      stroke="currentColor"
-                                      viewBox="0 0 24 24"
-                                    >
-                                      <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth={2}
-                                        d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
-                                      />
-                                    </svg>
-                                    {selectedCandidate["Nomor Telepon"]}
-                                  </a>
-                                ) : (
-                                  <span className="text-gray-400">
-                                    Not available
-                                  </span>
-                                )}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Education */}
-                        <div className="bg-white border border-gray-100 rounded-lg p-5">
-                          <h3 className="text-lg font-medium text-gray-900 mb-3 flex items-center">
-                            <svg
-                              className="w-5 h-5 mr-2 text-gray-600"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path d="M12 14l9-5-9-5-9 5 9 5z"></path>
-                              <path d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"></path>
-                            </svg>
-                            Education Background
-                          </h3>
-                          <p className="text-sm text-gray-800 bg-gray-50/50 p-3 rounded border">
-                            {selectedCandidate["Pendidikan Terakhir"] ||
-                              "No education information available"}
-                          </p>
-                        </div>
-
-                        {/* Strengths & Weaknesses */}
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                          {/* Strengths */}
-                          <div className="bg-white border border-gray-100 rounded-lg p-5">
-                            <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
-                              <svg
-                                className="w-5 h-5 mr-2 text-green-600"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                                />
-                              </svg>
-                              <span className="text-green-700">Strengths</span>
-                            </h3>
-                            <div className="bg-green-50/70 border border-green-100 rounded-md p-4">
-                              {selectedCandidate.Kekuatan ? (
-                                Array.isArray(selectedCandidate.Kekuatan) ? (
-                                  <ol className="list-decimal list-inside space-y-1 text-sm text-gray-800 leading-relaxed">
-                                    {selectedCandidate.Kekuatan.map(
-                                      (item, idx) => (
-                                        <li key={idx}>
-                                          {item.replace(/^\d+\.\s*/, "").trim()}
-                                        </li>
-                                      )
-                                    )}
-                                  </ol>
-                                ) : (
-                                  <ol className="list-decimal list-inside space-y-1 text-sm text-gray-800 leading-relaxed">
-                                    {selectedCandidate.Kekuatan
-                                      // Pecah hanya berdasarkan baris baru, buang baris kosong
-                                      .split(/\r?\n+/)
-                                      .map((line) =>
-                                        line.replace(/^\d+\.\s*/, "").trim()
-                                      ) // Hapus nomor di awal baris
-                                      .filter((line) => line.length > 0) // Buang baris kosong
-                                      // Gabungkan potongan pendek yang tampaknya kelanjutan baris sebelumnya
-                                      .reduce((acc, line) => {
-                                        if (
-                                          acc.length &&
-                                          line.match(/^[\d./]+$/)
-                                        ) {
-                                          // Jika baris hanya angka atau pecahan seperti "97/", gabungkan ke baris sebelumnya
-                                          acc[acc.length - 1] += " " + line;
-                                        } else {
-                                          acc.push(line);
-                                        }
-                                        return acc;
-                                      }, [])
-                                      .map((strength, idx) => (
-                                        <li key={idx}>{strength}</li>
-                                      ))}
-                                  </ol>
-                                )
-                              ) : (
-                                <p className="text-gray-400 text-sm">
-                                  No strengths data available
-                                </p>
-                              )}
-                            </div>
-                          </div>
-
-                          {/* Weaknesses */}
-                          <div className="bg-white border border-gray-100 rounded-lg p-5">
-                            <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
-                              <svg
-                                className="w-5 h-5 mr-2 text-orange-600"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
-                                />
-                              </svg>
-                              <span className="text-orange-700">
-                                Areas for Improvement
-                              </span>
-                            </h3>
-                            <div className="bg-orange-50/70 border border-orange-100 rounded-md p-4">
-                              {selectedCandidate.Kekurangan ? (
-                                Array.isArray(selectedCandidate.Kekurangan) ? (
-                                  <ol className="list-decimal list-inside space-y-1 text-sm text-gray-800 leading-relaxed">
-                                    {selectedCandidate.Kekurangan.map(
-                                      (weakness, index) => (
-                                        <li key={index}>
-                                          {weakness.replace(/^\d+\.\s*/, "")}
-                                        </li>
-                                      )
-                                    )}
-                                  </ol>
-                                ) : (
-                                  <ol className="list-decimal list-inside space-y-1 text-sm text-gray-800 leading-relaxed">
-                                    {selectedCandidate.Kekurangan.split(
-                                      /\r?\n|\d+\.\s*/
-                                    )
-                                      .filter((item) => item.trim() !== "")
-                                      .map((weakness, index) => (
-                                        <li key={index}>{weakness.trim()}</li>
-                                      ))}
-                                  </ol>
-                                )
-                              ) : (
-                                <p className="text-gray-400 text-sm">
-                                  No weaknesses data available
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Risk & Reward Factors */}
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-                          {/* Risk Factors */}
-                          <div className="bg-white border border-gray-100 rounded-lg p-5">
-                            <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
-                              <svg
-                                className="w-5 h-5 mr-2 text-red-600"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
-                                />
-                              </svg>
-                              <span className="text-red-700">Risk Factors</span>
-                            </h3>
-                            <div className="bg-red-50/70 border border-red-100 rounded-md p-4">
-                              {selectedCandidate["Risk Factor"] ? (
-                                Array.isArray(
-                                  selectedCandidate["Risk Factor"]
-                                ) ? (
-                                  <ol className="list-decimal list-inside space-y-1 text-sm text-gray-800 leading-relaxed">
-                                    {selectedCandidate["Risk Factor"].map(
-                                      (risk, index) => (
-                                        <li key={index}>
-                                          {risk.replace(/^\d+\.\s*/, "")}
-                                        </li>
-                                      )
-                                    )}
-                                  </ol>
-                                ) : (
-                                  <ol className="list-decimal list-inside space-y-1 text-sm text-gray-800 leading-relaxed">
-                                    {selectedCandidate["Risk Factor"]
-                                      .split(/\r?\n|\d+\.\s*/)
-                                      .filter((item) => item.trim() !== "")
-                                      .map((risk, index) => (
-                                        <li key={index}>{risk.trim()}</li>
-                                      ))}
-                                  </ol>
-                                )
-                              ) : (
-                                <p className="text-gray-400 text-sm">
-                                  No risk factors data available
-                                </p>
-                              )}
-                            </div>
-                          </div>
-
-                          {/* Reward Potential */}
-                          <div className="bg-white border border-gray-100 rounded-lg p-5">
-                            <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
-                              <svg
-                                className="w-5 h-5 mr-2 text-blue-600"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M13 10V3L4 14h7v7l9-11h-7z"
-                                />
-                              </svg>
-                              <span className="text-blue-700">
-                                Reward Potential
-                              </span>
-                            </h3>
-                            <div className="bg-blue-50/70 border border-blue-100 rounded-md p-4">
-                              {selectedCandidate["Reward Factor"] ? (
-                                Array.isArray(
-                                  selectedCandidate["Reward Factor"]
-                                ) ? (
-                                  <ol className="list-decimal list-inside space-y-1 text-sm text-gray-800 leading-relaxed">
-                                    {selectedCandidate["Reward Factor"].map(
-                                      (reward, index) => (
-                                        <li key={index}>
-                                          {reward.replace(/^\d+\.\s*/, "")}
-                                        </li>
-                                      )
-                                    )}
-                                  </ol>
-                                ) : (
-                                  <ol className="list-decimal list-inside space-y-1 text-sm text-gray-800 leading-relaxed">
-                                    {selectedCandidate["Reward Factor"]
-                                      .split(/\r?\n|\d+\.\s*/)
-                                      .filter((item) => item.trim() !== "")
-                                      .map((reward, index) => (
-                                        <li key={index}>{reward.trim()}</li>
-                                      ))}
-                                  </ol>
-                                )
-                              ) : (
-                                <p className="text-gray-400 text-sm">
-                                  No reward factors data available
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Detailed Analysis */}
-                        <div className="bg-white border border-gray-100 rounded-lg p-5">
-                          <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
-                            <svg
-                              className="w-5 h-5 mr-2 text-gray-600"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                              />
-                            </svg>
-                            Analysis Summary
-                          </h3>
-                          <div className="bg-gray-50/50 border border-gray-100 rounded-md p-4">
-                            <p className="text-sm text-gray-800 leading-relaxed whitespace-pre-wrap">
-                              {selectedCandidate.Justifikasi ||
-                                "No analysis data available"}
-                            </p>
-                          </div>
-                        </div>
-
-                        {/* Footer Information */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-gray-100">
-                          <div className="bg-gray-50/50 rounded-lg p-4 border border-gray-100">
-                            <h4 className="text-sm font-medium text-gray-700 mb-2 flex items-center">
-                              <svg
-                                className="w-4 h-4 mr-1"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                                />
-                              </svg>
-                              CV Document
-                            </h4>
-                            {selectedCandidate["Drive Link"] &&
-                              selectedCandidate["Drive Link"] !==
-                              "Gagal upload ke Drive" ? (
-                              <a
-                                href={selectedCandidate["Drive Link"]}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center px-3 py-2 bg-blue-50 text-blue-700 rounded-md text-sm font-medium hover:bg-blue-100 transition-colors duration-200 border border-blue-200"
-                              >
-                                <svg
-                                  className="w-4 h-4 mr-2"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  viewBox="0 0 24 24"
-                                >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                                  />
-                                </svg>
-                                View Document
-                              </a>
-                            ) : (
-                              <p className="text-gray-400 text-sm">
-                                Document not available
-                              </p>
-                            )}
-                          </div>
-
-                          <div className="bg-gray-50/50 rounded-lg p-4 border border-gray-100">
-                            <h4 className="text-sm font-medium text-gray-700 mb-2 flex items-center">
-                              <svg
-                                className="w-4 h-4 mr-1"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                                />
-                              </svg>
-                              Analysis Date
-                            </h4>
-                            {selectedCandidate.Waktu ? (
-                              <div className="text-sm text-gray-700">
-                                <p className="font-medium">
-                                  {new Date(
-                                    selectedCandidate.Waktu
-                                  ).toLocaleDateString("en-US", {
-                                    year: "numeric",
-                                    month: "long",
-                                    day: "numeric",
-                                  })}
-                                </p>
-                                <p className="text-gray-500 text-xs mt-1">
-                                  {new Date(
-                                    selectedCandidate.Waktu
-                                  ).toLocaleTimeString("en-US", {
-                                    hour: "2-digit",
-                                    minute: "2-digit",
-                                  })}
-                                </p>
-                              </div>
-                            ) : (
-                              <p className="text-gray-400 text-sm">
-                                Date not available
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-            </>
-          ) : (
-            <div className="text-center py-12">
-              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg
-                  className="w-8 h-8 text-gray-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-                  />
-                </svg>
-              </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
-                No Analysis Data
-              </h3>
-              <p className="text-gray-600 mb-4">
-                Start the screening process to see candidate analysis results
-                here.
-              </p>
-              <div className="text-sm text-gray-500">
-                <p>
-                  💡 <strong>Tip:</strong> Make sure your Gmail contains emails
-                  with subjects including "resume" or "cv" with PDF attachments.
-                </p>
-              </div>
-            </div>
-          )}
+        </>
+      ) : (
+        <div className="text-center py-16">
+          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+          </div>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Belum Ada Data Analisis</h3>
+          <p className="text-gray-600 mb-4">Mulai proses screening untuk melihat hasil analisis kandidat di sini</p>
+          <div className="text-sm text-gray-500">
+            <p>💡 <strong>Tips:</strong> Pastikan Gmail Anda berisi email dengan subjek yang sesuai dan lampiran CV dalam format PDF</p>
+          </div>
         </div>
+      )}
+    </div>
 
         {/* Stats Summary */}
         {results.length > 0 && (
