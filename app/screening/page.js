@@ -982,7 +982,7 @@ export default function Home() {
               isDragOver
                 ? "border-blue-400 bg-blue-50"
                 : selectedFile
-                  ? "border-green-300"
+                  ? "border-green-300 bg-green-50"
                   : "border-gray-300 hover:border-gray-400"
             }`}
             onDragOver={handleDragOver}
