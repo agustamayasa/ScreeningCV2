@@ -552,7 +552,7 @@ export default function Home() {
   // Show login page if not authenticated
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-gray-50">
       {/* Navbar */}
       <nav className="bg-white border-b border-gray-100 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -776,7 +776,7 @@ export default function Home() {
         )}
 
         {/* Configuration Section */}
-        <div className="bg-white border border-gray-200 rounded-xl p-8 mb-8  mx-auto">
+        <div className="bg-white border border-gray-200 rounded-xl p-8 mb-8 max-w-6xl mx-auto">
         {/* Header */}
         <div className="flex items-start mb-8 pb-6 border-b border-gray-100">
           <div className="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center mr-4 flex-shrink-0">
@@ -817,16 +817,15 @@ export default function Home() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Job Position - Left Column */}
           <div>
-            <div className="flex items-center mb-3">
-              <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mr-2.5">
-                <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                </svg>
-              </div>
+            <div className="flex items-center mb-2">
+              <svg className="w-5 h-5 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
               <label htmlFor="jobPosition" className="block text-sm font-medium text-gray-700">
                 Nama Posisi Pekerjaan
               </label>
             </div>
+            <p className="text-xs text-gray-500 mb-3">Tentukan posisi yang sedang dibuka</p>
             
             <input
               type="text"
@@ -836,21 +835,20 @@ export default function Home() {
               placeholder="Contoh: UI/UX Designer, Frontend Developer"
               className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 bg-white text-gray-900 placeholder-gray-400"
             />
-            <p className="text-xs text-gray-500 mt-1.5">Digunakan untuk nama spreadsheet dan folder</p>
+            <p className="text-xs text-gray-500 mt-1.5">Nama ini akan digunakan untuk penamaan spreadsheet secara otomatis</p>
           </div>
 
           {/* Email Subjects - Right Column */}
           <div>
-            <div className="flex items-center mb-3">
-              <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center mr-2.5">
-                <svg className="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                </svg>
-              </div>
+            <div className="flex items-center mb-2">
+              <svg className="w-5 h-5 text-purple-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
               <label className="block text-sm font-medium text-gray-700">
                 Format Subjek Email
               </label>
             </div>
+            <p className="text-xs text-gray-500 mb-3">Tentukan pola subjek email yang akan dipindai</p>
             
             <div className="space-y-2.5">
               {emailSubjects.map((subject, index) => (
@@ -888,7 +886,7 @@ export default function Home() {
               Tambah Subjek
             </button>
             
-            <p className="text-xs text-gray-500 mt-2">Email dengan subjek ini akan dipindai untuk CV attachment</p>
+            <p className="text-xs text-gray-500 mt-2">Sistem akan memindai email dengan subjek yang sesuai untuk mencari CV otomatis</p>
           </div>
         </div>
 
