@@ -978,7 +978,7 @@ export default function Home() {
 
           {/* File Upload Area */}
           <div
-            className={`border-2 border-dashed rounded-xl p-10 text-center transition-all duration-200 bg-white ${
+            className={`border-2 border-dashed rounded-xl p-10 text-center transition-all duration-200 ${
               isDragOver
                 ? "border-blue-400 bg-blue-50"
                 : selectedFile
