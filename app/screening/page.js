@@ -776,7 +776,7 @@ export default function Home() {
         )}
 
         {/* Configuration Section */}
-        <div className="bg-white border border-gray-200 rounded-xl p-8 mb-8 max-w-6xl mx-auto">
+        <div className="bg-white border border-gray-200 rounded-xl p-8 mb-8 mx-auto">
         {/* Header */}
         <div className="flex items-start mb-8 pb-6 border-b border-gray-100">
           <div className="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center mr-4 flex-shrink-0">
@@ -935,421 +935,276 @@ export default function Home() {
 
         {/* Main Process Section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
-          {/* Upload Section */}
-<div className="bg-white border border-gray-200 rounded-xl p-6">
-  <div className="flex items-center justify-between mb-6">
-    <div className="flex items-center">
-      <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
-        <svg
-          className="w-5 h-5 text-blue-600"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-          />
-        </svg>
-      </div>
-      <div>
-        <h2 className="text-lg font-semibold text-gray-900">
-          Job Description Upload
-        </h2>
-        <p className="text-sm text-gray-600">
-          Upload PDF file containing job requirements
-        </p>
-      </div>
-    </div>
-    
-    {/* Download Template Button */}
-    <a
-      href="/templates/Template_Deskripsi_Pekerjaan.docx"
-      download
-      className="flex items-center gap-2 px-4 py-2 bg-green-50 hover:bg-green-100 text-green-700 rounded-lg border border-green-200 transition-colors duration-200 text-sm font-medium"
-    >
-      <svg
-        className="w-4 h-4"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-        />
-      </svg>
-      Download Template
-    </a>
-  </div>
-
-  {/* Configuration Reminder */}
-  {!isConfigSaved && (
-    <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-      <div className="flex items-center">
-        <svg
-          className="w-4 h-4 text-amber-500 mr-2"
-          fill="currentColor"
-          viewBox="0 0 20 20"
-        >
-          <path
-            fillRule="evenodd"
-            d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
-            clipRule="evenodd"
-          />
-        </svg>
-        <p className="text-amber-700 text-sm">
-          Simpan konfigurasi screening terlebih dahulu
-        </p>
-      </div>
-    </div>
-  )}
-
-  {/* File Upload Area */}
-  <div
-    className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors duration-200 ${
-      isDragOver
-        ? "border-blue-400 bg-blue-50"
-        : selectedFile
-          ? "border-green-300 bg-green-50"
-          : "border-gray-300 hover:border-gray-400"
-    }`}
-    onDragOver={handleDragOver}
-    onDragLeave={handleDragLeave}
-    onDrop={handleDrop}
-  >
-    <input
-      type="file"
-      accept=".pdf"
-      onChange={handleFileChange}
-      className="hidden"
-      id="file-upload"
-    />
-
-    {selectedFile ? (
-      <div className="space-y-3">
-        <svg
-          className="w-12 h-12 text-green-500 mx-auto"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-          />
-        </svg>
-        <div>
-          <p className="font-medium text-gray-900">
-            {selectedFile.name}
-          </p>
-          <p className="text-sm text-gray-500">
-            {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
-          </p>
-        </div>
-      </div>
-    ) : (
-      <div className="space-y-3">
-        <svg
-          className="w-12 h-12 text-gray-400 mx-auto"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-          />
-        </svg>
-        <div>
-          <label htmlFor="file-upload" className="cursor-pointer">
-            <span className="text-blue-600 hover:text-blue-500 font-medium">
-              Click to upload
-            </span>
-            <span className="text-gray-600"> or drag and drop</span>
-          </label>
-          <p className="text-sm text-gray-500">PDF files only</p>
-        </div>
-      </div>
-    )}
-  </div>
-
-  {/* Upload Button */}
-  <button
-    onClick={handleUpload}
-    disabled={!selectedFile || !isConfigSaved}
-    className="w-full mt-4 bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors duration-200 font-medium"
-  >
-    Upload Job Description
-  </button>
-
-  {/* Upload Status */}
-  {uploadStatus && (
-    <div
-      className={`mt-4 p-3 rounded-lg text-sm font-medium ${
-        uploadStatus.includes("Sukses")
-          ? "bg-green-50 text-green-700 border border-green-200"
-          : uploadStatus.includes("Gagal")
-            ? "bg-red-50 text-red-700 border border-red-200"
-            : "bg-blue-50 text-blue-700 border border-blue-200"
-      }`}
-    >
-      {uploadStatus}
-    </div>
-  )}
-</div>
-
-          {/* AI Analysis Section */}
-          <div className="bg-white border border-gray-200 rounded-xl p-6">
-            <div className="flex items-center mb-6">
-              <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
-                <svg
-                  className="w-5 h-5 text-blue-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
-                  />
+        {/* Upload Section */}
+        <div className="bg-white border border-gray-200 rounded-xl p-8">
+          {/* Header */}
+          <div className="flex items-start justify-between mb-8 pb-6 border-b border-gray-100">
+            <div className="flex items-start flex-1">
+              <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center mr-4 flex-shrink-0">
+                <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                 </svg>
               </div>
-              <div>
-                <h2 className="text-lg font-semibold text-gray-900">
-                  AI Analysis
-                </h2>
-                <p className="text-sm text-gray-600">
-                  Process CVs with intelligent screening
-                </p>
+              <div className="flex-1">
+                <h2 className="text-xl font-semibold text-gray-900 mb-1">Unggah Deskripsi Pekerjaan</h2>
+                <p className="text-sm text-gray-500">Unggah file PDF berisi persyaratan pekerjaan</p>
               </div>
             </div>
+            
+            {/* Download Template Button */}
+            <a
+              href="/templates/Template_Deskripsi_Pekerjaan.docx"
+              download
+              className="flex items-center gap-2 px-4 py-2 bg-green-50 hover:bg-green-100 text-green-700 rounded-lg border border-green-200 transition-colors duration-200 text-sm font-medium ml-4 flex-shrink-0"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              Unduh Template
+            </a>
+          </div>
 
-            <div className="space-y-4">
-              {/* Prerequisites Check */}
-              <div className="bg-gray-50 rounded-lg p-4">
-                <h3 className="font-medium text-gray-900 mb-3">
-                  Prerequisites
-                </h3>
-                <div className="space-y-2">
-                  <div className="flex items-center">
-                    <svg
-                      className={`w-4 h-4 mr-2 ${isConfigSaved ? "text-green-500" : "text-gray-400"
-                        }`}
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                    <span
-                      className={`text-sm ${isConfigSaved ? "text-green-700" : "text-gray-600"
-                        }`}
-                    >
-                      Screening configuration saved
-                    </span>
-                  </div>
-                  <div className="flex items-center">
-                    <svg
-                      className={`w-4 h-4 mr-2 ${uploadStatus.includes("Sukses")
-                        ? "text-green-500"
-                        : "text-gray-400"
-                        }`}
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                    <span
-                      className={`text-sm ${uploadStatus.includes("Sukses")
-                        ? "text-green-700"
-                        : "text-gray-600"
-                        }`}
-                    >
-                      Job description uploaded
-                    </span>
-                  </div>
+          {/* Configuration Reminder */}
+          {!isConfigSaved && (
+            <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+              <div className="flex items-center">
+                <svg className="w-5 h-5 text-amber-500 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+                <p className="text-amber-700 text-sm font-medium">Simpan konfigurasi penyaringan terlebih dahulu sebelum mengunggah</p>
+              </div>
+            </div>
+          )}
+
+          {/* File Upload Area */}
+          <div
+            className={`border-2 border-dashed rounded-xl p-10 text-center transition-all duration-200 ${
+              isDragOver
+                ? "border-blue-400 bg-blue-50"
+                : selectedFile
+                  ? "border-green-300 bg-green-50"
+                  : "border-gray-300 hover:border-gray-400 bg-gray-50"
+            }`}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+          >
+            <input
+              type="file"
+              accept=".pdf"
+              onChange={handleFileChange}
+              className="hidden"
+              id="file-upload"
+            />
+
+            {selectedFile ? (
+              <div className="space-y-4">
+                <svg className="w-16 h-16 text-green-500 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <div>
+                  <p className="font-semibold text-gray-900 text-lg">{selectedFile.name}</p>
+                  <p className="text-sm text-gray-500 mt-1">{(selectedFile.size / 1024 / 1024).toFixed(2)} MB</p>
                 </div>
               </div>
-
-              {/* Process Overview */}
-              <div className="bg-gray-50 rounded-lg p-4">
-                <h3 className="font-medium text-gray-900 mb-2">
-                  Process Overview
-                </h3>
-                <ul className="text-sm text-gray-600 space-y-1">
-                  <li className="flex items-center">
-                    <svg
-                      className="w-4 h-4 text-green-500 mr-2"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                    Scan Gmail for CV attachments
-                  </li>
-                  <li className="flex items-center">
-                    <svg
-                      className="w-4 h-4 text-green-500 mr-2"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                    Extract and analyze text content
-                  </li>
-                  <li className="flex items-center">
-                    <svg
-                      className="w-4 h-4 text-green-500 mr-2"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                    Upload CVs to Google Drive
-                  </li>
-                  <li className="flex items-center">
-                    <svg
-                      className="w-4 h-4 text-green-500 mr-2"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                    Generate compatibility scores
-                  </li>
-                </ul>
+            ) : (
+              <div className="space-y-4">
+                <svg className="w-16 h-16 text-gray-400 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                </svg>
+                <div>
+                  <label htmlFor="file-upload" className="cursor-pointer">
+                    <span className="text-blue-600 hover:text-blue-700 font-semibold">Klik untuk mengunggah</span>
+                    <span className="text-gray-600"> atau seret dan lepas file</span>
+                  </label>
+                  <p className="text-sm text-gray-500 mt-2">Hanya file PDF yang didukung</p>
+                </div>
               </div>
+            )}
+          </div>
 
-              {/* Action Buttons */}
-              <div className="space-y-3">
-                <button
-                  onClick={handleStartScreening}
-                  disabled={
-                    isLoading ||
-                    !uploadStatus.includes("Sukses") ||
-                    !isConfigSaved
-                  }
-                  className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors duration-200 font-medium flex items-center justify-center"
-                >
-                  {isLoading ? (
-                    <>
-                      <svg
-                        className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                      >
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                        ></circle>
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                        ></path>
-                      </svg>
-                      Processing...
-                    </>
-                  ) : (
-                    <>
-                      <svg
-                        className="w-5 h-5 mr-2"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M13 10V3L4 14h7v7l9-11h-7z"
-                        />
-                      </svg>
-                      Start AI Analysis
-                    </>
-                  )}
-                </button>
+          {/* Upload Button */}
+          <button
+            onClick={handleUpload}
+            disabled={!selectedFile || !isConfigSaved}
+            className="w-full mt-6 bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all duration-200 font-medium shadow-sm hover:shadow flex items-center justify-center"
+          >
+            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+            </svg>
+            Unggah Deskripsi Pekerjaan
+          </button>
 
-                {results.length > 0 && (
-                  <button
-                    onClick={handleClearResults}
-                    disabled={isLoading}
-                    className="w-full bg-red-600 text-white py-3 px-4 rounded-lg hover:bg-red-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors duration-200 font-medium flex items-center justify-center"
-                  >
-                    <svg
-                      className="w-5 h-5 mr-2"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                      />
-                    </svg>
-                    Clear All Data
-                  </button>
+          {/* Upload Status */}
+          {uploadStatus && (
+            <div className={`mt-4 p-4 rounded-lg text-sm font-medium ${
+              uploadStatus.includes("Sukses")
+                ? "bg-green-50 text-green-800 border border-green-200"
+                : uploadStatus.includes("Gagal")
+                  ? "bg-red-50 text-red-800 border border-red-200"
+                  : "bg-blue-50 text-blue-800 border border-blue-200"
+            }`}>
+              <div className="flex items-center">
+                {uploadStatus.includes("Sukses") ? (
+                  <svg className="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                ) : (
+                  <svg className="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
                 )}
+                {uploadStatus}
               </div>
+            </div>
+          )}
+        </div>
 
-              {/* Screening Status */}
-              {screeningStatus && (
-                <div
-                  className={`p-3 rounded-lg text-sm font-medium ${screeningStatus.includes("berhasil") ||
-                    screeningStatus.includes("Sukses")
-                    ? "bg-green-50 text-green-700 border border-green-200"
-                    : screeningStatus.includes("Error") ||
-                      screeningStatus.includes("Gagal")
-                      ? "bg-red-50 text-red-700 border border-red-200"
-                      : "bg-blue-50 text-blue-700 border border-blue-200"
-                    }`}
-                >
-                  {screeningStatus}
-                </div>
-              )}
+        {/* AI Analysis Section */}
+        <div className="bg-white border border-gray-200 rounded-xl p-8">
+          {/* Header */}
+          <div className="flex items-start mb-8 pb-6 border-b border-gray-100">
+            <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center mr-4 flex-shrink-0">
+              <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+              </svg>
+            </div>
+            <div className="flex-1">
+              <h2 className="text-xl font-semibold text-gray-900 mb-1">Analisis dengan AI</h2>
+              <p className="text-sm text-gray-500">Proses CV dengan penyaringan cerdas berbasis kecerdasan buatan</p>
             </div>
           </div>
+
+          <div className="space-y-6">
+            {/* Prerequisites Check */}
+            <div>
+              <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center">
+                <svg className="w-4 h-4 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                </svg>
+                Persyaratan
+              </h3>
+              <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+                <div className="flex items-center">
+                  <svg className={`w-5 h-5 mr-3 flex-shrink-0 ${isConfigSaved ? "text-green-500" : "text-gray-400"}`} fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                  <span className={`text-sm font-medium ${isConfigSaved ? "text-green-700" : "text-gray-600"}`}>
+                    Konfigurasi penyaringan tersimpan
+                  </span>
+                </div>
+                <div className="flex items-center">
+                  <svg className={`w-5 h-5 mr-3 flex-shrink-0 ${uploadStatus.includes("Sukses") ? "text-green-500" : "text-gray-400"}`} fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                  <span className={`text-sm font-medium ${uploadStatus.includes("Sukses") ? "text-green-700" : "text-gray-600"}`}>
+                    Deskripsi pekerjaan terunggah
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Process Overview */}
+            <div>
+              <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center">
+                <svg className="w-4 h-4 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                Ringkasan Proses
+              </h3>
+              <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+                <div className="flex items-start">
+                  <svg className="w-5 h-5 text-blue-600 mr-3 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg>
+                  <span className="text-sm text-gray-700">Memindai Gmail untuk lampiran CV</span>
+                </div>
+                <div className="flex items-start">
+                  <svg className="w-5 h-5 text-blue-600 mr-3 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  <span className="text-sm text-gray-700">Mengekstrak dan menganalisis konten teks</span>
+                </div>
+                <div className="flex items-start">
+                  <svg className="w-5 h-5 text-blue-600 mr-3 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                  </svg>
+                  <span className="text-sm text-gray-700">Mengunggah CV ke Google Drive</span>
+                </div>
+                <div className="flex items-start">
+                  <svg className="w-5 h-5 text-blue-600 mr-3 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                  </svg>
+                  <span className="text-sm text-gray-700">Menghasilkan skor kompatibilitas</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="space-y-3 pt-2">
+              <button
+                onClick={handleStartScreening}
+                disabled={isLoading || !uploadStatus.includes("Sukses") || !isConfigSaved}
+                className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all duration-200 font-medium flex items-center justify-center shadow-sm hover:shadow"
+              >
+                {isLoading ? (
+                  <>
+                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Memproses Analisis...
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                    Mulai Analisis AI
+                  </>
+                )}
+              </button>
+
+              {results.length > 0 && (
+                <button
+                  onClick={handleClearResults}
+                  disabled={isLoading}
+                  className="w-full bg-red-600 text-white py-3 px-4 rounded-lg hover:bg-red-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all duration-200 font-medium flex items-center justify-center shadow-sm hover:shadow"
+                >
+                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                  Hapus Semua Data
+                </button>
+              )}
+            </div>
+
+            {/* Screening Status */}
+            {screeningStatus && (
+              <div className={`p-4 rounded-lg text-sm font-medium ${
+                screeningStatus.includes("berhasil") || screeningStatus.includes("Sukses")
+                  ? "bg-green-50 text-green-800 border border-green-200"
+                  : screeningStatus.includes("Error") || screeningStatus.includes("Gagal")
+                    ? "bg-red-50 text-red-800 border border-red-200"
+                    : "bg-blue-50 text-blue-800 border border-blue-200"
+              }`}>
+                <div className="flex items-center">
+                  {screeningStatus.includes("berhasil") || screeningStatus.includes("Sukses") ? (
+                    <svg className="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  ) : (
+                    <svg className="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  )}
+                  {screeningStatus}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
+      </div>
 
         {/* Results Section */}
         <div className="bg-white border border-gray-200 rounded-xl p-6">
