@@ -814,8 +814,8 @@ async def start_screening(request: Request):
                 try:
                     current_progress = i + 1
                     
-                    # Kirim progress per email
-                    yield f"data: {json.dumps({'stage': 'processing', 'total': max_emails, 'current': current_progress, 'message': f'Memproses email {current_progress} dari {max_emails}...'})}\n\n"
+                    # Kirim progress per email dengan data konsisten
+                    yield f"data: {json.dumps({'stage': 'processing', 'total': max_emails, 'current': current_progress, 'processed': processed_count, 'skipped': skipped_count, 'message': f'Memproses email {current_progress} dari {max_emails}...'})}\n\n"
                     await asyncio.sleep(0.1)
                     
                     msg = gmail.users().messages().get(userId='me', id=message['id']).execute()
@@ -829,8 +829,8 @@ async def start_screening(request: Request):
                         filename = part.get('filename', '')
                         if filename and filename.lower().endswith('.pdf'):
                             try:
-                                # Update progress dengan nama file
-                                yield f"data: {json.dumps({'stage': 'processing', 'total': max_emails, 'current': current_progress, 'message': f'Menganalisis: {filename}', 'filename': filename})}\n\n"
+                                # Update progress dengan nama file dan counter yang konsisten
+                                yield f"data: {json.dumps({'stage': 'processing', 'total': max_emails, 'current': current_progress, 'processed': processed_count, 'skipped': skipped_count, 'message': f'Menganalisis: {filename}', 'filename': filename})}\n\n"
                                 await asyncio.sleep(0.1)
                                 
                                 attachment_id = part['body']['attachmentId']
@@ -852,7 +852,7 @@ async def start_screening(request: Request):
                                 if cv_hash in existing_hashes:
                                     print(f"CV {filename} sudah pernah diproses, skip.")
                                     skipped_count += 1
-                                    yield f"data: {json.dumps({'stage': 'processing', 'total': max_emails, 'current': current_progress, 'processed': processed_count, 'skipped': skipped_count, 'message': f'{filename} sudah ada (dilewati)', 'skipped_file': True})}\n\n"
+                                    yield f"data: {json.dumps({'stage': 'processing', 'total': max_emails, 'current': current_progress, 'processed': processed_count, 'skipped': skipped_count, 'message': f'CV {filename} sudah ada, dilewati', 'skipped_file': True})}\n\n"
                                     await asyncio.sleep(0.1)
                                     continue
                                 
@@ -905,10 +905,9 @@ async def start_screening(request: Request):
                                     "Justifikasi": analysis_result.get('justifikasi', 'Tidak dapat dianalisis')
                                 })
                                 processed_count += 1
-                                print(f"Berhasil proses: {filename}")
                                 
-                                # Kirim progress sukses dengan counter yang diupdate
-                                yield f"data: {json.dumps({'stage': 'processing', 'total': max_emails, 'current': current_progress, 'processed': processed_count, 'skipped': skipped_count, 'message': f'Berhasil menganalisis: {filename}', 'success': True})}\n\n"
+                                # Kirim progress sukses
+                                yield f"data: {json.dumps({'stage': 'processing', 'total': max_emails, 'current': current_progress, 'processed': processed_count, 'skipped': skipped_count, 'message': f'Berhasil: {filename}', 'success': True})}\n\n"
                                 await asyncio.sleep(0.1)
                                 
                             except Exception as e:

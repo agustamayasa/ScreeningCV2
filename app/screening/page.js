@@ -408,31 +408,29 @@ export default function Home() {
             setScreeningStatus(data.message);
             setProgress({ ...progress, stage: 'query', message: data.message });
           } else if (data.stage === 'processing') {
-            // Update state progress dengan data terbaru dari backend
-            setProgress({
-              total: data.total || 0,
-              current: data.current || 0,
-              message: data.message || '',
+            setProgress(prev => ({
+              total: data.total || prev.total,
+              current: data.current || prev.current,
+              message: data.message || prev.message,
               stage: 'processing',
-              processed: data.processed || 0,
-              skipped: data.skipped || 0
-            });
+              processed: data.processed !== undefined ? data.processed : prev.processed,
+              skipped: data.skipped !== undefined ? data.skipped : prev.skipped
+            }));
             
             // Update status dengan informasi detail
             if (data.filename) {
-              setScreeningStatus(`Memproses: ${data.filename}`);
+              setScreeningStatus(`Memproses: ${data.filename} (${data.current}/${data.total})`);
             } else {
               setScreeningStatus(`Progress: ${data.current}/${data.total} email`);
             }
           } else if (data.stage === 'complete') {
             setScreeningStatus(data.message);
             setProgress({
-              total: data.emails_checked || 0,
-              current: data.emails_checked || 0,
+              ...progress,
               stage: 'complete',
               message: data.message,
-              processed: data.processed_count || 0,
-              skipped: data.skipped_count || 0
+              processed: data.processed_count,
+              skipped: data.skipped_count
             });
             
             // Refresh results setelah selesai
@@ -1279,62 +1277,129 @@ const resetToFirstPage = () => {
   )}
 </div>
 
-{/* Enhanced Progress Bar - Minimalist & Modern */}
+{/* Progress Bar - Tampil saat processing */}
 {isLoading && progress.stage === 'processing' && progress.total > 0 && (
-  <div className="space-y-4 p-5 bg-white rounded-xl border border-gray-200 shadow-sm">
-    {/* Header dengan Stats */}
-    <div className="flex items-center justify-between">
-      <div className="flex items-center gap-2">
-        <div className="w-2 h-2 bg-blue-600 rounded-full animate-pulse"></div>
-        <span className="text-sm font-medium text-gray-900">Sedang Memproses</span>
-      </div>
-      <span className="text-2xl font-bold text-gray-900 tabular-nums">
-        {progress.current}<span className="text-gray-400">/{progress.total}</span>
-      </span>
-    </div>
-
-    {/* Circular Progress or Linear - Minimalist Style */}
-    <div className="relative">
-      {/* Background Bar */}
-      <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-        {/* Animated Progress Bar */}
-        <div
-          style={{ width: `${(progress.current / progress.total) * 100}%` }}
-          className="h-full bg-blue-600 rounded-full transition-all duration-700 ease-out relative overflow-hidden"
-        >
-          {/* Shimmer Effect */}
-          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-30 animate-shimmer"></div>
+  <div className="relative overflow-hidden bg-white rounded-xl border border-gray-200 shadow-sm">
+    {/* Animated Background Gradient */}
+    <div className="absolute inset-0 bg-gradient-to-r from-blue-50/50 via-indigo-50/30 to-blue-50/50 animate-pulse"></div>
+    
+    <div className="relative p-5 space-y-4">
+      {/* Header dengan Progress Percentage */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="relative w-10 h-10 flex items-center justify-center">
+            {/* Rotating Ring */}
+            <div className="absolute inset-0">
+              <svg className="w-full h-full animate-spin" style={{ animationDuration: '3s' }} viewBox="0 0 50 50">
+                <circle
+                  cx="25"
+                  cy="25"
+                  r="20"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="3"
+                  className="text-blue-200"
+                  strokeDasharray="60 70"
+                  strokeLinecap="round"
+                />
+              </svg>
+            </div>
+            {/* Center Icon */}
+            <div className="relative z-10">
+              <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+            </div>
+          </div>
+          <div>
+            <div className="text-sm font-semibold text-gray-900">Analyzing Resumes</div>
+            <div className="text-xs text-gray-500 mt-0.5">{progress.current} of {progress.total} completed</div>
+          </div>
+        </div>
+        <div className="text-right">
+          <div className="text-2xl font-bold text-gray-900 tabular-nums">
+            {Math.round((progress.current / progress.total) * 100)}%
+          </div>
         </div>
       </div>
-      
-      {/* Percentage Badge - Floating */}
-      <div className="absolute -top-1 left-1/2 transform -translate-x-1/2 -translate-y-full mb-2">
-        <div className="bg-blue-600 text-white text-xs font-bold px-2.5 py-1 rounded-full shadow-sm">
-          {Math.round((progress.current / progress.total) * 100)}%
+
+      {/* Modern Progress Bar */}
+      <div className="space-y-2">
+        <div className="relative h-2 bg-gray-100 rounded-full overflow-hidden">
+          {/* Progress Fill with Shine Effect */}
+          <div
+            style={{ width: `${(progress.current / progress.total) * 100}%` }}
+            className="absolute inset-y-0 left-0 bg-gradient-to-r from-blue-500 via-blue-600 to-indigo-600 rounded-full transition-all duration-700 ease-out"
+          >
+            {/* Shine Animation */}
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer"></div>
+          </div>
         </div>
       </div>
-    </div>
 
-    {/* Current File Being Processed */}
-    {progress.message && (
-      <div className="flex items-start gap-2 text-sm">
-        <svg className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+      {/* Current File Being Processed */}
+      <div className="flex items-start gap-2 p-3 bg-gray-50 rounded-lg border border-gray-100">
+        <svg className="w-4 h-4 mt-0.5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
         </svg>
-        <span className="text-gray-600 flex-1 leading-relaxed">{progress.message}</span>
+        <div className="flex-1 min-w-0">
+          <p className="text-xs font-medium text-gray-900 truncate">{progress.message}</p>
+        </div>
       </div>
-    )}
 
-    {/* Stats Grid - Minimalist */}
-    <div className="grid grid-cols-2 gap-4 pt-3 border-t border-gray-100">
-      <div className="space-y-1">
-        <div className="text-xs text-gray-500 uppercase tracking-wide font-medium">Berhasil</div>
-        <div className="text-2xl font-bold text-green-600 tabular-nums">{progress.processed}</div>
+      {/* Stats Grid */}
+      <div className="grid grid-cols-3 gap-3 pt-3 border-t border-gray-100">
+        <div className="text-center">
+          <div className="text-lg font-bold text-gray-900 tabular-nums">{progress.current}</div>
+          <div className="text-xs text-gray-500 mt-0.5">Checked</div>
+        </div>
+        <div className="text-center border-x border-gray-100">
+          <div className="text-lg font-bold text-green-600 tabular-nums">{progress.processed}</div>
+          <div className="text-xs text-gray-500 mt-0.5">Processed</div>
+        </div>
+        <div className="text-center">
+          <div className="text-lg font-bold text-amber-600 tabular-nums">{progress.skipped}</div>
+          <div className="text-xs text-gray-500 mt-0.5">Skipped</div>
+        </div>
       </div>
-      <div className="space-y-1">
-        <div className="text-xs text-gray-500 uppercase tracking-wide font-medium">Dilewati</div>
-        <div className="text-2xl font-bold text-amber-600 tabular-nums">{progress.skipped}</div>
-      </div>
+    </div>
+  </div>
+)}
+
+<style jsx>{`
+  @keyframes shimmer {
+    0% {
+      transform: translateX(-100%);
+    }
+    100% {
+      transform: translateX(100%);
+    }
+  }
+  .animate-shimmer {
+    animation: shimmer 2s infinite;
+  }
+`}</style>
+
+{/* Screening Status */}
+{screeningStatus && (
+  <div className={`p-4 rounded-lg text-sm font-medium ${
+    screeningStatus.includes("berhasil") || screeningStatus.includes("Sukses")
+      ? "bg-green-50 text-green-800 border border-green-200"
+      : screeningStatus.includes("Error") || screeningStatus.includes("Gagal")
+        ? "bg-red-50 text-red-800 border border-red-200"
+        : "bg-blue-50 text-blue-800 border border-blue-200"
+  }`}>
+    <div className="flex items-center">
+      {screeningStatus.includes("berhasil") || screeningStatus.includes("Sukses") ? (
+        <svg className="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      ) : (
+        <svg className="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      )}
+      {screeningStatus}
     </div>
   </div>
 )}
