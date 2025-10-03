@@ -35,6 +35,15 @@ export default function Home() {
     direction: "desc",
   });
 
+  const [progress, setProgress] = useState({
+  total: 0,
+  current: 0,
+  message: '',
+  stage: '',
+  processed: 0,
+  skipped: 0
+});
+
   // Fungsi untuk menangani error dengan lebih baik
   const handleApiError = (error, defaultMessage) => {
     console.error(defaultMessage, error);
@@ -342,50 +351,109 @@ export default function Home() {
   };
 
   const handleStartScreening = async () => {
-    if (!uploadStatus.includes("Sukses")) {
-      setError("Upload deskripsi pekerjaan terlebih dahulu");
-      return;
-    }
+  if (!uploadStatus.includes("Sukses")) {
+    setError("Upload deskripsi pekerjaan terlebih dahulu");
+    return;
+  }
 
-    if (!isConfigSaved) {
-      setError("Simpan konfigurasi screening terlebih dahulu");
-      return;
-    }
+  if (!isConfigSaved) {
+    setError("Simpan konfigurasi screening terlebih dahulu");
+    return;
+  }
 
-    setIsLoading(true);
-    setScreeningStatus("Memulai proses screening...");
-    setError("");
+  setIsLoading(true);
+  setScreeningStatus("Memulai proses screening...");
+  setError("");
+  setProgress({ total: 0, current: 0, message: '', stage: '', processed: 0, skipped: 0 });
 
-    try {
-      const response = await axios.post(
-        `${API_BASE_URL}/api/start-screening`,
-        {},
-        {
-          timeout: 3000000,
-        }
-      );
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/start-screening`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+    });
 
-      setScreeningStatus(`${response.data.message}`);
-
-      setTimeout(async () => {
-        await fetchResults();
-        setScreeningStatus((prev) => prev + " Data berhasil diperbarui!");
-      }, 2000);
-    } catch (error) {
-      const errorMessage = handleApiError(error, "Gagal melakukan screening");
-
-      if (error.response?.status === 401) {
+    if (!response.ok) {
+      if (response.status === 401) {
         setScreeningStatus("Sesi expired, mengarahkan ke login...");
         setTimeout(() => {
           window.location.href = `${API_BASE_URL}/api/login`;
         }, 2000);
-      } else {
-        setScreeningStatus(`${errorMessage}`);
+        return;
       }
-    } finally {
-      setIsLoading(false);
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
-  };
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+
+      const chunk = decoder.decode(value);
+      const lines = chunk.split('\n');
+
+      for (const line of lines) {
+        if (line.startsWith('data: ')) {
+          const data = JSON.parse(line.substring(6));
+          
+          // Update progress berdasarkan stage
+          if (data.stage === 'init') {
+            setScreeningStatus(data.message);
+            setProgress({ ...progress, stage: 'init', message: data.message });
+          } else if (data.stage === 'query') {
+            setScreeningStatus(data.message);
+            setProgress({ ...progress, stage: 'query', message: data.message });
+          } else if (data.stage === 'processing') {
+            setProgress({
+              total: data.total,
+              current: data.current,
+              message: data.message,
+              stage: 'processing',
+              processed: data.processed || 0,
+              skipped: data.skipped || 0
+            });
+            
+            // Update status dengan informasi detail
+            if (data.filename) {
+              setScreeningStatus(`Memproses: ${data.filename} (${data.current}/${data.total})`);
+            } else {
+              setScreeningStatus(`Progress: ${data.current}/${data.total} email`);
+            }
+          } else if (data.stage === 'complete') {
+            setScreeningStatus(data.message);
+            setProgress({
+              ...progress,
+              stage: 'complete',
+              message: data.message,
+              processed: data.processed_count,
+              skipped: data.skipped_count
+            });
+            
+            // Refresh results setelah selesai
+            setTimeout(async () => {
+              await fetchResults();
+              setScreeningStatus(prev => prev + " Data berhasil diperbarui!");
+            }, 1000);
+          } else if (data.stage === 'error') {
+            setError(data.message);
+            setScreeningStatus(`Error: ${data.message}`);
+          }
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Error during screening:', error);
+    const errorMessage = error.message || "Gagal melakukan screening";
+    setScreeningStatus(`Error: ${errorMessage}`);
+    setError(errorMessage);
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   const handleLogin = () => {
     window.location.href = `${API_BASE_URL}/api/login`;
@@ -1170,68 +1238,133 @@ const resetToFirstPage = () => {
               </div>
             </div>
 
-            {/* Action Buttons */}
             <div className="space-y-3 pt-2">
-              <button
-                onClick={handleStartScreening}
-                disabled={isLoading || !uploadStatus.includes("Sukses") || !isConfigSaved}
-                className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all duration-200 font-medium flex items-center justify-center shadow-sm hover:shadow"
-              >
-                {isLoading ? (
-                  <>
-                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Memproses Analisis...
-                  </>
-                ) : (
-                  <>
-                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                    </svg>
-                    Mulai Analisis AI
-                  </>
-                )}
-              </button>
+  <button
+    onClick={handleStartScreening}
+    disabled={isLoading || !uploadStatus.includes("Sukses") || !isConfigSaved}
+    className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all duration-200 font-medium flex items-center justify-center shadow-sm hover:shadow"
+  >
+    {isLoading ? (
+      <>
+        <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        Memproses Analisis...
+      </>
+    ) : (
+      <>
+        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+        </svg>
+        Mulai Analisis AI
+      </>
+    )}
+  </button>
 
-              {results.length > 0 && (
-                <button
-                  onClick={handleClearResults}
-                  disabled={isLoading}
-                  className="w-full bg-red-600 text-white py-3 px-4 rounded-lg hover:bg-red-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all duration-200 font-medium flex items-center justify-center shadow-sm hover:shadow"
-                >
-                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                  </svg>
-                  Hapus Semua Data
-                </button>
-              )}
-            </div>
+  {results.length > 0 && (
+    <button
+      onClick={handleClearResults}
+      disabled={isLoading}
+      className="w-full bg-red-600 text-white py-3 px-4 rounded-lg hover:bg-red-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all duration-200 font-medium flex items-center justify-center shadow-sm hover:shadow"
+    >
+      <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+      </svg>
+      Hapus Semua Data
+    </button>
+  )}
+</div>
 
-            {/* Screening Status */}
-            {screeningStatus && (
-              <div className={`p-4 rounded-lg text-sm font-medium ${
-                screeningStatus.includes("berhasil") || screeningStatus.includes("Sukses")
-                  ? "bg-green-50 text-green-800 border border-green-200"
-                  : screeningStatus.includes("Error") || screeningStatus.includes("Gagal")
-                    ? "bg-red-50 text-red-800 border border-red-200"
-                    : "bg-blue-50 text-blue-800 border border-blue-200"
-              }`}>
-                <div className="flex items-center">
-                  {screeningStatus.includes("berhasil") || screeningStatus.includes("Sukses") ? (
-                    <svg className="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                  ) : (
-                    <svg className="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                  )}
-                  {screeningStatus}
-                </div>
-              </div>
-            )}
+{/* Progress Bar - Tampil saat processing */}
+{isLoading && progress.stage === 'processing' && progress.total > 0 && (
+  <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200 space-y-3">
+    {/* Header Progress */}
+    <div className="flex items-center justify-between">
+      <div className="flex items-center space-x-2">
+        <div className="relative">
+          <svg className="animate-spin h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+        </div>
+        <span className="text-sm font-semibold text-blue-900">
+          Memproses CV
+        </span>
+      </div>
+      <span className="text-sm font-bold text-blue-700">
+        {progress.current}/{progress.total}
+      </span>
+    </div>
+
+    {/* Progress Bar */}
+    <div className="relative">
+      <div className="overflow-hidden h-3 text-xs flex rounded-full bg-blue-100 shadow-inner">
+        <div
+          style={{ width: `${(progress.current / progress.total) * 100}%` }}
+          className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-gradient-to-r from-blue-500 to-indigo-600 transition-all duration-500 ease-out"
+        ></div>
+      </div>
+      <div className="absolute inset-0 flex items-center justify-center">
+        <span className="text-xs font-bold text-blue-900 drop-shadow-sm">
+          {Math.round((progress.current / progress.total) * 100)}%
+        </span>
+      </div>
+    </div>
+
+    {/* Detail Message */}
+    <div className="text-xs text-blue-800 flex items-start space-x-2">
+      <svg className="w-4 h-4 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+      <span className="flex-1">{progress.message}</span>
+    </div>
+
+    {/* Stats */}
+    <div className="grid grid-cols-2 gap-2 pt-2 border-t border-blue-200">
+      <div className="flex items-center space-x-2">
+        <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <span className="text-xs text-gray-700">
+          <span className="font-semibold text-green-700">{progress.processed}</span> diproses
+        </span>
+      </div>
+      <div className="flex items-center space-x-2">
+        <svg className="w-4 h-4 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <span className="text-xs text-gray-700">
+          <span className="font-semibold text-yellow-700">{progress.skipped}</span> dilewati
+        </span>
+      </div>
+    </div>
+  </div>
+)}
+
+{/* Screening Status */}
+{screeningStatus && (
+  <div className={`p-4 rounded-lg text-sm font-medium ${
+    screeningStatus.includes("berhasil") || screeningStatus.includes("Sukses")
+      ? "bg-green-50 text-green-800 border border-green-200"
+      : screeningStatus.includes("Error") || screeningStatus.includes("Gagal")
+        ? "bg-red-50 text-red-800 border border-red-200"
+        : "bg-blue-50 text-blue-800 border border-blue-200"
+  }`}>
+    <div className="flex items-center">
+      {screeningStatus.includes("berhasil") || screeningStatus.includes("Sukses") ? (
+        <svg className="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      ) : (
+        <svg className="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      )}
+      {screeningStatus}
+    </div>
+  </div>
+)}
           </div>
         </div>
       </div>
