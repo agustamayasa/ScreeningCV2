@@ -408,10 +408,11 @@ export default function Home() {
             setScreeningStatus(data.message);
             setProgress({ ...progress, stage: 'query', message: data.message });
           } else if (data.stage === 'processing') {
+            // Update state progress dengan data terbaru dari backend
             setProgress({
-              total: data.total,
-              current: data.current,
-              message: data.message,
+              total: data.total || 0,
+              current: data.current || 0,
+              message: data.message || '',
               stage: 'processing',
               processed: data.processed || 0,
               skipped: data.skipped || 0
@@ -419,18 +420,19 @@ export default function Home() {
             
             // Update status dengan informasi detail
             if (data.filename) {
-              setScreeningStatus(`Memproses: ${data.filename} (${data.current}/${data.total})`);
+              setScreeningStatus(`Memproses: ${data.filename}`);
             } else {
               setScreeningStatus(`Progress: ${data.current}/${data.total} email`);
             }
           } else if (data.stage === 'complete') {
             setScreeningStatus(data.message);
             setProgress({
-              ...progress,
+              total: data.emails_checked || 0,
+              current: data.emails_checked || 0,
               stage: 'complete',
               message: data.message,
-              processed: data.processed_count,
-              skipped: data.skipped_count
+              processed: data.processed_count || 0,
+              skipped: data.skipped_count || 0
             });
             
             // Refresh results setelah selesai
@@ -1238,7 +1240,8 @@ const resetToFirstPage = () => {
               </div>
             </div>
 
-            <div className="space-y-3 pt-2">
+            {/* Action Buttons */}
+<div className="space-y-3 pt-2">
   <button
     onClick={handleStartScreening}
     disabled={isLoading || !uploadStatus.includes("Sukses") || !isConfigSaved}
@@ -1276,67 +1279,61 @@ const resetToFirstPage = () => {
   )}
 </div>
 
-{/* Progress Bar - Tampil saat processing */}
+{/* Enhanced Progress Bar - Minimalist & Modern */}
 {isLoading && progress.stage === 'processing' && progress.total > 0 && (
-  <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200 space-y-3">
-    {/* Header Progress */}
+  <div className="space-y-4 p-5 bg-white rounded-xl border border-gray-200 shadow-sm">
+    {/* Header dengan Stats */}
     <div className="flex items-center justify-between">
-      <div className="flex items-center space-x-2">
-        <div className="relative">
-          <svg className="animate-spin h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-          </svg>
-        </div>
-        <span className="text-sm font-semibold text-blue-900">
-          Memproses CV
-        </span>
+      <div className="flex items-center gap-2">
+        <div className="w-2 h-2 bg-blue-600 rounded-full animate-pulse"></div>
+        <span className="text-sm font-medium text-gray-900">Sedang Memproses</span>
       </div>
-      <span className="text-sm font-bold text-blue-700">
-        {progress.current}/{progress.total}
+      <span className="text-2xl font-bold text-gray-900 tabular-nums">
+        {progress.current}<span className="text-gray-400">/{progress.total}</span>
       </span>
     </div>
 
-    {/* Progress Bar */}
+    {/* Circular Progress or Linear - Minimalist Style */}
     <div className="relative">
-      <div className="overflow-hidden h-3 text-xs flex rounded-full bg-blue-100 shadow-inner">
+      {/* Background Bar */}
+      <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+        {/* Animated Progress Bar */}
         <div
           style={{ width: `${(progress.current / progress.total) * 100}%` }}
-          className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-gradient-to-r from-blue-500 to-indigo-600 transition-all duration-500 ease-out"
-        ></div>
+          className="h-full bg-blue-600 rounded-full transition-all duration-700 ease-out relative overflow-hidden"
+        >
+          {/* Shimmer Effect */}
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-30 animate-shimmer"></div>
+        </div>
       </div>
-      <div className="absolute inset-0 flex items-center justify-center">
-        <span className="text-xs font-bold text-blue-900 drop-shadow-sm">
+      
+      {/* Percentage Badge - Floating */}
+      <div className="absolute -top-1 left-1/2 transform -translate-x-1/2 -translate-y-full mb-2">
+        <div className="bg-blue-600 text-white text-xs font-bold px-2.5 py-1 rounded-full shadow-sm">
           {Math.round((progress.current / progress.total) * 100)}%
-        </span>
+        </div>
       </div>
     </div>
 
-    {/* Detail Message */}
-    <div className="text-xs text-blue-800 flex items-start space-x-2">
-      <svg className="w-4 h-4 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-      </svg>
-      <span className="flex-1">{progress.message}</span>
-    </div>
-
-    {/* Stats */}
-    <div className="grid grid-cols-2 gap-2 pt-2 border-t border-blue-200">
-      <div className="flex items-center space-x-2">
-        <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+    {/* Current File Being Processed */}
+    {progress.message && (
+      <div className="flex items-start gap-2 text-sm">
+        <svg className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
         </svg>
-        <span className="text-xs text-gray-700">
-          <span className="font-semibold text-green-700">{progress.processed}</span> diproses
-        </span>
+        <span className="text-gray-600 flex-1 leading-relaxed">{progress.message}</span>
       </div>
-      <div className="flex items-center space-x-2">
-        <svg className="w-4 h-4 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-        <span className="text-xs text-gray-700">
-          <span className="font-semibold text-yellow-700">{progress.skipped}</span> dilewati
-        </span>
+    )}
+
+    {/* Stats Grid - Minimalist */}
+    <div className="grid grid-cols-2 gap-4 pt-3 border-t border-gray-100">
+      <div className="space-y-1">
+        <div className="text-xs text-gray-500 uppercase tracking-wide font-medium">Berhasil</div>
+        <div className="text-2xl font-bold text-green-600 tabular-nums">{progress.processed}</div>
+      </div>
+      <div className="space-y-1">
+        <div className="text-xs text-gray-500 uppercase tracking-wide font-medium">Dilewati</div>
+        <div className="text-2xl font-bold text-amber-600 tabular-nums">{progress.skipped}</div>
       </div>
     </div>
   </div>
@@ -1365,6 +1362,7 @@ const resetToFirstPage = () => {
     </div>
   </div>
 )}
+
           </div>
         </div>
       </div>
@@ -2433,6 +2431,17 @@ const resetToFirstPage = () => {
 
       {/* Custom styles for line clamping */}
       <style jsx>{`
+      @keyframes shimmer {
+    0% {
+      transform: translateX(-100%);
+    }
+    100% {
+      transform: translateX(100%);
+    }
+  }
+  .animate-shimmer {
+    animation: shimmer 2s infinite;
+  }
         .line-clamp-2 {
           display: -webkit-box;
           -webkit-line-clamp: 2;
