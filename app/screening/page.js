@@ -361,7 +361,7 @@ export default function Home() {
         `${API_BASE_URL}/api/start-screening`,
         {},
         {
-          timeout: 300000,
+          timeout: 3000000,
         }
       );
 
@@ -1384,8 +1384,8 @@ const resetToFirstPage = () => {
                         {result['Pendidikan Terakhir'].length > 40 ? `${result['Pendidikan Terakhir'].substring(0, 40)}...` : result['Pendidikan Terakhir']}
                       </p>
                     </td>
-                    <td className="py-3.5 px-3 text-center">
-                      <div className={`inline-block px-2.5 py-1 rounded-full text-xs font-semibold border ${getScoreBadgeColor(result['Overall Fit'])}`}>
+                    <td className="py-4 px-2 text-center">
+                      <div className={`px-2 py-1 rounded-full text-sm font-medium border ${getScoreBadgeColor(result['Overall Fit'])}`}>
                         {result['Overall Fit']}%
                       </div>
                     </td>
