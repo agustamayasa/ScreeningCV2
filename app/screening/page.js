@@ -21,7 +21,7 @@ export default function Home() {
   // New state for configuration forms
   const [jobPosition, setJobPosition] = useState("");
   const [emailSubjects, setEmailSubjects] = useState([""]);
-  const [configStatus, setConfigStatus] = useState("");
+  const [status, setStatus] = useState({ message: "", type: "idle" });
   const [isConfigSaved, setIsConfigSaved] = useState(false);
   const [currentSpreadsheetName, setCurrentSpreadsheetName] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -196,58 +196,59 @@ export default function Home() {
 
   // New functions for configuration
   const handleSaveConfig = async () => {
-    if (!jobPosition.trim()) {
-      setConfigStatus("Nama posisi pekerjaan tidak boleh kosong");
-      // Clear error message after 5 seconds
-      setTimeout(() => {
-        setConfigStatus("");
-      }, 5000);
-      return;
-    }
+  // Validasi Job Position
+  if (!jobPosition.trim()) {
+    setStatus({
+      message: "Nama posisi pekerjaan tidak boleh kosong",
+      type: "error",
+    });
+    setTimeout(() => setStatus({ message: "", type: "idle" }), 5000);
+    return;
+  }
 
-    const validSubjects = emailSubjects.filter(
-      (subject) => subject.trim() !== ""
+  // Validasi Email Subjects
+  const validSubjects = emailSubjects.filter((subject) => subject.trim() !== "");
+  if (validSubjects.length === 0) {
+    setStatus({
+      message: "Minimal satu subjek email harus diisi",
+      type: "error",
+    });
+    setTimeout(() => setStatus({ message: "", type: "idle" }), 5000);
+    return;
+  }
+
+  try {
+    // 1. Set status ke 'loading' (ini akan memiliki warna netral)
+    setStatus({ message: "Menyimpan konfigurasi...", type: "loading" });
+
+    const response = await axios.post(
+      `${API_BASE_URL}/api/set-screening-config`,
+      {
+        job_position: jobPosition.trim(),
+        email_subjects: validSubjects,
+      }
     );
-    if (validSubjects.length === 0) {
-      setConfigStatus("Minimal satu subjek email harus diisi");
-      // Clear error message after 5 seconds
-      setTimeout(() => {
-        setConfigStatus("");
-      }, 5000);
-      return;
-    }
 
-    try {
-      setConfigStatus("Menyimpan konfigurasi...");
-      const response = await axios.post(
-        `${API_BASE_URL}/api/set-screening-config`,
-        {
-          job_position: jobPosition.trim(),
-          email_subjects: validSubjects,
-        }
-      );
+    setIsConfigSaved(true);
+    setCurrentSpreadsheetName(response.data.spreadsheet_name);
+    setCurrentSpreadsheetUrl(response.data.spreadsheet_url || "");
 
-      setIsConfigSaved(true);
-      setCurrentSpreadsheetName(response.data.spreadsheet_name);
-      setCurrentSpreadsheetUrl(response.data.spreadsheet_url || "");
-      setConfigStatus(
-        `Konfigurasi berhasil disimpan! Spreadsheet: ${response.data.spreadsheet_name}`
-      );
+    // 2. Set status ke 'success' (ini akan berwarna hijau)
+    setStatus({
+      message: `Konfigurasi berhasil disimpan! Spreadsheet: ${response.data.spreadsheet_name}`,
+      type: "success",
+    });
 
-      // Clear success message after 8 seconds (longer for success messages)
-      setTimeout(() => {
-        setConfigStatus("");
-      }, 8000);
-    } catch (error) {
-      const errorMessage = handleApiError(error, "Gagal menyimpan konfigurasi");
-      setConfigStatus(`Error: ${errorMessage}`);
+    setTimeout(() => setStatus({ message: "", type: "idle" }), 8000);
+  } catch (error) {
+    const errorMessage = handleApiError(error, "Gagal menyimpan konfigurasi");
+    
+    // 3. Set status ke 'error' (ini akan berwarna merah)
+    setStatus({ message: `Error: ${errorMessage}`, type: "error" });
 
-      // Clear error message after 8 seconds
-      setTimeout(() => {
-        setConfigStatus("");
-      }, 8000);
-    }
-  };
+    setTimeout(() => setStatus({ message: "", type: "idle" }), 8000);
+  }
+};
 
   const addEmailSubject = () => {
     setEmailSubjects([...emailSubjects, ""]);
@@ -993,7 +994,7 @@ const resetToFirstPage = () => {
                 <svg className="w-5 h-5 text-amber-500 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                 </svg>
-                <p className="text-amber-700 text-sm font-medium">Simpan konfigurasi penyaringan terlebih dahulu sebelum mengunggah</p>
+                <p className="text-amber-700 text-sm font-medium">Simpan konfigurasi Screening terlebih dahulu sebelum mengunggah</p>
               </div>
             </div>
           )}
@@ -1101,7 +1102,7 @@ const resetToFirstPage = () => {
             </div>
             <div className="flex-1">
               <h2 className="text-xl font-semibold text-gray-900 mb-1">Analisis dengan AI</h2>
-              <p className="text-sm text-gray-500">Proses CV dengan penyaringan cerdas berbasis kecerdasan buatan</p>
+              <p className="text-sm text-gray-500">Proses CV dengan Screening cerdas berbasis kecerdasan buatan</p>
             </div>
           </div>
 
@@ -1120,7 +1121,7 @@ const resetToFirstPage = () => {
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                   </svg>
                   <span className={`text-sm font-medium ${isConfigSaved ? "text-green-700" : "text-gray-600"}`}>
-                    Konfigurasi penyaringan tersimpan
+                    Konfigurasi Screening tersimpan
                   </span>
                 </div>
                 <div className="flex items-center">
