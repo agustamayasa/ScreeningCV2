@@ -578,6 +578,13 @@ def format_list_to_string(data_list):
     
     # Membuat string dengan format "1. item\n2. item\n..."
     return "\n".join(f"{i+1}. {item}" for i, item in enumerate(data_list))
+
+def safe_json_dumps(data):
+    """
+    Safely serialize data to JSON string with proper escaping
+    """
+    return json.dumps(data, ensure_ascii=False, separators=(',', ':'))
+
 # ==============================================================================
 # ENDPOINTS API
 # ==============================================================================
@@ -773,7 +780,8 @@ async def start_screening(request: Request):
             gmail, drive, gc, refreshed_creds = get_google_services(request=request)
             
             # Kirim progress: Inisialisasi
-            yield f"data: {json.dumps({'stage': 'init', 'message': 'Mempersiapkan folder dan spreadsheet...'})}\n\n"
+            init_data = {'stage': 'init', 'message': 'Mempersiapkan folder dan spreadsheet...'}
+            yield f"data: {safe_json_dumps(init_data)}\n\n"
             await asyncio.sleep(0.1)
             
             screening_folder_id, cv_folder_id = ensure_folder_structure(drive, job_position_name)
@@ -784,7 +792,8 @@ async def start_screening(request: Request):
             existing_hashes = get_existing_hashes(sheet)
             
             # Kirim progress: Query Gmail
-            yield f"data: {json.dumps({'stage': 'query', 'message': 'Mencari email dengan resume...'})}\n\n"
+            query_data = {'stage': 'query', 'message': 'Mencari email dengan resume...'}
+            yield f"data: {safe_json_dumps(query_data)}\n\n"
             await asyncio.sleep(0.1)
             
             gmail_query = build_gmail_query(email_subjects)
@@ -797,13 +806,30 @@ async def start_screening(request: Request):
             
             messages = results.get('messages', [])
             if not messages:
-                yield f"data: {json.dumps({'stage': 'complete', 'message': 'Tidak ada email dengan resume ditemukan.', 'processed_count': 0, 'skipped_count': 0, 'total_emails': 0, 'emails_checked': 0, 'spreadsheet_name': spreadsheet_name, 'gmail_query_used': gmail_query, 'results': []})}\n\n"
+                complete_data = {
+                    'stage': 'complete', 
+                    'message': 'Tidak ada email dengan resume ditemukan.', 
+                    'processed_count': 0, 
+                    'skipped_count': 0, 
+                    'total_emails': 0, 
+                    'emails_checked': 0, 
+                    'spreadsheet_name': spreadsheet_name, 
+                    'gmail_query_used': gmail_query, 
+                    'results': []
+                }
+                yield f"data: {safe_json_dumps(complete_data)}\n\n"
                 return
             
             max_emails = min(30, len(messages))
             
             # Kirim progress: Mulai processing
-            yield f"data: {json.dumps({'stage': 'processing', 'total': max_emails, 'current': 0, 'message': f'Memulai analisis {max_emails} email...'})}\n\n"
+            start_data = {
+                'stage': 'processing', 
+                'total': max_emails, 
+                'current': 0, 
+                'message': f'Memulai analisis {max_emails} email...'
+            }
+            yield f"data: {safe_json_dumps(start_data)}\n\n"
             await asyncio.sleep(0.1)
             
             processed_results = []
@@ -815,7 +841,15 @@ async def start_screening(request: Request):
                     current_progress = i + 1
                     
                     # Kirim progress per email dengan data konsisten
-                    yield f"data: {json.dumps({'stage': 'processing', 'total': max_emails, 'current': current_progress, 'processed': processed_count, 'skipped': skipped_count, 'message': f'Memproses email {current_progress} dari {max_emails}...'})}\n\n"
+                    progress_data = {
+                        'stage': 'processing', 
+                        'total': max_emails, 
+                        'current': current_progress, 
+                        'processed': processed_count, 
+                        'skipped': skipped_count, 
+                        'message': f'Memproses email {current_progress} dari {max_emails}...'
+                    }
+                    yield f"data: {safe_json_dumps(progress_data)}\n\n"
                     await asyncio.sleep(0.1)
                     
                     msg = gmail.users().messages().get(userId='me', id=message['id']).execute()
@@ -829,8 +863,17 @@ async def start_screening(request: Request):
                         filename = part.get('filename', '')
                         if filename and filename.lower().endswith('.pdf'):
                             try:
-                                # Update progress dengan nama file dan counter yang konsisten
-                                yield f"data: {json.dumps({'stage': 'processing', 'total': max_emails, 'current': current_progress, 'processed': processed_count, 'skipped': skipped_count, 'message': f'Menganalisis: {filename}', 'filename': filename})}\n\n"
+                                # Update progress dengan nama file
+                                file_progress_data = {
+                                    'stage': 'processing', 
+                                    'total': max_emails, 
+                                    'current': current_progress, 
+                                    'processed': processed_count, 
+                                    'skipped': skipped_count, 
+                                    'message': f'Menganalisis: {filename}', 
+                                    'filename': filename
+                                }
+                                yield f"data: {safe_json_dumps(file_progress_data)}\n\n"
                                 await asyncio.sleep(0.1)
                                 
                                 attachment_id = part['body']['attachmentId']
@@ -852,7 +895,16 @@ async def start_screening(request: Request):
                                 if cv_hash in existing_hashes:
                                     print(f"CV {filename} sudah pernah diproses, skip.")
                                     skipped_count += 1
-                                    yield f"data: {json.dumps({'stage': 'processing', 'total': max_emails, 'current': current_progress, 'processed': processed_count, 'skipped': skipped_count, 'message': f'CV {filename} sudah ada, dilewati', 'skipped_file': True})}\n\n"
+                                    skip_data = {
+                                        'stage': 'processing', 
+                                        'total': max_emails, 
+                                        'current': current_progress, 
+                                        'processed': processed_count, 
+                                        'skipped': skipped_count, 
+                                        'message': f'CV {filename} sudah ada, dilewati', 
+                                        'skipped_file': True
+                                    }
+                                    yield f"data: {safe_json_dumps(skip_data)}\n\n"
                                     await asyncio.sleep(0.1)
                                     continue
                                 
@@ -890,6 +942,7 @@ async def start_screening(request: Request):
                                 sheet.append_row(row_to_insert)
                                 existing_hashes.add(cv_hash)
                                 
+                                # Clean data untuk hasil - hindari karakter yang bisa break JSON
                                 processed_results.append({
                                     "Waktu": current_time,
                                     "Drive Link": drive_link,
@@ -907,7 +960,16 @@ async def start_screening(request: Request):
                                 processed_count += 1
                                 
                                 # Kirim progress sukses
-                                yield f"data: {json.dumps({'stage': 'processing', 'total': max_emails, 'current': current_progress, 'processed': processed_count, 'skipped': skipped_count, 'message': f'Berhasil: {filename}', 'success': True})}\n\n"
+                                success_data = {
+                                    'stage': 'processing', 
+                                    'total': max_emails, 
+                                    'current': current_progress, 
+                                    'processed': processed_count, 
+                                    'skipped': skipped_count, 
+                                    'message': f'Berhasil: {filename}', 
+                                    'success': True
+                                }
+                                yield f"data: {safe_json_dumps(success_data)}\n\n"
                                 await asyncio.sleep(0.1)
                                 
                             except Exception as e:
@@ -918,16 +980,45 @@ async def start_screening(request: Request):
                     print(f"Error processing message {message['id']}: {e}")
                     continue
 
-            # Kirim hasil akhir
+            # Kirim hasil akhir - SPLIT menjadi dua message untuk menghindari payload terlalu besar
             message = f"{processed_count} resume baru berhasil diproses, {skipped_count} resume sudah ada sebelumnya dari {max_emails} email yang diperiksa (total {len(messages)} email ditemukan)."
             
-            yield f"data: {json.dumps({'stage': 'complete', 'message': message, 'results': processed_results, 'processed_count': processed_count, 'skipped_count': skipped_count, 'total_emails': len(messages), 'emails_checked': max_emails, 'spreadsheet_name': spreadsheet_name, 'gmail_query_used': gmail_query})}\n\n"
+            # Message 1: Summary tanpa results (untuk menghindari JSON terlalu besar)
+            summary_data = {
+                'stage': 'complete', 
+                'message': message, 
+                'processed_count': processed_count, 
+                'skipped_count': skipped_count, 
+                'total_emails': len(messages), 
+                'emails_checked': max_emails, 
+                'spreadsheet_name': spreadsheet_name, 
+                'gmail_query_used': gmail_query,
+                'results': []  # Kosongkan results di sini
+            }
+            yield f"data: {safe_json_dumps(summary_data)}\n\n"
+            
+            # Message 2: Results dikirim secara batch (jika ada)
+            # Kirim results dalam chunk kecil untuk menghindari JSON terlalu besar
+            if processed_results:
+                chunk_size = 5  # Kirim 5 hasil per message
+                for i in range(0, len(processed_results), chunk_size):
+                    chunk = processed_results[i:i + chunk_size]
+                    results_chunk_data = {
+                        'stage': 'results_chunk',
+                        'results': chunk,
+                        'chunk_index': i // chunk_size,
+                        'total_chunks': (len(processed_results) + chunk_size - 1) // chunk_size
+                    }
+                    yield f"data: {safe_json_dumps(results_chunk_data)}\n\n"
+                    await asyncio.sleep(0.05)
 
         except HTTPException as e:
-            yield f"data: {json.dumps({'stage': 'error', 'message': e.detail})}\n\n"
+            error_data = {'stage': 'error', 'message': e.detail}
+            yield f"data: {safe_json_dumps(error_data)}\n\n"
         except Exception as e:
             print(f"Terjadi error tak terduga di start_screening: {e}")
-            yield f"data: {json.dumps({'stage': 'error', 'message': f'Internal server error: {str(e)}'})}\n\n"
+            error_data = {'stage': 'error', 'message': f'Internal server error: {str(e)}'}
+            yield f"data: {safe_json_dumps(error_data)}\n\n"
     
     return StreamingResponse(generate_progress(), media_type="text/event-stream")
 

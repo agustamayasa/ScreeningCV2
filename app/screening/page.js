@@ -1391,30 +1391,6 @@ const resetToFirstPage = () => {
   </div>
 )}
 
-{/* Screening Status */}
-{screeningStatus && (
-  <div className={`p-4 rounded-lg text-sm font-medium ${
-    screeningStatus.includes("berhasil") || screeningStatus.includes("Sukses")
-      ? "bg-green-50 text-green-800 border border-green-200"
-      : screeningStatus.includes("Error") || screeningStatus.includes("Gagal")
-        ? "bg-red-50 text-red-800 border border-red-200"
-        : "bg-blue-50 text-blue-800 border border-blue-200"
-  }`}>
-    <div className="flex items-center">
-      {screeningStatus.includes("berhasil") || screeningStatus.includes("Sukses") ? (
-        <svg className="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-      ) : (
-        <svg className="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-      )}
-      {screeningStatus}
-    </div>
-  </div>
-)}
-
           </div>
         </div>
       </div>
