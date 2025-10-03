@@ -19,8 +19,6 @@ import gspread
 import hashlib
 from pydantic import BaseModel
 from typing import List, Optional
-from absl import logging as absl_logging
-
 
 # ==============================================================================
 # KONFIGURASI DAN SETUP AWAL
@@ -33,8 +31,6 @@ os.environ["GRPC_VERBOSITY"] = "NONE"
 os.environ["GRPC_TRACE"] = ""
 os.environ['GRPC_VERBOSITY'] = 'ERROR'
 os.environ['GOOGLE_CLOUD_DISABLE_GRPC_CHANNEL_CREATION_WARNING'] = 'true'
-absl_logging.set_verbosity(absl_logging.FATAL)
-
 load_dotenv()
 
 # --- Logika untuk memuat kredensial ---
