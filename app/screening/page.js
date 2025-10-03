@@ -21,7 +21,7 @@ export default function Home() {
   // New state for configuration forms
   const [jobPosition, setJobPosition] = useState("");
   const [emailSubjects, setEmailSubjects] = useState([""]);
-  const [status, setStatus] = useState({ message: "", type: "idle" });
+  const [configStatus, setConfigStatus] = useState("");
   const [isConfigSaved, setIsConfigSaved] = useState(false);
   const [currentSpreadsheetName, setCurrentSpreadsheetName] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -196,59 +196,58 @@ export default function Home() {
 
   // New functions for configuration
   const handleSaveConfig = async () => {
-  // Validasi Job Position
-  if (!jobPosition.trim()) {
-    setStatus({
-      message: "Nama posisi pekerjaan tidak boleh kosong",
-      type: "error",
-    });
-    setTimeout(() => setStatus({ message: "", type: "idle" }), 5000);
-    return;
-  }
+    if (!jobPosition.trim()) {
+      setConfigStatus("Nama posisi pekerjaan tidak boleh kosong");
+      // Clear error message after 5 seconds
+      setTimeout(() => {
+        setConfigStatus("");
+      }, 5000);
+      return;
+    }
 
-  // Validasi Email Subjects
-  const validSubjects = emailSubjects.filter((subject) => subject.trim() !== "");
-  if (validSubjects.length === 0) {
-    setStatus({
-      message: "Minimal satu subjek email harus diisi",
-      type: "error",
-    });
-    setTimeout(() => setStatus({ message: "", type: "idle" }), 5000);
-    return;
-  }
-
-  try {
-    // 1. Set status ke 'loading' (ini akan memiliki warna netral)
-    setStatus({ message: "Menyimpan konfigurasi...", type: "loading" });
-
-    const response = await axios.post(
-      `${API_BASE_URL}/api/set-screening-config`,
-      {
-        job_position: jobPosition.trim(),
-        email_subjects: validSubjects,
-      }
+    const validSubjects = emailSubjects.filter(
+      (subject) => subject.trim() !== ""
     );
+    if (validSubjects.length === 0) {
+      setConfigStatus("Minimal satu subjek email harus diisi");
+      // Clear error message after 5 seconds
+      setTimeout(() => {
+        setConfigStatus("");
+      }, 5000);
+      return;
+    }
 
-    setIsConfigSaved(true);
-    setCurrentSpreadsheetName(response.data.spreadsheet_name);
-    setCurrentSpreadsheetUrl(response.data.spreadsheet_url || "");
+    try {
+      setConfigStatus("Menyimpan konfigurasi...");
+      const response = await axios.post(
+        `${API_BASE_URL}/api/set-screening-config`,
+        {
+          job_position: jobPosition.trim(),
+          email_subjects: validSubjects,
+        }
+      );
 
-    // 2. Set status ke 'success' (ini akan berwarna hijau)
-    setStatus({
-      message: `Konfigurasi berhasil disimpan! Spreadsheet: ${response.data.spreadsheet_name}`,
-      type: "success",
-    });
+      setIsConfigSaved(true);
+      setCurrentSpreadsheetName(response.data.spreadsheet_name);
+      setCurrentSpreadsheetUrl(response.data.spreadsheet_url || "");
+      setConfigStatus(
+        `Konfigurasi berhasil disimpan! Spreadsheet: ${response.data.spreadsheet_name}`
+      );
 
-    setTimeout(() => setStatus({ message: "", type: "idle" }), 8000);
-  } catch (error) {
-    const errorMessage = handleApiError(error, "Gagal menyimpan konfigurasi");
-    
-    // 3. Set status ke 'error' (ini akan berwarna merah)
-    setStatus({ message: `Error: ${errorMessage}`, type: "error" });
+      // Clear success message after 8 seconds (longer for success messages)
+      setTimeout(() => {
+        setConfigStatus("");
+      }, 8000);
+    } catch (error) {
+      const errorMessage = handleApiError(error, "Gagal menyimpan konfigurasi");
+      setConfigStatus(`Error: ${errorMessage}`);
 
-    setTimeout(() => setStatus({ message: "", type: "idle" }), 8000);
-  }
-};
+      // Clear error message after 8 seconds
+      setTimeout(() => {
+        setConfigStatus("");
+      }, 8000);
+    }
+  };
 
   const addEmailSubject = () => {
     setEmailSubjects([...emailSubjects, ""]);
@@ -809,7 +808,7 @@ const resetToFirstPage = () => {
             </svg>
           </div>
           <div className="flex-1">
-            <h2 className="text-xl font-semibold text-gray-900 mb-1">Konfigurasi Penyaringan</h2>
+            <h2 className="text-xl font-semibold text-gray-900 mb-1">Konfigurasi Screening</h2>
             <p className="text-sm text-gray-500">Atur posisi pekerjaan dan kriteria subjek email pelamar</p>
           </div>
         </div>
