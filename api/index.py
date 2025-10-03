@@ -19,6 +19,7 @@ import gspread
 import hashlib
 from pydantic import BaseModel
 from typing import List, Optional
+import absl.logging
 
 # ==============================================================================
 # KONFIGURASI DAN SETUP AWAL
@@ -26,8 +27,7 @@ from typing import List, Optional
 os.environ['GOOGLE_APPLICATION_CREDENTIALS_JSON'] = '1'
 logging.getLogger('googleapiclient.discovery_cache').setLevel(logging.ERROR)
 logging.getLogger('googleapiclient.discovery').setLevel(logging.WARNING)
-os.environ['GRPC_VERBOSITY'] = 'ERROR'
-os.environ['GOOGLE_CLOUD_DISABLE_GRPC_CHANNEL_CREATION_WARNING'] = 'true'
+absl.logging.set_verbosity(absl.logging.ERROR)
 load_dotenv()
 
 # --- Logika untuk memuat kredensial ---
