@@ -388,59 +388,83 @@ export default function Home() {
 
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
+    let buffer = '';
 
     while (true) {
       const { value, done } = await reader.read();
       if (done) break;
 
-      const chunk = decoder.decode(value);
-      const lines = chunk.split('\n');
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      
+      // Simpan line terakhir yang mungkin incomplete
+      buffer = lines.pop() || '';
 
       for (const line of lines) {
         if (line.startsWith('data: ')) {
-          const data = JSON.parse(line.substring(6));
-          
-          // Update progress berdasarkan stage
-          if (data.stage === 'init') {
-            setScreeningStatus(data.message);
-            setProgress({ ...progress, stage: 'init', message: data.message });
-          } else if (data.stage === 'query') {
-            setScreeningStatus(data.message);
-            setProgress({ ...progress, stage: 'query', message: data.message });
-          } else if (data.stage === 'processing') {
-            setProgress(prev => ({
-              total: data.total || prev.total,
-              current: data.current || prev.current,
-              message: data.message || prev.message,
-              stage: 'processing',
-              processed: data.processed !== undefined ? data.processed : prev.processed,
-              skipped: data.skipped !== undefined ? data.skipped : prev.skipped
-            }));
+          try {
+            const jsonString = line.substring(6).trim();
+            if (!jsonString) continue;
             
-            // Update status dengan informasi detail
-            if (data.filename) {
-              setScreeningStatus(`Memproses: ${data.filename} (${data.current}/${data.total})`);
-            } else {
-              setScreeningStatus(`Progress: ${data.current}/${data.total} email`);
+            const data = JSON.parse(jsonString);
+            
+            // Update progress berdasarkan stage
+            if (data.stage === 'init') {
+              setScreeningStatus(data.message);
+              setProgress({ ...progress, stage: 'init', message: data.message });
+            } else if (data.stage === 'query') {
+              setScreeningStatus(data.message);
+              setProgress({ ...progress, stage: 'query', message: data.message });
+            } else if (data.stage === 'processing') {
+              setProgress({
+                total: data.total || 0,
+                current: data.current || 0,
+                message: data.message || '',
+                stage: 'processing',
+                processed: data.processed || 0,
+                skipped: data.skipped || 0
+              });
+              
+              // Update status dengan informasi detail
+              if (data.filename) {
+                setScreeningStatus(`Memproses: ${data.filename} (${data.current}/${data.total})`);
+              } else if (data.success) {
+                setScreeningStatus(`✓ Berhasil (${data.processed} processed, ${data.skipped} skipped)`);
+              } else if (data.skipped_file) {
+                setScreeningStatus(`⊘ CV sudah ada, dilewati (${data.skipped} total skipped)`);
+              } else {
+                setScreeningStatus(`Progress: ${data.current}/${data.total} email`);
+              }
+            } else if (data.stage === 'complete') {
+              setScreeningStatus(data.message);
+              setProgress({
+                total: data.emails_checked || 0,
+                current: data.emails_checked || 0,
+                message: data.message,
+                stage: 'complete',
+                processed: data.processed_count || 0,
+                skipped: data.skipped_count || 0
+              });
+              
+              // FETCH results dari API setelah complete
+              console.log('Screening complete, fetching results...');
+              setTimeout(async () => {
+                try {
+                  await fetchResults();
+                  setScreeningStatus(prev => prev + " ✓ Data berhasil diperbarui!");
+                } catch (err) {
+                  console.error('Error fetching results after completion:', err);
+                  setError('Proses selesai tetapi gagal memuat hasil. Silakan refresh halaman.');
+                }
+              }, 500);
+            } else if (data.stage === 'error') {
+              setError(data.message);
+              setScreeningStatus(`Error: ${data.message}`);
             }
-          } else if (data.stage === 'complete') {
-            setScreeningStatus(data.message);
-            setProgress({
-              ...progress,
-              stage: 'complete',
-              message: data.message,
-              processed: data.processed_count,
-              skipped: data.skipped_count
-            });
-            
-            // Refresh results setelah selesai
-            setTimeout(async () => {
-              await fetchResults();
-              setScreeningStatus(prev => prev + " Data berhasil diperbarui!");
-            }, 1000);
-          } else if (data.stage === 'error') {
-            setError(data.message);
-            setScreeningStatus(`Error: ${data.message}`);
+          } catch (parseError) {
+            console.error('Error parsing SSE data:', parseError);
+            console.error('Problematic line:', line);
+            // Jangan throw error, lanjutkan saja
           }
         }
       }

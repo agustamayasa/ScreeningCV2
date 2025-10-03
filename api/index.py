@@ -814,8 +814,7 @@ async def start_screening(request: Request):
                     'total_emails': 0, 
                     'emails_checked': 0, 
                     'spreadsheet_name': spreadsheet_name, 
-                    'gmail_query_used': gmail_query, 
-                    'results': []
+                    'gmail_query_used': gmail_query
                 }
                 yield f"data: {safe_json_dumps(complete_data)}\n\n"
                 return
@@ -826,13 +825,14 @@ async def start_screening(request: Request):
             start_data = {
                 'stage': 'processing', 
                 'total': max_emails, 
-                'current': 0, 
+                'current': 0,
+                'processed': 0,
+                'skipped': 0,
                 'message': f'Memulai analisis {max_emails} email...'
             }
             yield f"data: {safe_json_dumps(start_data)}\n\n"
             await asyncio.sleep(0.1)
             
-            processed_results = []
             processed_count = 0
             skipped_count = 0
             
@@ -863,6 +863,9 @@ async def start_screening(request: Request):
                         filename = part.get('filename', '')
                         if filename and filename.lower().endswith('.pdf'):
                             try:
+                                # Sanitize filename untuk menghindari karakter khusus
+                                safe_filename = filename.replace('"', '\\"').replace('\n', ' ').replace('\r', ' ')
+                                
                                 # Update progress dengan nama file
                                 file_progress_data = {
                                     'stage': 'processing', 
@@ -870,8 +873,8 @@ async def start_screening(request: Request):
                                     'current': current_progress, 
                                     'processed': processed_count, 
                                     'skipped': skipped_count, 
-                                    'message': f'Menganalisis: {filename}', 
-                                    'filename': filename
+                                    'message': f'Menganalisis: {safe_filename[:50]}...', 
+                                    'filename': safe_filename[:100]
                                 }
                                 yield f"data: {safe_json_dumps(file_progress_data)}\n\n"
                                 await asyncio.sleep(0.1)
@@ -901,7 +904,7 @@ async def start_screening(request: Request):
                                         'current': current_progress, 
                                         'processed': processed_count, 
                                         'skipped': skipped_count, 
-                                        'message': f'CV {filename} sudah ada, dilewati', 
+                                        'message': f'CV sudah ada, dilewati', 
                                         'skipped_file': True
                                     }
                                     yield f"data: {safe_json_dumps(skip_data)}\n\n"
@@ -941,32 +944,16 @@ async def start_screening(request: Request):
                                 
                                 sheet.append_row(row_to_insert)
                                 existing_hashes.add(cv_hash)
-                                
-                                # Clean data untuk hasil - hindari karakter yang bisa break JSON
-                                processed_results.append({
-                                    "Waktu": current_time,
-                                    "Drive Link": drive_link,
-                                    "Nama": analysis_result.get('nama', 'Tidak tercantum'),
-                                    "Email": analysis_result.get('email', 'Tidak tercantum'),
-                                    "Nomor Telepon": analysis_result.get('nomor_telepon', 'Tidak tercantum'),
-                                    "Pendidikan Terakhir": analysis_result.get('pendidikan_terakhir', 'Tidak tercantum'),
-                                    "Kekuatan": analysis_result.get('kekuatan', 'Tidak dapat dianalisis'),
-                                    "Kekurangan": analysis_result.get('kekurangan', 'Tidak dapat dianalisis'),
-                                    "Risk Factor": analysis_result.get('risk_factor', 'Tidak dapat dianalisis'),
-                                    "Reward Factor": analysis_result.get('reward_factor', 'Tidak dapat dianalisis'),
-                                    "Overall Fit": analysis_result.get('overall_fit', 0),
-                                    "Justifikasi": analysis_result.get('justifikasi', 'Tidak dapat dianalisis')
-                                })
                                 processed_count += 1
                                 
-                                # Kirim progress sukses
+                                # Kirim progress sukses - HANYA info ringkas, tanpa data detail
                                 success_data = {
                                     'stage': 'processing', 
                                     'total': max_emails, 
                                     'current': current_progress, 
                                     'processed': processed_count, 
                                     'skipped': skipped_count, 
-                                    'message': f'Berhasil: {filename}', 
+                                    'message': f'Berhasil diproses', 
                                     'success': True
                                 }
                                 yield f"data: {safe_json_dumps(success_data)}\n\n"
@@ -980,10 +967,10 @@ async def start_screening(request: Request):
                     print(f"Error processing message {message['id']}: {e}")
                     continue
 
-            # Kirim hasil akhir - SPLIT menjadi dua message untuk menghindari payload terlalu besar
+            # Kirim hasil akhir - TANPA results array (frontend akan fetch sendiri)
             message = f"{processed_count} resume baru berhasil diproses, {skipped_count} resume sudah ada sebelumnya dari {max_emails} email yang diperiksa (total {len(messages)} email ditemukan)."
             
-            # Message 1: Summary tanpa results (untuk menghindari JSON terlalu besar)
+            # HANYA kirim summary, TIDAK ADA results
             summary_data = {
                 'stage': 'complete', 
                 'message': message, 
@@ -992,25 +979,9 @@ async def start_screening(request: Request):
                 'total_emails': len(messages), 
                 'emails_checked': max_emails, 
                 'spreadsheet_name': spreadsheet_name, 
-                'gmail_query_used': gmail_query,
-                'results': []  # Kosongkan results di sini
+                'gmail_query_used': gmail_query
             }
             yield f"data: {safe_json_dumps(summary_data)}\n\n"
-            
-            # Message 2: Results dikirim secara batch (jika ada)
-            # Kirim results dalam chunk kecil untuk menghindari JSON terlalu besar
-            if processed_results:
-                chunk_size = 5  # Kirim 5 hasil per message
-                for i in range(0, len(processed_results), chunk_size):
-                    chunk = processed_results[i:i + chunk_size]
-                    results_chunk_data = {
-                        'stage': 'results_chunk',
-                        'results': chunk,
-                        'chunk_index': i // chunk_size,
-                        'total_chunks': (len(processed_results) + chunk_size - 1) // chunk_size
-                    }
-                    yield f"data: {safe_json_dumps(results_chunk_data)}\n\n"
-                    await asyncio.sleep(0.05)
 
         except HTTPException as e:
             error_data = {'stage': 'error', 'message': e.detail}
@@ -1042,45 +1013,6 @@ async def get_results(request: Request):
         
         all_records = sheet.get_all_records()
         
-        filtered_records = []
-        for record in all_records:
-            filtered_record = {k: v for k, v in record.items() if k != 'CV_Hash'}
-            filtered_records.append(filtered_record)
-        
-        return JSONResponse(content={
-            "results": filtered_records,
-            "spreadsheet_name": spreadsheet_name
-        })
-        
-    except HTTPException as e:
-        raise e
-    except Exception as e:
-        print(f"Error in get_results: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to fetch results: {str(e)}")
-
-@app.get("/api/get-results")
-async def get_results(request: Request):
-    global job_position_name
-    
-    try:
-        gmail, drive, gc, _ = get_google_services(request=request)
-        
-        # Jika tidak ada nama posisi yang diset, gunakan default
-        if not job_position_name:
-            spreadsheet_name = "Analisis Resume AI"
-            position_for_folder = "General"  # Default position untuk folder
-        else:
-            spreadsheet_name = generate_spreadsheet_name(job_position_name)
-            position_for_folder = job_position_name
-        
-        # Panggil ensure_spreadsheet_exists dengan parameter lengkap
-        spreadsheet = ensure_spreadsheet_exists(gc, drive, spreadsheet_name, position_for_folder)
-        sheet = spreadsheet.sheet1
-        
-        # Ambil semua data
-        all_records = sheet.get_all_records()
-        
-        # Hapus kolom CV_Hash dari hasil yang dikembalikan ke frontend
         filtered_records = []
         for record in all_records:
             filtered_record = {k: v for k, v in record.items() if k != 'CV_Hash'}
