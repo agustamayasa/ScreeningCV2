@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="https://raw.githubusercontent.com/agustamayasa/screeningcv2/main/ScreeningCV2-9d69a13eae665539ae8a40550c0cd1fe6c9ecd8b/public/rekruta1.jpg" alt="Rekruta Logo" width="400"/>
+  <img src="https://raw.githubusercontent.com/agustamayasa/ScreeningCV2/main/public/rekruta1.jpg" alt="Rekruta Logo" width="400"/>
 </div>
 
 <h1 align="center">Rekruta: Asisten Screening CV Berbasis AI</h1>
