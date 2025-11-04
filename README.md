@@ -12,11 +12,12 @@
     Biarkan AI menganalisis, memfilter, dan memberi peringkat kandidat terbaik langsung dari Gmail & Google Drive Anda, sementara Anda fokus pada hal terpenting: wawancara.
   </p>
   
-  <p>
+  <h2 align="center">
     <a href="https://screening-cv-2.vercel.app/screening">
       <img src="https://img.shields.io/badge/Coba_Aplikasi_Langsung-LIVE-green?style=for-the-badge&logo=vercel&logoColor=white" alt="Coba Aplikasi Langsung">
     </a>
-  </p>
+  </h2>
+  
   <p>
     <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT">
     <img src="https://img.shields.io/badge/Next.js-15.5-black?logo=nextdotjs" alt="Next.js">
