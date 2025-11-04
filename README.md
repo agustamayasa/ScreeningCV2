@@ -13,10 +13,21 @@
   </p>
   
   <br>
-  <a href="https://screening-cv-2.vercel.app/screening" style="text-decoration: none;">
-    <div style="background-color: #28a745; color: white; padding: 14px 28px; border-radius: 8px; font-size: 22px; font-weight: bold; display: inline-block; font-family: Arial, sans-serif; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
-      🚀 Coba Aplikasi Langsung (LIVE)
-    </div>
+  <a href="https://screening-cv-2.vercel.app/screening" style="
+    display: inline-block;
+    padding: 16px 32px;
+    border: none;
+    border-radius: 10px;
+    background-image: linear-gradient(to bottom right, #28a745, #22c55e);
+    color: white;
+    font-size: 24px;
+    font-weight: bold;
+    text-decoration: none;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji';
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+    transition: transform 0.2s ease-out;
+  ">
+    🚀 Coba Aplikasi Langsung (LIVE)
   </a>
   <br>
   <br>
