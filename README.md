@@ -46,7 +46,6 @@
     * Lihat semua kandidat yang telah dianalisis dalam tabel yang rapi.
     * **Pencarian:** Cari kandidat berdasarkan nama, email, atau keahlian.
     * **Sortir:** Urutkan kandidat berdasarkan Skor Kecocokan, Nama, atau Tanggal.
-    * **Paginasi:** Navigasi mudah untuk ratusan hasil.
     * **Modal Detail:** Klik tombol "Detail" untuk melihat laporan analisis lengkap untuk setiap kandidat dalam modal *pop-up* yang bersih.
 * **🔄 Deteksi Duplikat:** Aplikasi membuat *hash* unik untuk setiap CV yang diproses untuk mencegah pemrosesan dan penduplikasian data yang sama di Google Sheets.
 * **📡 Streaming Progres Real-time (SSE):** Tonton proses screening secara langsung! Backend menggunakan *Server-Sent Events (SSE)* untuk mengirim pembaruan status ke frontend, mulai dari "Mencari email..." hingga "Memproses CV: [nama file]..." dan "Selesai".
@@ -58,13 +57,32 @@
 Proyek ini dibangun dengan arsitektur *full-stack* modern yang memisahkan frontend dan backend.
 
 ### Frontend
+
+<p>
+  <img src="https://img.shields.io/badge/Next.js-15.5-black?logo=nextdotjs&logoColor=white" alt="Next.js">
+  <img src="https://img.shields.io/badge/React-19.1-blue?logo=react&logoColor=61DAFB" alt="React">
+  <img src="https://img.shields.io/badge/Tailwind_CSS-4-blue?logo=tailwindcss&logoColor=06B6D4" alt="Tailwind CSS">
+  <img src="https://img.shields.io/badge/Axios-purple?logo=axios&logoColor=white" alt="Axios">
+</p>
+
 * **Framework:** [Next.js 15](https://nextjs.org/) (menggunakan App Router)
 * **Bahasa:** JavaScript (React)
 * **Styling:** [Tailwind CSS 4](https://tailwindcss.com/)
 * **Manajemen State:** React Hooks (`useState`, `useEffect`)
 * **Fetch Data:** [Axios](https://axios-http.com/) (untuk permintaan API) & `fetch` native (untuk streaming SSE)
 
+---
+
 ### Backend (Serverless API)
+
+<p>
+  <img src="https://img.shields.io/badge/FastAPI-green?logo=fastapi" alt="FastAPI">
+  <img src="https://img.shields.io/badge/Python-3.10+-blue?logo=python&logoColor=FFD43B" alt="Python">
+  <img src="https://img.shields.io/badge/Google_Gemini-blue?logo=google-gemini" alt="Google Gemini">
+  <img src="https://img.shields.io/badge/Google_Cloud-Platform-orange?logo=googlecloud" alt="Google Cloud">
+  <img src="https://img.shields.io/badge/Vercel-Deployment-black?logo=vercel&logoColor=white" alt="Vercel">
+</p>
+
 * **Framework:** [FastAPI (Python)](https://fastapi.tiangolo.com/)
 * **Bahasa:** Python 3.10+
 * **AI:** [Google Gemini API](https://ai.google.dev/) (`google-generativeai`)
