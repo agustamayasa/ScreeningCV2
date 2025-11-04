@@ -12,25 +12,20 @@
     Biarkan AI menganalisis, memfilter, dan memberi peringkat kandidat terbaik langsung dari Gmail & Google Drive Anda, sementara Anda fokus pada hal terpenting: wawancara.
   </p>
   
-  <br>
-  <a href="https://screening-cv-2.vercel.app/screening" style="
-    display: inline-block;
-    padding: 16px 32px;
-    border: none;
-    border-radius: 10px;
-    background-image: linear-gradient(to bottom right, #28a745, #22c55e);
-    color: white;
-    font-size: 24px;
-    font-weight: bold;
-    text-decoration: none;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji';
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
-    transition: transform 0.2s ease-out;
-  ">
-    🚀 Coba Aplikasi Langsung (LIVE)
-  </a>
-  <br>
-  <br>
+  <br/>
+  
+  <p>
+    <a href="https://screening-cv-2.vercel.app/screening">
+      <img src="https://img.shields.io/badge/🚀_COBA_APLIKASI_SEKARANG-4F46E5?style=for-the-badge&logoColor=white&labelColor=818CF8" alt="Coba Aplikasi Langsung" height="50">
+    </a>
+  </p>
+  
+  <p>
+    <em>✨ Gratis • ⚡ Cepat • 🤖 Didukung AI</em>
+  </p>
+  
+  <br/>
+  
   <p>
     <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT">
     <img src="https://img.shields.io/badge/Next.js-15.5-black?logo=nextdotjs" alt="Next.js">
