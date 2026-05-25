@@ -60,3 +60,4 @@ yarn-error.log*
 next-env.d.ts
 deploy.sh
 deploy.md
+deploy.env
